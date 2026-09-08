@@ -80,5 +80,6 @@ public class PasswordResetController {
     private void applyAuthLayout(Model model) {
         model.addAttribute("authPageLayout", true);
         model.addAttribute("compactTopContent", true);
+        model.addAttribute("disableGlobalChatbot", true);
     }
 }

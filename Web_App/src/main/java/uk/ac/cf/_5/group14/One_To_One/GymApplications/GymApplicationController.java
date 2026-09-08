@@ -141,6 +141,7 @@ public class GymApplicationController {
             GymApplication application = gymApplicationService.getApplicationByAccessToken(token);
             model.addAttribute("authPageLayout", true);
             model.addAttribute("compactTopContent", true);
+            model.addAttribute("disableGlobalChatbot", true);
             model.addAttribute("gymApplication", application);
             model.addAttribute("messages", gymApplicationService.getMessages(application.getId()));
             return "public-views/auth/signup-gym-application";

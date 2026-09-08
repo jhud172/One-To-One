@@ -1,6 +1,7 @@
 @import "../components/public/guest-foundation.css";
 @import "../components/public/guest-marketing.css";
 @import "../components/public/guest-auth.css";
+@import "../components/public/auth-journey.css";
 @import "../components/public/guest-utility.css";
 
 @tailwind components;

@@ -1,12 +1,12 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(#{ui.01228}, null, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="content" class="auth-container auth-container--wide guest-experience guest-auth" data-guest-scene>
+    <div th:fragment="content" class="auth-container auth-container--wide guest-experience guest-auth guest-auth--wizard" data-guest-scene>
         <div class="guest-auth__stage">
             <header class="guest-auth__assurance">
                 <span class="guest-auth__brand-mark" aria-hidden="true"></span>
                 <div class="guest-auth__intro">
                     <span class="guest-auth__signal-line" aria-hidden="true"></span>
+                    <p class="auth-workspace-kicker" th:text="#{auth.wizard.gym.kicker}">Verified gym application</p>
                     <h1 class="auth-heading" th:text="#{ui.01213}">Apply for your gym account</h1>
                     <p class="auth-subheading" th:text="#{ui.01214}">Submit your gym details for review. We only create the live gym admin account after approval.</p>
                 </div>
@@ -15,194 +15,96 @@
 
             <div class="auth-card guest-auth__panel">
                 <div class="auth-accent-bar"></div>
+                <form th:action="@{/signup/gym}" th:object="${signupForm}" method="post" class="auth-form auth-wizard" data-auth-wizard th:attr="data-step-error=#{auth.wizard.error}">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <div th:if="${#fields.hasAnyErrors()}" class="auth-alert auth-alert--error" role="alert" th:text="#{ui.01192}">Please correct the highlighted fields below.</div>
 
-            <form th:action="@{/signup/gym}" th:object="${signupForm}" method="post" class="auth-form">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
-                <div th:if="${#fields.hasAnyErrors()}" class="auth-alert auth-alert--error" role="alert" th:text="#{ui.01192}">
-                    Please correct the highlighted fields below.
-                </div>
-
-                <div class="auth-form-grid">
-                <div class="auth-field">
-                    <label for="gymName" class="auth-field__label" th:text="#{ui.01215}">Gym name *</label>
-                    <input
-                        type="text"
-                        id="gymName"
-                        th:field="*{gymName}"
-                        required
-                        autocomplete="organization"
-                        placeholder="Your gym name"
-                        class="auth-field__input"  th:placeholder="#{ui.01216}"/>
-                    <div th:if="${#fields.hasErrors('gymName')}" class="auth-field__error">
-                        <span th:errors="*{gymName}"></span>
-                    </div>
-                </div>
-
-                <div class="auth-field">
-                    <label for="contactName" class="auth-field__label" th:text="#{ui.01217}">Primary contact name *</label>
-                    <input
-                        type="text"
-                        id="contactName"
-                        th:field="*{contactName}"
-                        required
-                        autocomplete="name"
-                        placeholder="Full name"
-                        class="auth-field__input"  th:placeholder="#{ui.01218}"/>
-                    <div th:if="${#fields.hasErrors('contactName')}" class="auth-field__error">
-                        <span th:errors="*{contactName}"></span>
-                    </div>
-                </div>
-                </div>
-
-                <div class="auth-form-grid">
-                <div class="auth-field">
-                    <label for="adminEmail" class="auth-field__label" th:text="#{ui.01219}">Admin email *</label>
-                    <input
-                        type="email"
-                        id="adminEmail"
-                        th:field="*{adminEmail}"
-                        required
-                        autocomplete="email"
-                        placeholder="admin@example.com"
-                        class="auth-field__input"  th:placeholder="#{ui.01220}"/>
-                    <div th:if="${#fields.hasErrors('adminEmail')}" class="auth-field__error">
-                        <span th:errors="*{adminEmail}"></span>
-                    </div>
-                </div>
-
-                <div class="auth-field">
-                    <label for="gymUsername" class="auth-field__label" th:text="#{ui.01221}">Gym username *</label>
-                    <input
-                        type="text"
-                        id="gymUsername"
-                        th:field="*{gymUsername}"
-                        required
-                        autocomplete="username"
-                        placeholder="Choose a gym username"
-                        class="auth-field__input"  th:placeholder="#{ui.01222}"/>
-                    <p class="auth-field__hint" th:text="#{ui.01197}">3–20 characters. Letters, numbers and underscores only.</p>
-                    <div th:if="${#fields.hasErrors('gymUsername')}" class="auth-field__error">
-                        <span th:errors="*{gymUsername}"></span>
-                    </div>
-                </div>
-                </div>
-
-                <div class="auth-field">
-                    <label for="contactPhone" class="auth-field__label" th:text="#{ui.01223}">Contact phone *</label>
-                    <input
-                        type="tel"
-                        id="contactPhone"
-                        th:field="*{contactPhone}"
-                        required
-                        autocomplete="tel"
-                        placeholder="Contact phone number"
-                        class="auth-field__input"  th:placeholder="#{ui.01224}"/>
-                    <div th:if="${#fields.hasErrors('contactPhone')}" class="auth-field__error">
-                        <span th:errors="*{contactPhone}"></span>
-                    </div>
-                </div>
-
-                <div class="auth-form-grid">
-                    <div class="auth-field">
-                        <label for="address" class="auth-field__label" th:text="#{ui.01225}">Street address *</label>
-                        <input
-                            type="text"
-                            id="address"
-                            th:field="*{address}"
-                            required
-                            autocomplete="street-address"
-                            class="auth-field__input" />
-                        <div th:if="${#fields.hasErrors('address')}" class="auth-field__error">
-                            <span th:errors="*{address}"></span>
+                    <div class="auth-wizard__header">
+                        <div class="auth-wizard__meta">
+                            <p class="auth-wizard__label" data-auth-progress-label data-pattern="Step {current} of {total}" th:attr="data-pattern=#{auth.wizard.progressPattern}">Step 1 of 3</p>
+                            <p class="auth-wizard__label" th:text="#{auth.wizard.gym.time}">About 3 minutes</p>
+                        </div>
+                        <div class="auth-wizard__progress" data-auth-progress role="progressbar" aria-label="Application progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" th:attr="aria-label=#{auth.wizard.progressLabel}"></div>
+                        <div class="auth-wizard__nav auth-wizard__nav--three" aria-label="Application steps" th:attr="aria-label=#{auth.wizard.stepsLabel}">
+                            <button type="button" class="auth-wizard__nav-item is-active" data-auth-step-nav aria-current="step"><span class="auth-wizard__nav-index">01</span><span class="auth-wizard__nav-text" th:text="#{auth.wizard.organisation}">Organisation</span></button>
+                            <button type="button" class="auth-wizard__nav-item" data-auth-step-nav disabled><span class="auth-wizard__nav-index">02</span><span class="auth-wizard__nav-text" th:text="#{auth.wizard.location}">Location</span></button>
+                            <button type="button" class="auth-wizard__nav-item" data-auth-step-nav disabled><span class="auth-wizard__nav-index">03</span><span class="auth-wizard__nav-text" th:text="#{auth.wizard.security}">Security</span></button>
                         </div>
                     </div>
 
-                    <div class="auth-field">
-                        <label for="city" class="auth-field__label" th:text="#{ui.01226}">City *</label>
-                        <input
-                            type="text"
-                            id="city"
-                            th:field="*{city}"
-                            required
-                            autocomplete="address-level2"
-                            class="auth-field__input" />
-                        <div th:if="${#fields.hasErrors('city')}" class="auth-field__error">
-                            <span th:errors="*{city}"></span>
+                    <section class="auth-wizard__step is-active" data-auth-step aria-labelledby="gym-step-organisation">
+                        <div class="auth-wizard__step-intro">
+                            <p class="auth-wizard__step-kicker" th:text="#{auth.wizard.stepOne}">Step one</p>
+                            <h2 id="gym-step-organisation" class="auth-wizard__step-title" data-auth-step-heading tabindex="-1" th:text="#{auth.wizard.gym.organisationTitle}">Tell us about your gym</h2>
+                            <p class="auth-wizard__step-copy" th:text="#{auth.wizard.gym.organisationCopy}">We use these details to identify your organisation and primary contact.</p>
                         </div>
-                    </div>
-                </div>
+                        <p class="auth-alert auth-alert--error auth-wizard__step-error" data-auth-step-error role="alert" hidden></p>
+                        <div class="auth-form-grid">
+                            <div class="auth-field"><label for="gymName" class="auth-field__label" th:text="#{ui.01215}">Gym name *</label><input type="text" id="gymName" th:field="*{gymName}" required autocomplete="organization" placeholder="Your gym name" class="auth-field__input" th:placeholder="#{ui.01216}" /><div th:if="${#fields.hasErrors('gymName')}" class="auth-field__error"><span th:errors="*{gymName}"></span></div></div>
+                            <div class="auth-field"><label for="contactName" class="auth-field__label" th:text="#{ui.01217}">Primary contact name *</label><input type="text" id="contactName" th:field="*{contactName}" required autocomplete="name" placeholder="Contact name" class="auth-field__input" th:placeholder="#{ui.01218}" /><div th:if="${#fields.hasErrors('contactName')}" class="auth-field__error"><span th:errors="*{contactName}"></span></div></div>
+                            <div class="auth-field"><label for="adminEmail" class="auth-field__label" th:text="#{ui.01219}">Admin email *</label><input type="email" id="adminEmail" th:field="*{adminEmail}" required autocomplete="email" placeholder="admin@example.com" class="auth-field__input" th:placeholder="#{ui.01220}" /><div th:if="${#fields.hasErrors('adminEmail')}" class="auth-field__error"><span th:errors="*{adminEmail}"></span></div></div>
+                            <div class="auth-field"><label for="contactPhone" class="auth-field__label" th:text="#{ui.01223}">Contact phone *</label><input type="tel" id="contactPhone" th:field="*{contactPhone}" required autocomplete="tel" placeholder="Contact phone number" class="auth-field__input" th:placeholder="#{ui.01224}" /><div th:if="${#fields.hasErrors('contactPhone')}" class="auth-field__error"><span th:errors="*{contactPhone}"></span></div></div>
+                        </div>
+                        <div class="auth-wizard__actions">
+                            <a th:href="@{/signup}" class="auth-btn auth-btn--secondary" th:text="#{ui.01201}">Choose account type</a>
+                            <button type="button" class="auth-btn auth-btn--primary" data-auth-next><span th:text="#{auth.wizard.continue}">Continue</span><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></button>
+                        </div>
+                    </section>
 
-                <div class="auth-form-grid">
-                    <div class="auth-field">
-                        <label for="password" class="auth-field__label" th:text="#{ui.01198}">Password *</label>
-                        <div class="auth-field__input-wrapper">
-                            <input
-                                type="password"
-                                id="password"
-                                th:field="*{password}"
-                                required
-                                autocomplete="new-password"
-                                class="auth-field__input auth-field__input--with-icon" />
-                            <button type="button" class="password-toggle" id="togglePassword" aria-label="Toggle password visibility" th:attr="aria-label=#{ui.01187}">
-                                <svg class="h-5 w-5" id="eyeIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                            </button>
+                    <section class="auth-wizard__step" data-auth-step aria-labelledby="gym-step-location">
+                        <div class="auth-wizard__step-intro">
+                            <p class="auth-wizard__step-kicker" th:text="#{auth.wizard.stepTwo}">Step two</p>
+                            <h2 id="gym-step-location" class="auth-wizard__step-title" data-auth-step-heading tabindex="-1" th:text="#{auth.wizard.gym.locationTitle}">Confirm where you operate</h2>
+                            <p class="auth-wizard__step-copy" th:text="#{auth.wizard.gym.locationCopy}">Your address supports the review process and future gym discovery.</p>
                         </div>
-                        <p class="auth-field__hint" th:text="#{ui.01199}">At least 8 characters, including upper and lower case, a number and a special character.</p>
-                        <div th:if="${#fields.hasErrors('password')}" class="auth-field__error">
-                            <span th:errors="*{password}"></span>
+                        <p class="auth-alert auth-alert--error auth-wizard__step-error" data-auth-step-error role="alert" hidden></p>
+                        <div class="auth-form-grid">
+                            <div class="auth-field"><label for="address" class="auth-field__label" th:text="#{ui.01225}">Street address *</label><input type="text" id="address" th:field="*{address}" required autocomplete="street-address" class="auth-field__input" /><div th:if="${#fields.hasErrors('address')}" class="auth-field__error"><span th:errors="*{address}"></span></div></div>
+                            <div class="auth-field"><label for="city" class="auth-field__label" th:text="#{ui.01226}">City *</label><input type="text" id="city" th:field="*{city}" required autocomplete="address-level2" class="auth-field__input" /><div th:if="${#fields.hasErrors('city')}" class="auth-field__error"><span th:errors="*{city}"></span></div></div>
                         </div>
-                    </div>
+                        <div class="auth-wizard__actions">
+                            <button type="button" class="auth-btn auth-btn--secondary" data-auth-back th:text="#{auth.wizard.back}">Back</button>
+                            <button type="button" class="auth-btn auth-btn--primary" data-auth-next><span th:text="#{auth.wizard.continue}">Continue</span><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></button>
+                        </div>
+                    </section>
 
-                    <div class="auth-field">
-                        <label for="confirmPassword" class="auth-field__label" th:text="#{ui.01200}">Confirm password *</label>
-                        <div class="auth-field__input-wrapper">
-                            <input
-                                type="password"
-                                id="confirmPassword"
-                                th:field="*{confirmPassword}"
-                                required
-                                autocomplete="new-password"
-                                class="auth-field__input auth-field__input--with-icon" />
-                            <button type="button" class="password-toggle" id="toggleConfirmPassword" aria-label="Toggle password visibility" th:attr="aria-label=#{ui.01187}">
-                                <svg class="h-5 w-5" id="confirmEyeIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                            </button>
+                    <section class="auth-wizard__step" data-auth-step aria-labelledby="gym-step-security">
+                        <div class="auth-wizard__step-intro">
+                            <p class="auth-wizard__step-kicker" th:text="#{auth.wizard.finalStep}">Final step</p>
+                            <h2 id="gym-step-security" class="auth-wizard__step-title" data-auth-step-heading tabindex="-1" th:text="#{auth.wizard.gym.securityTitle}">Protect the gym administrator account</h2>
+                            <p class="auth-wizard__step-copy" th:text="#{auth.wizard.gym.securityCopy}">Choose the username and password your approved gym administrator will use.</p>
                         </div>
-                        <div th:if="${#fields.hasErrors('confirmPassword')}" class="auth-field__error">
-                            <span th:errors="*{confirmPassword}"></span>
+                        <p class="auth-alert auth-alert--error auth-wizard__step-error" data-auth-step-error role="alert" hidden></p>
+                        <div class="auth-field">
+                            <label for="gymUsername" class="auth-field__label" th:text="#{ui.01221}">Gym username *</label>
+                            <input type="text" id="gymUsername" th:field="*{gymUsername}" required autocomplete="username" placeholder="Choose a gym username" class="auth-field__input" th:placeholder="#{ui.01222}" />
+                            <p class="auth-field__hint" th:text="#{ui.01197}">3–20 characters. Letters, numbers and underscores only.</p>
+                            <div th:if="${#fields.hasErrors('gymUsername')}" class="auth-field__error"><span th:errors="*{gymUsername}"></span></div>
                         </div>
-                    </div>
-                </div>
+                        <div class="auth-form-grid">
+                            <div class="auth-field">
+                                <label for="password" class="auth-field__label" th:text="#{ui.01198}">Password *</label>
+                                <div class="auth-field__input-wrapper"><input type="password" id="password" th:field="*{password}" required autocomplete="new-password" class="auth-field__input auth-field__input--with-icon" /><button type="button" class="password-toggle" id="togglePassword" aria-label="Toggle password visibility" th:attr="aria-label=#{ui.01187}"><svg class="h-5 w-5" id="eyeIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button></div>
+                                <div class="auth-password-strength" data-password-strength="password" data-score="0" role="progressbar" aria-label="Password strength" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" th:attr="aria-label=#{auth.passwordStrength.label},data-empty-label=#{auth.passwordStrength.empty},data-weak-label=#{auth.passwordStrength.weak},data-fair-label=#{auth.passwordStrength.fair},data-good-label=#{auth.passwordStrength.good},data-strong-label=#{auth.passwordStrength.strong},data-complete-label=#{auth.passwordStrength.complete}"><span class="auth-password-strength__bar"></span><span class="auth-password-strength__bar"></span><span class="auth-password-strength__bar"></span><span class="auth-password-strength__bar"></span><span class="auth-password-strength__bar"></span><span class="auth-password-strength__label" data-password-strength-label th:text="#{auth.passwordStrength.empty}">Start with 8 or more characters</span></div>
+                                <p class="auth-field__hint" th:text="#{ui.01199}">At least 8 characters, including upper and lower case, a number and a special character.</p>
+                                <div th:if="${#fields.hasErrors('password')}" class="auth-field__error"><span th:errors="*{password}"></span></div>
+                            </div>
+                            <div class="auth-field">
+                                <label for="confirmPassword" class="auth-field__label" th:text="#{ui.01200}">Confirm password *</label>
+                                <div class="auth-field__input-wrapper"><input type="password" id="confirmPassword" th:field="*{confirmPassword}" required autocomplete="new-password" class="auth-field__input auth-field__input--with-icon" /><button type="button" class="password-toggle" id="toggleConfirmPassword" aria-label="Toggle password visibility" th:attr="aria-label=#{ui.01187}"><svg class="h-5 w-5" id="confirmEyeIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button></div>
+                                <div th:if="${#fields.hasErrors('confirmPassword')}" class="auth-field__error"><span th:errors="*{confirmPassword}"></span></div>
+                            </div>
+                        </div>
+                        <div class="auth-wizard__actions">
+                            <button type="button" class="auth-btn auth-btn--secondary" data-auth-back th:text="#{auth.wizard.back}">Back</button>
+                            <button type="submit" class="auth-btn auth-btn--primary"><span th:text="#{ui.01227}">Submit gym application</span><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></button>
+                        </div>
+                    </section>
 
-                <div class="auth-actions-row">
-                    <a th:href="@{/signup}" class="auth-btn auth-btn--secondary">
-                        <span th:text="#{ui.01201}">Choose account type</span>
-                    </a>
-                    <button type="submit" class="auth-btn auth-btn--primary">
-                        <span th:text="#{ui.01227}">Submit gym application</span>
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </button>
-                </div>
-
-                <p class="text-center text-sm text-gray-600">
-                    <th:block th:text="#{ui.01203}">Already have an account?</th:block>
-                    <a th:href="@{/login(role=gym)}" class="auth-link" th:text="#{ui.01204}">Log in</a>
-                </p>
-            </form>
+                    <p class="text-center text-sm text-gray-600"><th:block th:text="#{ui.01203}">Already have an account?</th:block> <a th:href="@{/login(role=gym)}" class="auth-link" th:text="#{ui.01204}">Log in</a></p>
+                </form>
             </div>
         </div>
     </div>
-
-    <th:block th:fragment="pageScripts">
-    <script th:src="@{/js/auth/signup-gym-page.js(v=${assetVersion})}" defer></script>
-    </th:block>
-
+    <th:block th:fragment="pageScripts"><script th:src="@{/js/auth/signup-gym-page.js(v=${assetVersion})}" defer></script></th:block>
 </th:block>

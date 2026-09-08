@@ -7,6 +7,7 @@
                 <span class="guest-auth__brand-mark" aria-hidden="true"></span>
                 <div class="guest-auth__intro">
                     <span class="guest-auth__signal-line" aria-hidden="true"></span>
+                    <p class="auth-workspace-kicker" th:text="#{auth.choice.kicker}">Choose your path</p>
                     <h1 class="auth-heading" th:text="#{auth.signupChoice.title}">Choose your account type</h1>
                     <p class="auth-subheading" th:text="#{auth.signupChoice.subtitle}">Select how you plan to use One To One.</p>
                 </div>
@@ -28,6 +29,7 @@
                             <h2 class="auth-choice-card__title" th:text="#{auth.role.client}">Client</h2>
                             <p class="auth-choice-card__description" th:text="#{auth.signupChoice.client}">Book trainers and track progress.</p>
                         </div>
+                        <span class="auth-choice-card__meta"><span th:text="#{auth.choice.clientAction}">Start training</span><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></span>
                     </div>
                 </a>
 
@@ -42,6 +44,7 @@
                             <h2 class="auth-choice-card__title" th:text="#{auth.role.trainer}">Trainer</h2>
                             <p class="auth-choice-card__description" th:text="#{auth.signupChoice.trainer}">Showcase your profile and clients.</p>
                         </div>
+                        <span class="auth-choice-card__meta"><span th:text="#{auth.choice.trainerAction}">Build your practice</span><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></span>
                     </div>
                 </a>
 
@@ -56,6 +59,7 @@
                             <h2 class="auth-choice-card__title" th:text="#{auth.role.gym}">Gym</h2>
                             <p class="auth-choice-card__description" th:text="#{auth.signupChoice.gym}">Manage your gym and trainers.</p>
                         </div>
+                        <span class="auth-choice-card__meta"><span th:text="#{auth.choice.gymAction}">Apply for access</span><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></span>
                     </div>
                 </a>
             </div>

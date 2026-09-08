@@ -7,7 +7,7 @@
              data-lang=${currentLanguage.code()},
              data-theme=${userSettings != null && userSettings.theme != null ? userSettings.theme.toString().toLowerCase() : 'system'},
              data-colorblind=${userSettings != null && userSettings.colorBlindMode ? 'on' : 'off'}"
-    th:with="assetVersion=${uiCssVersion != null and !#strings.isEmpty(uiCssVersion) ? uiCssVersion : '20260817p76'},
+    th:with="assetVersion=${uiCssVersion != null and !#strings.isEmpty(uiCssVersion) ? uiCssVersion : '20260820p81'},
              authUser=${@authHelper.getAuthenticatedUser()},
              includeNavbar=${@environment.getProperty('app.ui.includeNavbar') != 'false'},
              includeGlobalChatbot=${@environment.getProperty('app.ui.includeChatbot') != 'false' and disableGlobalChatbot != true and disableGlobalChatbot != 'true'},
@@ -107,8 +107,10 @@
 <script th:src="@{/js/core/language-selector.js(v=${assetVersion})}" defer></script>
 <script th:src="@{/js/core/floating-profile-card.js(v=${assetVersion})}" defer></script>
 <script th:src="@{/js/core/profile-preview.js(v=${assetVersion})}" defer></script>
-<script th:if="${includeGuestExperience}"
+    <script th:if="${includeGuestExperience}"
         th:src="@{/js/public/guest-experience.js(v=${assetVersion})}" defer></script>
+    <script th:if="${authPageLayout == true}"
+        th:src="@{/js/auth/auth-experience.js(v=${assetVersion})}" defer></script>
 
 <!-- Page-specific scripts -->
 <th:block th:if="${pageScripts != null}">

@@ -427,6 +427,9 @@
         if (roleSignupLink) {
             roleSignupLink.href = signupUrls[resolvedRole];
         }
+        pageRoot?.dispatchEvent(new CustomEvent("auth:rolechange", {
+            detail: { role: resolvedRole }
+        }));
 
         emailFields.setAttribute("aria-labelledby", resolvedRole === "trainer" ? "loginRoleTrainer" : "loginRoleClient");
 

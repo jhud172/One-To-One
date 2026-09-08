@@ -120,4 +120,52 @@ class LoginPageAccessibilityContractTest {
                 .doesNotContain("reportValidity()")
                 .doesNotContain("setCustomValidity(");
     }
+
+    @Test
+    void authenticationJourneysStayProgressiveAccessibleAndMotionAware() throws IOException {
+        String base = Files.readString(Path.of("src/main/resources/templates/base.html"));
+        String client = Files.readString(Path.of("src/main/resources/templates/public-views/auth/signup-client.html"));
+        String trainer = Files.readString(Path.of("src/main/resources/templates/public-views/auth/signup-trainer.html"));
+        String gym = Files.readString(Path.of("src/main/resources/templates/public-views/auth/signup-gym.html"));
+        String trainerSuccess = Files.readString(Path.of("src/main/resources/templates/public-views/auth/signup-trainer-success.html"));
+        String gymApplication = Files.readString(Path.of("src/main/resources/templates/public-views/auth/signup-gym-application.html"));
+        String emailVerification = Files.readString(Path.of("src/main/resources/templates/public-views/verify/email-code.html"));
+        String script = Files.readString(Path.of("src/main/resources/static/js/auth/auth-experience.js"));
+        String stylesheet = Files.readString(Path.of("src/main/resources/static/css/components/public/auth-journey.css"));
+
+        assertThat(base)
+                .contains("authPageLayout == true")
+                .contains("/js/auth/auth-experience.js(v=${assetVersion})");
+        assertThat(client)
+                .contains("data-auth-wizard")
+                .contains("auth-wizard__nav--two")
+                .contains("data-password-strength=\"password\"")
+                .doesNotContain("style=");
+        assertThat(trainer)
+                .contains("data-auth-wizard")
+                .contains("auth-wizard__nav--three")
+                .doesNotContain("style=");
+        assertThat(gym)
+                .contains("data-auth-wizard")
+                .contains("auth-wizard__nav--three")
+                .doesNotContain("style=");
+        assertThat(trainerSuccess)
+                .contains("auth-credential-card")
+                .contains("auth-completion-actions");
+        assertThat(gymApplication)
+                .contains("auth-application-card")
+                .contains("auth-application-message");
+        assertThat(emailVerification)
+                .contains("guest-auth--verify")
+                .contains("autocomplete=\"one-time-code\"");
+        assertThat(script)
+                .contains("(prefers-reduced-motion: reduce)")
+                .contains("aria-valuenow")
+                .contains("auth:rolechange")
+                .contains("setRegionAvailable");
+        assertThat(stylesheet)
+                .contains(".auth-flow-ready .auth-wizard__step[hidden]")
+                .contains("@media (prefers-reduced-motion: reduce)")
+                .contains(".auth-wizard__nav--three");
+    }
 }

@@ -13,11 +13,31 @@
                     <h1 class="auth-heading" th:text="#{auth.login.title}">Welcome back</h1>
                     <p class="auth-subheading" th:text="#{auth.login.subtitle}">Log in to continue.</p>
                 </div>
+                <div class="auth-role-story"
+                     data-auth-role-story
+                     th:attr="data-client-eyebrow=#{auth.experience.client.eyebrow},
+                              data-client-title=#{auth.experience.client.title},
+                              data-client-copy=#{auth.experience.client.copy},
+                              data-trainer-eyebrow=#{auth.experience.trainer.eyebrow},
+                              data-trainer-title=#{auth.experience.trainer.title},
+                              data-trainer-copy=#{auth.experience.trainer.copy},
+                              data-gym-eyebrow=#{auth.experience.gym.eyebrow},
+                              data-gym-title=#{auth.experience.gym.title},
+                              data-gym-copy=#{auth.experience.gym.copy}">
+                    <p class="auth-role-story__eyebrow" data-auth-role-eyebrow th:text="#{auth.experience.client.eyebrow}">Your client space</p>
+                    <p class="auth-role-story__title" data-auth-role-title th:text="#{auth.experience.client.title}">Training, progress and support in one place.</p>
+                    <p class="auth-role-story__copy" data-auth-role-copy th:text="#{auth.experience.client.copy}">Return to your programme, bookings and progress without losing momentum.</p>
+                </div>
                 <span class="guest-auth__assurance-rail" aria-hidden="true"></span>
             </header>
 
             <div class="auth-card auth-card--login guest-auth__panel">
             <div class="auth-accent-bar"></div>
+
+            <div class="auth-panel-heading">
+                <p class="auth-workspace-kicker" th:text="#{auth.experience.secureAccess}">Secure access</p>
+                <p class="auth-panel-heading__copy" th:text="#{auth.experience.chooseRole}">Choose your account type to reveal the right credentials.</p>
+            </div>
 
             <div th:if="${isDevMode}" class="auth-alert auth-alert--dev auth-alert--stacked" role="alert">
                 <div class="auth-dev-alert__row">

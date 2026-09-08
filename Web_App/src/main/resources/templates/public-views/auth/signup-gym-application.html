@@ -19,51 +19,51 @@
             <div th:if="${gymApplicationSuccess}" class="auth-alert auth-alert--success" role="alert" th:text="${gymApplicationSuccess}">Saved.</div>
             <div th:if="${gymApplicationError}" class="auth-alert auth-alert--error" role="alert" th:text="${gymApplicationError}">Error.</div>
 
-            <section class="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3">
+            <section class="auth-application-card">
+                <div class="auth-application-card__header">
                     <div>
-                        <p class="text-xs uppercase tracking-[0.22em] text-slate-500" th:text="#{ui.01208}">Application</p>
-                        <h2 class="mt-2 text-2xl font-semibold text-slate-900" th:text="${gymApplication.gymName}">Gym name</h2>
-                        <p class="mt-2 text-sm text-slate-600" th:text="${gymApplication.adminEmail}">email@example.com</p>
+                        <p class="auth-application-card__eyebrow" th:text="#{ui.01208}">Application</p>
+                        <h2 class="auth-application-card__title" th:text="${gymApplication.gymName}">Gym name</h2>
+                        <p class="auth-application-card__email" th:text="${gymApplication.adminEmail}">email@example.com</p>
                     </div>
-                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800" th:text="${gymApplication.status}">PENDING</span>
+                    <span class="auth-application-status" th:text="${gymApplication.status}">PENDING</span>
                 </div>
 
-                <dl class="mt-5 grid grid-cols-1 gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                <dl class="auth-application-details">
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.01177}">Gym username</dt>
-                        <dd class="mt-1 text-slate-900" th:text="${gymApplication.gymUsername}">gym_username</dd>
+                        <dt th:text="#{ui.01177}">Gym username</dt>
+                        <dd th:text="${gymApplication.gymUsername}">gym_username</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.00019}">Primary contact</dt>
-                        <dd class="mt-1 text-slate-900" th:text="${gymApplication.contactName}">Contact name</dd>
+                        <dt th:text="#{ui.00019}">Primary contact</dt>
+                        <dd th:text="${gymApplication.contactName}">Contact name</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.00020}">Phone</dt>
-                        <dd class="mt-1 text-slate-900" th:text="${gymApplication.contactPhone}">000</dd>
+                        <dt th:text="#{ui.00020}">Phone</dt>
+                        <dd th:text="${gymApplication.contactPhone}">000</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.00546}">Location</dt>
-                        <dd class="mt-1 text-slate-900" th:text="${gymApplication.address + ', ' + gymApplication.city}">Address</dd>
+                        <dt th:text="#{ui.00546}">Location</dt>
+                        <dd th:text="${gymApplication.address + ', ' + gymApplication.city}">Address</dd>
                     </div>
                 </dl>
             </section>
 
-            <section class="mt-5 space-y-3">
-                <div th:each="message : ${messages}" class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="${message.senderType}">SYSTEM</p>
-                        <p class="text-xs text-slate-400" th:text="${#temporals.format(message.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-30 10:00</p>
+            <section class="auth-application-messages">
+                <div th:each="message : ${messages}" class="auth-application-message">
+                    <div class="auth-application-message__meta">
+                        <p th:text="${message.senderType}">SYSTEM</p>
+                        <time th:datetime="${message.createdAt}" th:text="${#temporals.format(message.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-30 10:00</time>
                     </div>
-                    <p th:if="${message.subject != null}" class="mt-2 text-sm font-semibold text-slate-900" th:text="${message.subject}">Subject</p>
-                    <p class="mt-2 whitespace-pre-line text-sm text-slate-700" th:text="${message.body}">Message body.</p>
+                    <p th:if="${message.subject != null}" class="auth-application-message__subject" th:text="${message.subject}">Subject</p>
+                    <p class="auth-application-message__body" th:text="${message.body}">Message body.</p>
                 </div>
             </section>
 
             <form th:if="${gymApplication.status.name() != 'APPROVED' and gymApplication.status.name() != 'DECLINED'}"
                   th:action="@{/signup/gym/application/{token}/reply(token=${gymApplication.accessToken})}"
                   method="post"
-                  class="mt-5 space-y-3">
+                  class="auth-application-reply">
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <div>
                     <label for="applicationReply" class="auth-field__label" th:text="#{ui.01209}">Reply to the review team</label>
