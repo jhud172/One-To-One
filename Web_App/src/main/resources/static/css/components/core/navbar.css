@@ -1196,6 +1196,16 @@
         overflow: hidden;
     }
 
+    body > main,
+    body > footer {
+        transition: filter 240ms ease;
+    }
+
+    body.site-nav-open > main[data-site-nav-inert],
+    body.site-nav-open > footer[data-site-nav-inert] {
+        filter: blur(6px);
+    }
+
     body[data-overlay-owner="site-navigation"] #chatWidget,
     body[data-overlay-owner="site-navigation"] #quickActionsRoot,
     body[data-overlay-owner="site-navigation"] #platformPanelRoot {
@@ -1932,9 +1942,9 @@
             overflow: hidden;
             overscroll-behavior: none;
             padding: 0.5rem 0 max(0.75rem, env(safe-area-inset-bottom));
-            background: rgba(248, 250, 252, 0.72);
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
+            background: transparent;
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
         }
 
         .nav-dropdown > div {
@@ -2225,6 +2235,8 @@
         .nav-login-cta::before,
         .nav-login-cta__icon,
         .nav-login-cta__icon::before,
+        body > main,
+        body > footer,
         .navicon,
         .nav-auth-container,
         .nav-auth-container .floating-profile-card,
