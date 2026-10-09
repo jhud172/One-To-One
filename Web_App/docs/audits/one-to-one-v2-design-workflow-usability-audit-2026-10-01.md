@@ -3138,15 +3138,17 @@ Schedule actions now share the native transactional application service, preserv
 
 **Route/context:** `/gym/admin/memberships/create`, `/gym/admin/memberships/{id}/edit`.
 
-**Coverage:** **S** — source inventoried; no accepted current screenshot of this specific surface.
+**Coverage:** **V** — selected light English desktop/phone editor states inspected on 9 October; complete acceptance remains open.
 
 **Current finding/opportunity:** Source: one form handles both modes and shows current price.
 
 **Implementation progress:** Fix the broken create mode that hid price/billing fields and submitted to memberships/null/edit. Use a dedicated editable-fields form with decimal price bounds and a trusted edit ID/current price from the server. Retain invalid drafts with HTTP 400. Create products using the authenticated gym and exact minor-unit conversion; ordinary edits cannot alter persisted price, billing period or gym ownership. Native create/edit/error/foreign-owner regressions pass. Full browser/device and financial currency migration remain open; the existing membership ledger remains USD.
 
+**9 October laptop continuation:** Locked/refreshed metadata mutation preserves a newer stored price and existing subscriptions; native editor retains bounded catalogue context and invalid drafts. Current-price/monthly-billing/subscriber summary, semantic responsive controls and truthful delivery wording are implemented. Final 14 tests/two suites, 28 editor locale renders, CSS/package and 42 localisation bundles pass. Selected desktop/390px phone evidence and verification limits are recorded in the [membership editor checkpoint](../qa/2026-10-09-v2-membership-editor.md). W139.1/.2/.4 and full Q01–Q10 remain open.
+
 - [ ] W139.1 Verify the complete current page/state in its correct role, including the relevant embedded flows; record evidence and confirm the findings.
 - [ ] W139.2 **Design, styling and motion:** Create a clear product editor with readable billing period and preview; separate creation from price changes.
-- [ ] W139.3 **Workflow, usability and features:** Preserve validation and existing subscribers; prevent edits from silently bypassing the price-change workflow.
+- [x] W139.3 **Workflow, usability and features:** Preserve validation and existing subscribers; prevent edits from silently bypassing the price-change workflow.
 - [ ] W139.4 **Complete:** meet Q01–Q10 as applicable; record changed files, fresh screenshots, functional checks and actual test results before checking this box.
 
 
@@ -3163,6 +3165,8 @@ Schedule actions now share the native transactional application service, preserv
 **Current finding/opportunity:** Source: impact, subscriber warning and Confirm & Notify are consequential actions.
 
 **Implementation progress:** Replace the script-only confirmation modal with a native submitted form, required server-checked confirmation and progressive before/after/date preview using the shared confirmation dialogue. Bound and validate prices before conversion; invalid or unconfirmed requests retain their draft with HTTP 400. Lock the product and reuse an identical future price-change event so repeats do not create duplicate audit entries or notifications. State that configured email delivery is attempted, not tracked. Owned, invalid, confirmation and sequential replay tests use mocked delivery and pass. Concurrent replay and actual delivery/provider acceptance remain open.
+
+**9 October continuation:** Native submissions now require the price displayed during review; stale/missing quotes cannot create another event or attempt notification. Lock/refresh and actual enabled gym-owner checks preserve current price/metadata. Date validation/default/minimum and midnight use an injected clock in Europe/London. Selected provider-free browser evidence verifies the populated progressive preview, shared confirmation, zero subscribers, future change and identical replay remaining one event. See the [price consistency checkpoint](../qa/2026-10-09-v2-membership-price-history.md) for fresh results and limits. Controlled notification-body preview and complete page/release acceptance remain open.
 
 - [ ] W140.1 Verify the complete current page/state in its correct role, including the relevant embedded flows; record evidence and confirm the findings.
 - [ ] W140.2 **Design, styling and motion:** Use an explicit before/after comparison, affected subscribers, effective date and confirmation summary; no distracting motion.
@@ -3183,6 +3187,8 @@ Schedule actions now share the native transactional application service, preserv
 **Current finding/opportunity:** Source: chronology and no-change state provide an audit trail.
 
 **Implementation progress:** Keep owned audit records and actor context, use British date formatting with an explicit London zone and distinguish affected subscribers from confirmed delivery. Label increase/decrease figures as counts on the current page. Render actual populated history successfully and return 404 for other-gym product history. Native regression coverage passes. Full browser, large-history chronology/pagination and the USD-to-UK monetary policy migration remain open.
+
+**9 October continuation:** History uses deterministic creation-date/ID ordering, bounded pages and oversized requests clamped to the last page. Due-price application selects effective-date/ID order under a refreshed product lock and preserves newer metadata/status. History explicitly shows USD, London times and future scheduled context, keeping event records intact. Focused same-time twenty-six-event, future exclusion, stale metadata and fourteen-locale render evidence is recorded in the [price consistency checkpoint](../qa/2026-10-09-v2-membership-price-history.md). Whole-page/role/device and Q01–Q10 acceptance remain open.
 
 - [ ] W141.1 Verify the complete current page/state in its correct role, including the relevant embedded flows; record evidence and confirm the findings.
 - [ ] W141.2 **Design, styling and motion:** Create a readable history with effective date, old/new values and actor context where available.

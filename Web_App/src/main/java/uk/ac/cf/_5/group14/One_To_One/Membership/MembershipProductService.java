@@ -27,6 +27,8 @@ public class MembershipProductService {
     private final PriceChangeEventRepository priceChangeEventRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final java.time.Clock clock;
+    private final uk.ac.cf._5.group14.One_To_One.GymProfile.GymWorkspaceAccessService workspace;
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
@@ -46,8 +48,17 @@ public class MembershipProductService {
      * Update an existing membership product (excluding price)
      */
     @Transactional
-    public GymMembershipProduct updateProduct(GymMembershipProduct product) {
-        log.info("Updating membership product: {}", product.getId());
+    public GymMembershipProduct updateProduct(Long id, Long gymId, MembershipProductForm draft) {
+        // Copy only editable values after refreshing the locked row. A request may
+        // already hold an older managed price, billing period or scheduled change.
+        GymMembershipProduct product = productRepository.findLockedById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Product not found or access denied"));
+        entityManager.refresh(product, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        if (!Objects.equals(product.getGymId(), gymId)) throw new IllegalArgumentException("Product not found or access denied");
+        product.setName(draft.getName().trim());
+        product.setDescription(draft.getDescription());
+        product.setActive(draft.isActive());
+        log.info("Updating membership product details: {}", id);
         return productRepository.save(product);
     }
 
@@ -68,6 +79,7 @@ public class MembershipProductService {
     public long countActiveProducts(Long gymId) { return productRepository.countByGymIdAndActive(gymId, true); }
 
     /** Count before clamping; only the selected bounded page needs scheduled-price resolution. */
+    @Transactional
     public Page<GymMembershipProduct> searchProducts(Long gymId, String search, String state, int page, int size) {
         if (search == null || search.length() > 120 || state == null || !List.of("", "ACTIVE", "INACTIVE").contains(state) || size < 1 || size > 50)
             throw new IllegalArgumentException("Invalid product filters");
@@ -83,6 +95,7 @@ public class MembershipProductService {
     /**
      * Get all products for a gym
      */
+    @Transactional
     public List<GymMembershipProduct> getProductsByGymId(Long gymId) {
         List<GymMembershipProduct> products = productRepository.findByGymIdOrderByCreatedAtDesc(gymId);
         products.forEach(this::applyDuePriceChangesForProduct);
@@ -92,6 +105,7 @@ public class MembershipProductService {
     /**
      * Get paginated products for a gym
      */
+    @Transactional
     public Page<GymMembershipProduct> getProductsByGymId(Long gymId, Pageable pageable) {
         Page<GymMembershipProduct> products = productRepository.findByGymIdOrderByCreatedAtDesc(gymId, pageable);
         products.forEach(this::applyDuePriceChangesForProduct);
@@ -101,6 +115,7 @@ public class MembershipProductService {
     /**
      * Get active products for a gym
      */
+    @Transactional
     public List<GymMembershipProduct> getActiveProductsByGymId(Long gymId) {
         List<GymMembershipProduct> products = productRepository.findByGymIdAndActiveOrderByCreatedAtDesc(gymId, true);
         products.forEach(this::applyDuePriceChangesForProduct);
@@ -110,10 +125,12 @@ public class MembershipProductService {
     /**
      * Get a product by ID and gym ID (for authorization)
      */
+    @Transactional
     public GymMembershipProduct getProductByIdAndGymId(Long productId, Long gymId) {
         GymMembershipProduct product = productRepository.findByIdAndGymId(productId, gymId)
             .orElseThrow(() -> new IllegalArgumentException("Product not found or access denied"));
         applyDuePriceChangesForProduct(product);
+        if (!Objects.equals(product.getGymId(), gymId)) throw new IllegalArgumentException("Product not found or access denied");
         return product;
     }
     
@@ -137,6 +154,13 @@ public class MembershipProductService {
         String reason,
         Long changedByUserId
     ) {
+        return initiatePriceChange(productId, newPriceCents, effectiveAt, reason, changedByUserId, null);
+    }
+
+    /** Native submissions must review the current price; legacy internal callers retain their contract. */
+    @Transactional
+    public PriceChangeEvent initiatePriceChange(Long productId, Integer newPriceCents, Instant effectiveAt,
+                                                String reason, Long changedByUserId, Integer quotedPriceCents) {
         if (newPriceCents == null || newPriceCents < 0) {
             throw new IllegalArgumentException("A valid price is required");
         }
@@ -148,21 +172,22 @@ public class MembershipProductService {
             throw new IllegalArgumentException("Effective date is required for price changes");
         }
         
-        if (effectiveAt.isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Effective date cannot be in the past");
-        }
-        
         // Get the product
         GymMembershipProduct product = productRepository.findLockedById(productId)
             .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        entityManager.refresh(product, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         userRepository.findById(changedByUserId)
-            .filter(user -> user.getRole() == uk.ac.cf._5.group14.One_To_One.Users.Role.GYM_ADMIN
-                && java.util.Objects.equals(user.getGymId(), product.getGymId()))
+            .filter(user -> workspace.ownedGym(user).filter(gym -> Objects.equals(gym.getId(), product.getGymId())).isPresent())
             .orElseThrow(() -> new IllegalArgumentException("Access denied"));
         reason = reason.trim();
         var duplicate = priceChangeEventRepository.findFirstByProductIdAndNewPriceCentsAndEffectiveAtAndReasonOrderByCreatedAtDesc(
             productId, newPriceCents, effectiveAt, reason);
         if (duplicate.isPresent()) return duplicate.get();
+
+        if (effectiveAt.isBefore(clock.instant())) throw new IllegalArgumentException("Effective date cannot be in the past");
+        applyDuePriceChangesForProduct(product);
+        if (quotedPriceCents != null && !quotedPriceCents.equals(product.getPriceCents()))
+            throw new PriceReviewRequiredException();
 
         Integer oldPriceCents = product.getPriceCents();
         
@@ -197,7 +222,7 @@ public class MembershipProductService {
         log.info("[AUDIT] Price change confirmed by user {} for product {}. Event id: {}",
             changedByUserId, productId, event.getId());
 
-        if (!effectiveAt.isAfter(Instant.now())) {
+        if (!effectiveAt.isAfter(clock.instant())) {
             product.setPriceCents(newPriceCents);
             productRepository.save(product);
         }
@@ -235,11 +260,20 @@ public class MembershipProductService {
     @Transactional
     public void applyDuePriceChangesForProduct(GymMembershipProduct product) {
         PriceChangeEvent latestEffective = priceChangeEventRepository
-            .findFirstByProductIdAndEffectiveAtLessThanEqualOrderByEffectiveAtDesc(product.getId(), Instant.now());
+            .findFirstByProductIdAndEffectiveAtLessThanEqualOrderByEffectiveAtDescIdDesc(product.getId(), clock.instant());
 
-        if (latestEffective != null && !latestEffective.getNewPriceCents().equals(product.getPriceCents())) {
-            product.setPriceCents(latestEffective.getNewPriceCents());
-            productRepository.save(product);
+        if (latestEffective != null) {
+            GymMembershipProduct current = productRepository.findLockedById(product.getId()).orElseThrow();
+            entityManager.refresh(current, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            // Re-read after acquiring the product lock; another accepted change may now be due.
+            latestEffective = priceChangeEventRepository
+                .findFirstByProductIdAndEffectiveAtLessThanEqualOrderByEffectiveAtDescIdDesc(product.getId(), clock.instant());
+            if (latestEffective == null) return;
+            if (current != product) product.setPriceCents(current.getPriceCents());
+            if (latestEffective.getNewPriceCents().equals(current.getPriceCents())) return;
+            current.setPriceCents(latestEffective.getNewPriceCents());
+            productRepository.save(current);
+            if (current != product) product.setPriceCents(current.getPriceCents());
             log.info("Applied due price change for product {} to ${}",
                 product.getId(), latestEffective.getNewPriceCents() / 100.0);
         }
@@ -249,11 +283,18 @@ public class MembershipProductService {
      * Get price change history for a product
      */
     public List<PriceChangeEvent> getPriceChangeHistory(Long productId) {
-        return priceChangeEventRepository.findByProductIdOrderByCreatedAtDesc(productId);
+        return priceChangeEventRepository.findByProductIdOrderByCreatedAtDescIdDesc(productId);
     }
 
     public Page<PriceChangeEvent> getPriceChangeHistory(Long productId, Pageable pageable) {
-        return priceChangeEventRepository.findByProductIdOrderByCreatedAtDesc(productId, pageable);
+        int size = Math.min(50, Math.max(1, pageable.getPageSize()));
+        long count = priceChangeEventRepository.countByProductId(productId);
+        int page = (int) Math.min(Math.max(0L, pageable.getPageNumber()), Math.max(0L, (count - 1) / size));
+        return priceChangeEventRepository.findByProductIdOrderByCreatedAtDescIdDesc(productId, PageRequest.of(page, size));
+    }
+
+    public static class PriceReviewRequiredException extends IllegalArgumentException {
+        public PriceReviewRequiredException() { super("Review the current price before confirming this change"); }
     }
     
     /**

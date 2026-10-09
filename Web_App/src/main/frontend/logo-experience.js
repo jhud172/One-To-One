@@ -61,6 +61,7 @@ async function initialise(root) {
         renderRequested = false;
     let hoveredNode = null;
     let interactionBounds = null;
+    let gesture = null;
     let transitionTurn = 0,
         transitionTilt = 0;
     let returnFocus = null,
@@ -89,6 +90,7 @@ async function initialise(root) {
         status.textContent = text;
     }
     function markMode(mode, cinematic = false) {
+        endGesture();
         cinematicTransition = cinematic;
         root.dataset.phase = cinematic ? 'aligning' : 'changing';
         state.mode = mode;
@@ -143,6 +145,8 @@ async function initialise(root) {
             element.classList.toggle('is-complete', index < state.reps)
         );
         find('[data-logo-construction]').hidden = !construction;
+        find('[data-logo-manipulation]').hidden = !construction;
+        canvas.setAttribute('aria-describedby', construction ? 'logo-manipulation-hint' : 'logo-hint');
         find('[data-logo-demo-actions]').hidden = construction;
         all('[data-logo-story]').forEach(
             (el) => (el.hidden = construction || el.dataset.logoStory !== state.node)
@@ -282,7 +286,9 @@ async function initialise(root) {
         markMode('sculpture');
     });
     function resetPointer() {
+        endGesture();
         interactionBounds = null;
+        if (state.mode === 'exploded') return;
         state.rotation = 0;
         state.tilt = 0;
         wake();
@@ -291,6 +297,15 @@ async function initialise(root) {
         interactionBounds = stage.getBoundingClientRect();
     });
     stage.addEventListener('pointermove', (event) => {
+        if (state.mode === 'exploded') {
+            if (!gesture || gesture.id !== event.pointerId) return;
+            const dx = event.clientX - gesture.x;
+            const dy = event.clientY - gesture.y;
+            state.rotation = gesture.rotation + dx * 0.009;
+            state.tilt = THREE.MathUtils.clamp(gesture.tilt + dy * 0.009, -1.3, 1.3);
+            wake();
+            return;
+        }
         if (event.target.closest('button')) return;
         if (event.pointerType === 'touch' || reducedMotion.matches || state.paused || transition < 1) return;
         interactionBounds ??= stage.getBoundingClientRect();
@@ -299,12 +314,36 @@ async function initialise(root) {
         state.tilt = pose.tilt;
         wake();
     });
-    stage.addEventListener('pointerleave', resetPointer);
+    stage.addEventListener('pointerleave', () => {
+        if (state.mode !== 'exploded') resetPointer();
+    });
     stage.addEventListener('pointercancel', resetPointer);
     window.addEventListener('blur', resetPointer);
     window.addEventListener('scroll', resetPointer, { passive: true });
     window.addEventListener('resize', resetPointer);
+    function endGesture() {
+        if (!gesture) return;
+        const id = gesture.id;
+        gesture = null;
+        root.dataset.dragging = 'false';
+        if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
+    }
+    canvas.addEventListener('pointerdown', (event) => {
+        if (state.mode !== 'exploded' || !model || transition < 1 || !event.isPrimary || ![0, 2].includes(event.button)) return;
+        event.preventDefault();
+        canvas.focus({ preventScroll: true });
+        gesture = { id: event.pointerId, x: event.clientX, y: event.clientY,
+            rotation: state.rotation, tilt: state.tilt };
+        canvas.setPointerCapture(event.pointerId);
+        root.dataset.dragging = 'true';
+    });
+    canvas.addEventListener('pointerup', endGesture);
+    canvas.addEventListener('lostpointercapture', endGesture);
+    canvas.addEventListener('contextmenu', (event) => {
+        if (state.mode === 'exploded') event.preventDefault();
+    });
     canvas.addEventListener('click', (event) => {
+        if (state.mode === 'exploded') return;
         if (!state.expanded) {
             openExperience();
             return;
@@ -332,8 +371,9 @@ async function initialise(root) {
             event.preventDefault();
             if (event.key === 'ArrowLeft') state.rotation -= 0.2;
             if (event.key === 'ArrowRight') state.rotation += 0.2;
-            if (event.key === 'ArrowUp') state.tilt = Math.max(-0.55, state.tilt - 0.1);
-            if (event.key === 'ArrowDown') state.tilt = Math.min(0.55, state.tilt + 0.1);
+            const tiltLimit = state.mode === 'exploded' ? 1.3 : 0.55;
+            if (event.key === 'ArrowUp') state.tilt = Math.max(-tiltLimit, state.tilt - 0.1);
+            if (event.key === 'ArrowDown') state.tilt = Math.min(tiltLimit, state.tilt + 0.1);
             wake();
         }
     });
@@ -508,7 +548,7 @@ async function initialise(root) {
             );
         });
         const orbit = new THREE.CatmullRomCurve3(orbitPoints, true);
-        world.add(
+        scene.add(
             new THREE.Mesh(
                 new THREE.TubeGeometry(orbit, 160, 0.008, 5, true),
                 new THREE.MeshBasicMaterial({ color: 0x2287a8, transparent: true, opacity: 0.18 })
@@ -524,7 +564,7 @@ async function initialise(root) {
         }
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        world.add(
+        scene.add(
             new THREE.Points(
                 geometry,
                 new THREE.PointsMaterial({
@@ -582,7 +622,9 @@ async function initialise(root) {
         root.dataset.pointerTilt = tilt.toFixed(3);
         root.dataset.openAmount = openAmount.toFixed(3);
         if (state.expanded && pose.open > 0.9) revealInspector(true);
-        world.position.y = 0.22 + (instant ? 0 : Math.sin(elapsed * 0.65) * 0.06);
+        world.position.set(0, 0.22 + (instant || state.mode === 'exploded' ? 0 : Math.sin(elapsed * 0.65) * 0.06), 0);
+        root.dataset.pivotX = world.position.x.toFixed(3);
+        root.dataset.pivotY = world.position.y.toFixed(3);
         model.position.x = -openAmount * 0.08;
         wings.forEach((wing, i) => {
             const sign = i === 0 ? -1 : 1;

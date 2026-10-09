@@ -1,6 +1,8 @@
 # Version 2.0 prepared checkpoint — 3 October 2026
 
-The full web/native rebuild remains unfinished. The saved goal is currently paused for the laptop handoff; see [the 9 October handoff](2026-10-09-laptop-handoff.md). This is an incremental prepared checkpoint, not completed whole-product acceptance. Current next work is W139–W141 membership editing, price changes and history, with hosted W133 and complete W135 acceptance still open, followed by the remaining web/native pages and acceptance in the [page-by-page audit](../audits/one-to-one-v2-design-workflow-usability-audit-2026-10-01.md). W114/W115 context/notification acceptance, W107 authored technique/equipment/media and all existing gaps are retained. Earlier implementation milestones and their still-open acceptance are retained below; the 2 October checkpoint remains historical.
+Latest continuation: [9 October W140/W141 price consistency](2026-10-09-v2-membership-price-history.md). The completion goal is active; focused price/history work does not close the complete web/native checklist.
+
+The full web/native rebuild remains unfinished. Work resumed on the laptop on 9 October; the [fresh W139 checkpoint](2026-10-09-v2-membership-editor.md) records the accepted metadata/validation/subscriber workflow and selected editor evidence. Current next work is W140/W141 price-change/history, plus the shared tablet launcher collision and all earlier page-specific, native, hosted-provider and Q01–Q10 gaps. The 3–4 October milestones below remain historical evidence; they are not fresh laptop test results. See the [page-by-page audit](../audits/one-to-one-v2-design-workflow-usability-audit-2026-10-01.md) for full scope.
 
 
 
@@ -896,3 +898,7 @@ Actual disposable local browser: empty Save returns the validation alert; a synt
 This journey exposed a shared phone drawer defect: its panel was only 51 px wide and started at y=-542 px. The open ancestor transform and dock backdrop filter created containing blocks for the fixed panel. Removing those containing blocks restores a roughly 369 px panel within the 390 px viewport, y=138–249 through bottom y=682. All five dashboard panels open; Escape closes each and restores its own handle. Geometry is recorded in `docs/audits/evidence/v2-client-dashboard-drawer-geometry-20261003.json`. Notification activation now reaches the saved response.
 
 Evidence manifests: `build/v2-review-journey-current-summary-20261003.json`, `build/v2-review-drawer-current-summary-20261003.json`, and `build/v2-client-review-layout-current-summary-20261003.json`. W084.2/.3 and W177.2/.3 record the implemented flow. Full dark/zoom/no-JavaScript/role-state/concurrency matrices, native notification deep-link acceptance and consistent display timezone remain open. The template inventory now includes all 180 runtime HTML sources; inventory coverage does not imply completed acceptance. Continue W085 owner account settings and the remaining web/native work. The complete Version 2.0 goal remains active.
+
+## Fresh laptop continuation — 9 October 2026
+
+See the [W139 membership editor checkpoint](2026-10-09-v2-membership-editor.md): metadata now refreshes under lock before editing details, native catalogue/draft context is retained and selected desktop/phone evidence is recorded. Fourteen focused tests/two suites and packaging pass; full W139/Q01–Q10 and Version 2.0 remain unfinished. Continue W140/W141 and the earlier shared/native/provider acceptance gaps.

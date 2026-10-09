@@ -42,3 +42,9 @@ node tools/i18n/check-bundle-parity.mjs
 ```
 
 For Android, use Android Studio and `Phone-App/application`; start with `gradlew.bat assembleDebug` once the SDK is configured. No new native-device acceptance was established during the latest web milestones. No production deployment is requested by this handoff.
+
+## Laptop continuation — 9 October 2026
+
+Latest: the [W140/W141 continuation](2026-10-09-v2-membership-price-history.md) adds displayed-price review, consistent London effective dates, due-price metadata preservation and stable bounded history with explicit currency/future context. The persistent completion goal is active. Continue with controlled notification preview/failure evidence and the shared tablet collision, then remaining web/native and Q01–Q10 gaps. Focused checks do not imply whole-page or release acceptance.
+
+Work has resumed. The [fresh W139 checkpoint](2026-10-09-v2-membership-editor.md) supersedes the metadata-edit stopping point above. W139.3 is accepted with fourteen focused checks and selected editor evidence; full page/release acceptance is still open. The next implementation slice is W140/W141 price change/history, followed by the shared tablet launcher collision and all earlier gaps. Prior 4 October results above remain historical.

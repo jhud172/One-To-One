@@ -283,7 +283,7 @@ class GymAdminMembershipControllerTest {
         assertTrue(priceChangeEvents.findByProductIdOrderByCreatedAtDesc(product.getId()).isEmpty());
         for (int i = 0; i < 2; i++) {
             mockMvc.perform(post(action).with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
-                    .param("newPriceDollars", "29.99").param("effectiveDate", effective).param("reason", "Annual review").param("confirmPriceChange", "true"))
+                    .param("newPriceDollars", "29.99").param("effectiveDate", effective).param("reason", "Annual review").param("confirmPriceChange", "true").param("quotedPriceCents", "2500"))
                 .andExpect(status().is3xxRedirection());
         }
         assertEquals(1, priceChangeEvents.findByProductIdOrderByCreatedAtDesc(product.getId()).size());

@@ -48,6 +48,29 @@ public class GymAdminMembershipController {
     private final UserRepository userRepository;
     private final GymWorkspaceAccessService workspace;
     private final MessageSource messages;
+    private final java.time.Clock clock;
+    private static final ZoneId MEMBERSHIP_ZONE = ZoneId.of("Europe/London");
+
+    /** Native editor navigation keeps only bounded, known catalogue parameters. */
+    @ModelAttribute
+    void catalogueContext(@RequestParam(defaultValue = "") String search,
+                          @RequestParam(defaultValue = "") String state,
+                          @RequestParam(defaultValue = "0") int page,
+                          @RequestParam(required = false) Integer size, Model model) {
+        if (search.length() > 120 || !List.of("", "ACTIVE", "INACTIVE").contains(state)) {
+            search = ""; state = ""; page = 0; size = null;
+        }
+        model.addAttribute("catalogueSearch", search);
+        model.addAttribute("catalogueState", state);
+        model.addAttribute("cataloguePage", Math.max(0, page));
+        model.addAttribute("catalogueSize", resolvePageSize(size));
+        String url = "/gym/admin/memberships";
+        if (!search.isEmpty() || !state.isEmpty() || page != 0 || size != null)
+            url += "?search=" + URLEncoder.encode(search, StandardCharsets.UTF_8) + "&state=" + state
+                + "&page=" + Math.max(0, page) + "&size=" + resolvePageSize(size) + "#membership-results";
+        model.addAttribute("catalogueUrl", url);
+        model.addAttribute("minimumEffectiveDate", LocalDate.now(clock.withZone(MEMBERSHIP_ZONE)).plusDays(1));
+    }
     
     @InitBinder("product")
     void bindProduct(WebDataBinder binder) {
@@ -156,7 +179,8 @@ public class GymAdminMembershipController {
         @Valid @ModelAttribute("product") MembershipProductForm product,
         BindingResult result,
         HttpServletResponse response,
-        RedirectAttributes redirectAttributes
+        RedirectAttributes redirectAttributes,
+        Model model
     ) {
         User admin = getUserFromDetails(userDetails);
         
@@ -181,7 +205,7 @@ public class GymAdminMembershipController {
         membershipService.createProduct(created);
         
         redirectAttributes.addFlashAttribute("successMessage", "Membership product created successfully");
-        return "redirect:/gym/admin/memberships";
+        return "redirect:" + model.getAttribute("catalogueUrl");
     }
     
     /**
@@ -204,6 +228,8 @@ public class GymAdminMembershipController {
         model.addAttribute("product", MembershipProductForm.from(product));
         model.addAttribute("editingId", product.getId());
         model.addAttribute("currentPrice", product.getPriceDollars());
+        model.addAttribute("currentBillingPeriod", product.getBillingPeriod());
+        model.addAttribute("currentSubscribers", subscriptionRepository.countByProductIdAndStatus(id, SubscriptionStatus.ACTIVE));
         return "gym-views/gym-admin/memberships/form";
     }
     
@@ -230,20 +256,17 @@ public class GymAdminMembershipController {
         GymMembershipProduct existingProduct = requireOwnedProduct(id, admin.getGymId());
         model.addAttribute("editingId", existingProduct.getId());
         model.addAttribute("currentPrice", existingProduct.getPriceDollars());
+        model.addAttribute("currentBillingPeriod", existingProduct.getBillingPeriod());
+        model.addAttribute("currentSubscribers", subscriptionRepository.countByProductIdAndStatus(id, SubscriptionStatus.ACTIVE));
         if (result.hasErrors()) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return "gym-views/gym-admin/memberships/form";
         }
         
-        // Update allowed fields only (not price)
-        existingProduct.setName(updatedProduct.getName().trim());
-        existingProduct.setDescription(updatedProduct.getDescription());
-        existingProduct.setActive(updatedProduct.isActive());
-        
-        membershipService.updateProduct(existingProduct);
+        membershipService.updateProduct(id, admin.getGymId(), updatedProduct);
         
         redirectAttributes.addFlashAttribute("successMessage", "Product updated successfully");
-        return "redirect:/gym/admin/memberships";
+        return "redirect:" + model.getAttribute("catalogueUrl");
     }
     
     /**
@@ -264,7 +287,7 @@ public class GymAdminMembershipController {
         
         GymMembershipProduct product = requireOwnedProduct(id, admin.getGymId());
         long affectedCount = subscriptionRepository.countByProductIdAndStatus(id, SubscriptionStatus.ACTIVE);
-        LocalDate defaultEffectiveDate = resolveDefaultEffectiveDate(id).orElse(LocalDate.now().plusDays(30));
+        LocalDate defaultEffectiveDate = resolveDefaultEffectiveDate(id).orElse(LocalDate.now(clock.withZone(MEMBERSHIP_ZONE)).plusDays(30));
 
         PriceChangeRequest priceChange = new PriceChangeRequest();
         priceChange.setEffectiveDate(defaultEffectiveDate);
@@ -288,6 +311,7 @@ public class GymAdminMembershipController {
         BindingResult result,
         HttpServletResponse response,
         @RequestParam(defaultValue = "false") boolean confirmPriceChange,
+        @RequestParam(required = false) String quotedPriceCents,
         RedirectAttributes redirectAttributes,
         Model model
     ) {
@@ -313,36 +337,45 @@ public class GymAdminMembershipController {
             result.rejectValue("newPriceDollars", "NotNull", "New price is required");
         } else if (newPriceCents != null && newPriceCents < 0) {
             result.rejectValue("newPriceDollars", "Min", "Price must be zero or greater");
-        } else if (newPriceCents != null && newPriceCents.equals(product.getPriceCents())) {
-            result.rejectValue("newPriceDollars", "Same", "New price must be different from current price");
         }
 
+        Integer quote = null;
+        try {
+            if (quotedPriceCents != null && quotedPriceCents.matches("[0-9]{1,10}")) quote = Integer.valueOf(quotedPriceCents);
+        } catch (NumberFormatException ignored) { }
+        if (quote == null) result.reject("Quote", messages.getMessage("ui.gymPrice.review", null, LocaleContextHolder.getLocale()));
+
         LocalDate effectiveDate = priceChange.getEffectiveDate();
-        if (effectiveDate != null && !effectiveDate.isAfter(LocalDate.now())) {
+        if (effectiveDate != null && !effectiveDate.isAfter(LocalDate.now(clock.withZone(MEMBERSHIP_ZONE)))) {
             result.rejectValue("effectiveDate", "Future", "Effective date must be in the future");
         }
 
         if (result.hasErrors()) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             long affectedCount = subscriptionRepository.countByProductIdAndStatus(id, SubscriptionStatus.ACTIVE);
-            LocalDate defaultEffectiveDate = resolveDefaultEffectiveDate(id).orElse(LocalDate.now().plusDays(30));
+            LocalDate defaultEffectiveDate = resolveDefaultEffectiveDate(id).orElse(LocalDate.now(clock.withZone(MEMBERSHIP_ZONE)).plusDays(30));
             model.addAttribute("product", product);
             model.addAttribute("affectedMemberCount", affectedCount);
             model.addAttribute("defaultEffectiveDate", defaultEffectiveDate);
             return "gym-views/gym-admin/memberships/price-change";
         }
 
-        Instant effectiveAt = effectiveDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant effectiveAt = effectiveDate.atStartOfDay(MEMBERSHIP_ZONE).toInstant();
         log.info("[AUDIT] Price change request submitted by user {} for product {} (gym {}). New price: ${}, effective {}, reason length {}",
             admin.getId(), product.getId(), product.getGymId(), newPriceCents / 100.0, effectiveAt, priceChange.getReason().length());
 
-        membershipService.initiatePriceChange(
-            id,
-            newPriceCents,
-            effectiveAt,
-            priceChange.getReason(),
-            admin.getId()
-        );
+        try {
+            membershipService.initiatePriceChange(
+                id, newPriceCents, effectiveAt, priceChange.getReason(), admin.getId(), quote
+            );
+        } catch (IllegalArgumentException ex) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            result.reject("Price", ex instanceof MembershipProductService.PriceReviewRequiredException
+                ? messages.getMessage("ui.gymPrice.review", null, LocaleContextHolder.getLocale()) : ex.getMessage());
+            model.addAttribute("product", requireOwnedProduct(id, admin.getGymId()));
+            model.addAttribute("affectedMemberCount", subscriptionRepository.countByProductIdAndStatus(id, SubscriptionStatus.ACTIVE));
+            return "gym-views/gym-admin/memberships/price-change";
+        }
 
         redirectAttributes.addFlashAttribute(
             "successMessage",
@@ -381,6 +414,7 @@ public class GymAdminMembershipController {
         model.addAttribute("product", product);
         model.addAttribute("priceChanges", history);
         model.addAttribute("priceChangesPage", historyPage);
+        model.addAttribute("historyNow", clock.instant());
         model.addAttribute("pageSize", pageSize);
 
         int increaseCount = (int) historyPage.getContent().stream()
@@ -414,7 +448,7 @@ public class GymAdminMembershipController {
             .map(GymMemberSubscription::getRenewsAt)
             .filter(Objects::nonNull)
             .map(instant -> instant.atZone(ZoneId.of("Europe/London")).toLocalDate())
-            .filter(date -> date.isAfter(LocalDate.now(ZoneId.of("Europe/London"))))
+            .filter(date -> date.isAfter(LocalDate.now(clock.withZone(MEMBERSHIP_ZONE))))
             .min(Comparator.naturalOrder());
     }
     

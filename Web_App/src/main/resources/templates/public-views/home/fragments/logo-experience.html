@@ -37,7 +37,7 @@
                         tabindex="0"
                         role="button"
                         th:aria-label="#{logo.canvasLabel}"
-                        aria-describedby="logo-hint"
+                        aria-describedby="logo-hint logo-manipulation-hint"
                     ></canvas>
                     <div class="logo-node-labels" data-logo-node-labels hidden>
                         <button type="button" data-logo-node="trainer" th:text="#{logo.trainer}">Trainer</button>
@@ -50,32 +50,6 @@
                     <p id="logo-hint" class="logo-sr-only" th:text="#{logo.hint}">
                         Move your pointer or use arrow keys to rotate. Press Enter to open connections.
                     </p>
-                    <div class="logo-modes" role="group" th:aria-label="#{logo.view}">
-                        <button
-                            type="button"
-                            data-logo-mode="sculpture"
-                            aria-pressed="true"
-                            th:text="#{logo.sculpture}"
-                        >
-                            Sculpture
-                        </button>
-                        <button
-                            type="button"
-                            data-logo-mode="network"
-                            aria-pressed="false"
-                            th:text="#{logo.network}"
-                        >
-                            Connections
-                        </button>
-                        <button
-                            type="button"
-                            data-logo-mode="exploded"
-                            aria-pressed="false"
-                            th:text="#{logo.exploded}"
-                        >
-                            Explode
-                        </button>
-                    </div>
                     <div class="logo-launch">
                         <button
                             type="button"
@@ -93,6 +67,16 @@
                             </svg>
                             <span th:text="#{logo.open}">Open connections</span>
                         </button>
+                    </div>
+                </div>
+                <div class="logo-view-controls">
+                    <div class="logo-modes" role="group" th:aria-label="#{logo.view}">
+                        <button type="button" data-logo-mode="sculpture" aria-pressed="true" th:text="#{logo.sculpture}">Sculpture</button>
+                        <button type="button" data-logo-mode="network" aria-pressed="false" th:text="#{logo.network}">Connections</button>
+                        <button type="button" data-logo-mode="exploded" aria-pressed="false" th:text="#{logo.exploded}">Explode</button>
+                    </div>
+                    <div class="logo-manipulation" data-logo-manipulation hidden>
+                        <p id="logo-manipulation-hint" th:text="#{logo.dragHint}">Drag to rotate in place. Arrow keys also change the angle.</p>
                     </div>
                 </div>
                 <div class="logo-inspector-reveal">

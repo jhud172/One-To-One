@@ -17,6 +17,11 @@ public interface PriceChangeEventRepository extends JpaRepository<PriceChangeEve
     List<PriceChangeEvent> findByProductIdOrderByCreatedAtDesc(Long productId);
 
     Page<PriceChangeEvent> findByProductIdOrderByCreatedAtDesc(Long productId, Pageable pageable);
+
+    long countByProductId(Long productId);
+    List<PriceChangeEvent> findByProductIdOrderByCreatedAtDescIdDesc(Long productId);
+    Page<PriceChangeEvent> findByProductIdOrderByCreatedAtDescIdDesc(Long productId, Pageable pageable);
+    PriceChangeEvent findFirstByProductIdAndEffectiveAtLessThanEqualOrderByEffectiveAtDescIdDesc(Long productId, Instant effectiveAt);
     
     List<PriceChangeEvent> findByGymIdOrderByCreatedAtDesc(Long gymId);
 

@@ -2,7 +2,7 @@
 <div th:fragment="content" class="gym-operations-v2 gym-products-v2 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
     <header class="gym-roster-header" data-site-tour="gym-memberships">
         <div><h1 th:text="#{ui.00974}"></h1><p th:text="#{ui.00975}"></p></div>
-        <nav><a th:href="@{/gym/dashboard}" th:text="#{ui.00945}"></a><a class="btn btn--primary" th:href="@{/gym/admin/memberships/create}" th:text="#{ui.00972}"></a></nav>
+        <nav><a th:href="@{/gym/dashboard}" th:text="#{ui.00945}"></a><a class="btn btn--primary" th:href="@{/gym/admin/memberships/create(search=${search},state=${state},page=${productsPage.number},size=${pageSize})}" th:text="#{ui.00972}"></a></nav>
     </header>
     <p th:if="${successMessage}" class="gym-roster-feedback" role="status" th:text="${successMessage}"></p>
     <p th:if="${errorMessage}" class="gym-feedback" role="alert" th:text="${errorMessage}"></p>
@@ -40,7 +40,7 @@
                     <div><dt th:text="#{ui.gymRoster.activeSubscribers}"></dt><dd th:text="${subscriberCounts.get(product.id)}"></dd></div>
                 </dl>
                 <div class="gym-product-actions">
-                    <a class="btn btn--secondary" th:href="@{/gym/admin/memberships/{id}/edit(id=${product.id})}" th:text="#{ui.00138}"></a>
+                    <a class="btn btn--secondary" th:href="@{/gym/admin/memberships/{id}/edit(id=${product.id},search=${search},state=${state},page=${productsPage.number},size=${pageSize})}" th:text="#{ui.00138}"></a>
                     <a class="btn btn--primary" th:href="@{/gym/admin/memberships/{id}/price-change(id=${product.id})}" th:text="#{ui.00980}"></a>
                     <a class="btn btn--secondary" th:href="@{/gym/admin/memberships/{id}/price-history(id=${product.id})}" th:text="#{ui.00981}"></a>
                     <form th:if="${!product.active}" method="post" th:action="@{/gym/admin/memberships/{id}/status(id=${product.id})}">

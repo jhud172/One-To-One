@@ -1,5 +1,9 @@
 # Version 2.0 implementation record
 
+9 October user-requested interaction and responsive update: [fixed-pivot Explode checkpoint](2026-10-09-logo-fixed-pivot.md). Dragging changes the angle around a stationary centre; translation controls and movement shortcuts have been removed. View controls sit below the canvas and narrow-screen connection tiles use two columns. This focused change does not close whole-page/release acceptance.
+
+Latest continuation: [9 October W140/W141 price consistency](2026-10-09-v2-membership-price-history.md). Native displayed-price review, London clock/date rules, refreshed due-price application and stable bounded history preserve owned audit records. The persistent completion goal remains active; broader W140/W141 and Q01–Q10 acceptance is open.
+
 The active goal is the complete page-by-page rebuild in the [audit](../audits/one-to-one-v2-design-workflow-usability-audit-2026-10-01.md). Implementation is underway; the stabilised baseline remains the starting point. This record separates implemented changes from visual acceptance and external release gates.
 
 ## Visual and interaction target
@@ -1188,3 +1192,7 @@ Final **33 checks/five suites passed in 49 seconds**, including fourteen checkou
 Actual final v6h native browser proof: September 2026 card submitted in October is rejected with a visible expiry alert; holder/brand/expiry/quantity two and £24.70 are retained, the synthetic number is cleared, stock stays five and no saved card exists. Correcting to the current October month and re-entering the synthetic number creates one explicitly local demo order #2 and saves the chosen local demo card. Native Back returns `/orders`, one #2 card and no checkout form. This uses clearly labelled disposable local QA product 83001; no real money or delivery is involved. Inspected final `docs/audits/evidence/v2-merch-expired-card-desktop-20261004.png` (1280×900) and `v2-merch-expired-card-phone-20261004.png` (390×844, 348px checkout surface) show readable feedback with no horizontal overflow. English/light/1280×900/normal motion was restored. Fresh final readiness was 2026-10-04T16:46:16.978+01:00 in 10.677 seconds on local JVM 49756/8081. Browser price changes via a separate admin session and the complete no-script/theme/zoom/device/provider matrix remain unperformed; MVC price-review rendering is not that browser proof.
 
 Changed checkout controller/order-service price overload, shared expiry validator/card resolver/card service, checkout server total/hidden quote/feedback/action, cache literal, fourteen UI bundles and focused tests. W133.B records the implemented local price/expiry safeguard. W133 .1/.3/.4 and W133.A remain open for complete role/state/device/provider/PostgreSQL acceptance. **Continue W134/W135 bounded canonical order history, profile purchase preview and all remaining web/native pages; keep W107 authored media/model work and every earlier acceptance gap. The full goal remains active.**
+
+## Laptop continuation — 9 October 2026, W139
+
+The [membership editor checkpoint](2026-10-09-v2-membership-editor.md) records the locked/refreshed metadata safeguard, retained catalogue/draft context, editor presentation, final fourteen-test/package gate, 28 actual locale renders and inspected desktop/phone evidence. W139.3 is accepted; full W139/Q01–Q10 and Version 2.0 release acceptance remain open. Continue W140/W141 price-change/history, then the shared tablet launcher collision and all existing web/native gaps.

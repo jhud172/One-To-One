@@ -82,7 +82,8 @@
                 th:object="${priceChange}"
                 method="post" class="space-y-6" th:attr="data-confirm=#{ui.01011}">
 
-                <div th:if="${#fields.hasAnyErrors()}" role="alert" class="gym-feedback" th:text="#{ui.00958}"></div>
+                <div th:if="${#fields.hasAnyErrors()}" role="alert" class="gym-feedback"><p th:text="#{ui.00958}"></p><ul><li th:each="err : ${#fields.allErrors()}" th:text="${err}"></li></ul></div>
+                <input type="hidden" name="quotedPriceCents" th:value="${product.priceCents}">
                 <!-- CSRF Token -->
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
@@ -138,7 +139,7 @@
                         <th:block th:text="#{ui.01008}">Effective Date</th:block> <span class="text-red-500">*</span>
                     </label>
                     <input type="date"
-                           id="effectiveDate" th:attr="min=${#temporals.format(#temporals.createToday().plusDays(1), 'yyyy-MM-dd')}"
+                           id="effectiveDate" th:attr="min=${minimumEffectiveDate}"
                            th:field="*{effectiveDate}"
                            required
                            th:classappend="${#fields.hasErrors('effectiveDate')} ? ' border-rose-300 focus:border-rose-400 focus:ring-rose-400/20' : ''"
@@ -152,6 +153,7 @@
                 </div>
 
                 <!-- Warning Box -->
+                <p th:text="#{ui.gymPrice.effectiveHint}"></p>
                 <div class="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
                     <div class="flex items-start gap-3">
                         <svg class="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
