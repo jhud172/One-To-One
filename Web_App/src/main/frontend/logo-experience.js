@@ -128,7 +128,7 @@ async function initialise(root) {
         entryButton.setAttribute('aria-expanded', 'true');
         markMode('network', true);
         if (root.classList.contains('logo-fallback')) revealInspector(true);
-        (canvas.hidden ? find('[data-logo-close]') : canvas).focus({ preventScroll: true });
+        (canvas.hidden ? find('[data-logo-mode="network"]') : canvas).focus({ preventScroll: true });
     }
     function closeExperience() {
         state.expanded = false;
@@ -228,7 +228,6 @@ async function initialise(root) {
         wake();
     }
     find('[data-logo-open]').addEventListener('click', openExperience);
-    find('[data-logo-close]').addEventListener('click', closeExperience);
     find('[data-logo-implode]').addEventListener('click', () => markMode('sculpture'));
     root.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && state.expanded) {

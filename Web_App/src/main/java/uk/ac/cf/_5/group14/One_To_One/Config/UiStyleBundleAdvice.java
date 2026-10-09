@@ -10,7 +10,7 @@ import java.util.List;
 @ControllerAdvice
 public class UiStyleBundleAdvice {
 
-    static final String CSS_VERSION = "20261009v7i";
+    static final String CSS_VERSION = "20261009v7k";
 
     private static final List<String> AUTH_PATHS = List.of(
             "/login", "/signup", "/forgot-password", "/reset-password"
