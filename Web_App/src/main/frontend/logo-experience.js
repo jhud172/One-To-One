@@ -60,6 +60,9 @@ async function initialise(root) {
         cinematicTransition = false,
         renderRequested = false;
     let hoveredNode = null;
+    let pinnedNode = null;
+    let dismissedNode = null;
+    let previewCloseTimer = 0;
     let interactionBounds = null;
     let gesture = null;
     let transitionTurn = 0,
@@ -91,6 +94,8 @@ async function initialise(root) {
     }
     function markMode(mode, cinematic = false) {
         endGesture();
+        clearTimeout(previewCloseTimer);
+        pinnedNode = hoveredNode = dismissedNode = null;
         cinematicTransition = cinematic;
         root.dataset.phase = cinematic ? 'aligning' : 'changing';
         state.mode = mode;
@@ -122,7 +127,7 @@ async function initialise(root) {
         root.dataset.expanded = 'true';
         entryButton.setAttribute('aria-expanded', 'true');
         markMode('network', true);
-        if (!model || root.classList.contains('logo-fallback')) revealInspector(true);
+        if (root.classList.contains('logo-fallback')) revealInspector(true);
         (canvas.hidden ? find('[data-logo-close]') : canvas).focus({ preventScroll: true });
     }
     function closeExperience() {
@@ -139,6 +144,8 @@ async function initialise(root) {
     function renderStory() {
         const construction = state.mode === 'exploded';
         root.dataset.node = state.node;
+        root.dataset.pinned = String(Boolean(pinnedNode));
+        root.dataset.preview = String(Boolean(hoveredNode && !pinnedNode));
         root.style.setProperty('--rep-angle', `${state.reps * 60}deg`);
         all('[data-logo-rep-count]').forEach((element) => (element.textContent = String(state.reps)));
         all('[data-logo-rep-dot]').forEach((element, index) =>
@@ -151,18 +158,56 @@ async function initialise(root) {
         all('[data-logo-story]').forEach(
             (el) => (el.hidden = construction || el.dataset.logoStory !== state.node)
         );
-        all('[data-logo-node]').forEach((el) =>
-            el.setAttribute('aria-pressed', String(el.dataset.logoNode === state.node))
-        );
+        all('[data-logo-node]').forEach((el) => {
+            el.setAttribute('aria-pressed', String(el.dataset.logoNode === pinnedNode));
+            el.setAttribute('aria-expanded', String(!construction && Boolean(pinnedNode || hoveredNode) && el.dataset.logoNode === state.node));
+            el.setAttribute('aria-controls', 'logo-inspector');
+        });
         find('[data-logo-rep]').hidden = state.node !== 'workout';
         find('[data-logo-next]').hidden = state.node === 'workout';
         find('[data-logo-demo-progress]').textContent =
             state.reps === 6 ? root.dataset.repsComplete : root.dataset.repsLabel.replace('{0}', state.reps);
         find('[data-logo-node-labels]').hidden = state.mode !== 'network';
+        revealInspector(state.expanded && (construction || root.classList.contains('logo-fallback') || Boolean(pinnedNode || hoveredNode)));
+    }
+    function dismissDetails() {
+        clearTimeout(previewCloseTimer);
+        dismissedNode = state.node;
+        pinnedNode = hoveredNode = null;
+        renderStory();
+        wake();
+    }
+    function previewNode(key) {
+        clearTimeout(previewCloseTimer);
+        if (pinnedNode || key === dismissedNode || state.mode !== 'network') return;
+        if (hoveredNode === key) return;
+        hoveredNode = key;
+        if (key) state.node = key;
+        renderStory();
+        wake();
+    }
+    function releasePreview() {
+        dismissedNode = null;
+        clearTimeout(previewCloseTimer);
+        previewCloseTimer = setTimeout(() => {
+            const focusedNode = document.activeElement?.matches('[data-logo-node]');
+            if (!pinnedNode && !focusedNode && !inspector.matches(':hover') && !inspector.contains(document.activeElement)) {
+                hoveredNode = null;
+                renderStory();
+                wake();
+            }
+        }, 180);
     }
     function chooseNode(key) {
-        state.node = key;
         if (state.mode !== 'network') markMode('network');
+        if (pinnedNode === key) {
+            dismissDetails();
+            return;
+        }
+        clearTimeout(previewCloseTimer);
+        state.node = key;
+        pinnedNode = key;
+        hoveredNode = dismissedNode = null;
         renderStory();
         pulse = 1;
         wake();
@@ -188,7 +233,8 @@ async function initialise(root) {
     root.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && state.expanded) {
             event.preventDefault();
-            closeExperience();
+            if (pinnedNode || hoveredNode) dismissDetails();
+            else closeExperience();
         }
     });
     all('[data-logo-mode]').forEach((button) =>
@@ -196,18 +242,20 @@ async function initialise(root) {
     );
     all('[data-logo-node]').forEach((button) => {
         button.addEventListener('click', () => chooseNode(button.dataset.logoNode));
-        const highlight = () => {
-            hoveredNode = button.dataset.logoNode;
-            wake();
-        };
-        const clear = () => {
-            hoveredNode = null;
-            wake();
-        };
-        button.addEventListener('pointerenter', highlight);
-        button.addEventListener('pointerleave', clear);
-        button.addEventListener('focus', highlight);
-        button.addEventListener('blur', clear);
+        button.addEventListener('pointerenter', (event) => {
+            if (event.pointerType !== 'touch') previewNode(button.dataset.logoNode);
+        });
+        button.addEventListener('pointerleave', releasePreview);
+        button.addEventListener('focus', () => previewNode(button.dataset.logoNode));
+        button.addEventListener('blur', releasePreview);
+    });
+    find('[data-logo-dismiss]').addEventListener('click', dismissDetails);
+    inspector.addEventListener('pointerenter', () => clearTimeout(previewCloseTimer));
+    inspector.addEventListener('pointerleave', releasePreview);
+    inspector.addEventListener('focusout', releasePreview);
+    document.addEventListener('pointerdown', (event) => {
+        if ((pinnedNode || hoveredNode) && !inspector.contains(event.target)
+            && !stage.contains(event.target)) dismissDetails();
     });
     find('[data-logo-next]').addEventListener('click', () => {
         const order = ['trainer', 'gym', 'workout', 'activity'];
@@ -307,6 +355,15 @@ async function initialise(root) {
             return;
         }
         if (event.target.closest('button')) return;
+        if (state.mode === 'network' && model && transition === 1 && event.pointerType !== 'touch') {
+            const rect = canvas.getBoundingClientRect();
+            pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1,
+                -((event.clientY - rect.top) / rect.height) * 2 + 1);
+            raycaster.setFromCamera(pointer, camera);
+            const hit = raycaster.intersectObjects(nodes.map(node => node.mesh), false)[0];
+            if (hit) previewNode(hit.object.userData.key);
+            else releasePreview();
+        }
         if (event.pointerType === 'touch' || reducedMotion.matches || state.paused || transition < 1) return;
         interactionBounds ??= stage.getBoundingClientRect();
         const pose = pointerPose(event.clientX, event.clientY, interactionBounds);
@@ -315,6 +372,7 @@ async function initialise(root) {
         wake();
     });
     stage.addEventListener('pointerleave', () => {
+        releasePreview();
         if (state.mode !== 'exploded') resetPointer();
     });
     stage.addEventListener('pointercancel', resetPointer);
@@ -360,6 +418,7 @@ async function initialise(root) {
             false
         )[0];
         if (hit && state.mode === 'network') chooseNode(hit.object.userData.key);
+        else if (state.mode === 'network') dismissDetails();
         else if (state.mode === 'sculpture') markMode('network');
     });
     canvas.addEventListener('keydown', (event) => {
@@ -621,7 +680,7 @@ async function initialise(root) {
         root.dataset.pointerYaw = turn.toFixed(3);
         root.dataset.pointerTilt = tilt.toFixed(3);
         root.dataset.openAmount = openAmount.toFixed(3);
-        if (state.expanded && pose.open > 0.9) revealInspector(true);
+        if (state.expanded && pose.open > 0.9) revealInspector(state.mode === 'exploded' || Boolean(pinnedNode || hoveredNode));
         world.position.set(0, 0.22 + (instant || state.mode === 'exploded' ? 0 : Math.sin(elapsed * 0.65) * 0.06), 0);
         root.dataset.pivotX = world.position.x.toFixed(3);
         root.dataset.pivotY = world.position.y.toFixed(3);
@@ -640,7 +699,7 @@ async function initialise(root) {
         if (wordmark) wordmark.object.position.y = wordmark.base.y - openAmount * 0.32;
         pulse = Math.max(0, pulse - dt * 1.3);
         nodes.forEach((node) => {
-            const selected = node.key === state.node;
+            const selected = node.key === pinnedNode;
             const targetScale =
                 (selected ? 1.2 : hoveredNode === node.key ? 1.12 : 1) + (selected ? pulse * 0.16 : 0);
             node.mesh.scale.setScalar(THREE.MathUtils.lerp(node.mesh.scale.x, targetScale, smooth));
@@ -655,7 +714,7 @@ async function initialise(root) {
         links.forEach(({ curve, tube, beads, key }, index) => {
             tube.material.opacity = THREE.MathUtils.lerp(
                 tube.material.opacity,
-                key === state.node ? 0.78 : key === hoveredNode ? 0.6 : 0.25,
+                key === pinnedNode ? 0.78 : key === hoveredNode ? 0.6 : 0.25,
                 smooth
             );
             beads.forEach((bead, i) =>

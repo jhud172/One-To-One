@@ -118,3 +118,27 @@ body.version-two .home-cosmos .logo-fallback-destinations a { padding: .75rem; m
     .home-cosmos .logo-utility { width:100%; }
     .home-cosmos .logo-utility button { flex:1; min-height:44px; border:1px solid #2b3b53; border-radius:10px; }
 }
+
+/* Connection descriptions are revealed by the scene, rather than a permanent panel. */
+.home-cosmos .logo-experience:not(.logo-fallback) .logo-journey-heading,
+.home-cosmos .logo-experience:not(.logo-fallback) .logo-journey-path { display:none; }
+.home-cosmos .logo-inspector-reveal { grid-column:2; max-width:42rem; justify-self:center; }
+.home-cosmos .logo-inspector { position:relative; }
+.home-cosmos .logo-experience[data-details="true"] .logo-inspector { padding:1.25rem; }
+.home-cosmos .logo-journey-body { padding:1rem 0; border:0; }
+.home-cosmos .logo-story { min-height:180px; gap:1.25rem; }
+.home-cosmos .logo-story h3 { font-size:clamp(1.4rem,2.2vw,1.8rem); }
+.home-cosmos .logo-story p { font-size:.8125rem; line-height:1.65; }
+.home-cosmos .logo-story-art { min-height:180px; }
+.home-cosmos .story-photo { width:140px; height:140px; }
+.home-cosmos .story-orbit { width:180px; height:150px; }
+.home-cosmos .story-satellite { right:calc(50% - 80px); bottom:20px; width:34px; height:34px; }
+.logo-detail-close { position:relative; display:block; margin-inline-start:auto; width:44px; height:44px; border:1px solid #88b9db55; border-radius:50%; background:#112d42; color:#e9f7ff; font-size:24px; cursor:pointer; transition:background .2s,transform .2s; }
+.logo-detail-close:hover { background:#1b4b60; transform:rotate(90deg); }
+.logo-experience:is([data-mode="exploded"], .logo-fallback) .logo-detail-close { display:none; }
+.home-cosmos .logo-story:not([hidden]) { animation:logo-detail-enter .28s ease both; }
+@keyframes logo-detail-enter { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.home-cosmos .logo-node-labels button { min-height:44px; }
+@media (max-width:900px) { .home-cosmos .logo-inspector-reveal { grid-column:1; width:100%; } }
+@media (max-width:600px) { .home-cosmos .logo-story { grid-template-columns:1fr; } .home-cosmos .logo-story-art { display:none; } }
+@media (prefers-reduced-motion:reduce) { .logo-detail-close { transition:none; } .home-cosmos .logo-story:not([hidden]) { animation:none; } }
