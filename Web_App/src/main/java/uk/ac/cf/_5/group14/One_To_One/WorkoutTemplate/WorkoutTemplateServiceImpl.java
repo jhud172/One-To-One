@@ -29,7 +29,12 @@ public class WorkoutTemplateServiceImpl implements WorkoutTemplateService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void delete(Long id) {
+        if (templateRepository.isReferencedBySession(id)) {
+            throw new org.springframework.dao.DataIntegrityViolationException("Layout is referenced by a saved session");
+        }
+        userSettingsRepository.clearPreferredWorkoutTemplate(id);
         templateRepository.deleteById(id);
     }
 
@@ -56,7 +61,8 @@ public class WorkoutTemplateServiceImpl implements WorkoutTemplateService {
             Long preferredId = settingsOpt.get().getPreferredWorkoutTemplateId();
             if (preferredId != null) {
                 Optional<WorkoutTemplate> preferred = templateRepository.findById(preferredId);
-                if (preferred.isPresent()) {
+                if (preferred.isPresent() && (preferred.get().getUser() == null
+                        || userId.equals(preferred.get().getUser().getId()))) {
                     return preferred.get();
                 }
             }

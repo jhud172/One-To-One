@@ -17,11 +17,14 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
     List<Exercise> findByTags(Set<Tag> tags);
 
     // Gets exercises with the preferred tags and ensures that exercises with the banned tags are excluded.
-    @Query("select e from Exercise e " +
+    @Query("select distinct e from Exercise e " +
             "join e.tags t " +
             "where t in :preferredTags " +
             "and e not in " +
             "(select e from Exercise e " +
             "join e.tags t where t in :bannedTags)")
     List<Exercise> getFilteredSuggestedExercises(@Param("preferredTags") Set<Tag> preferredTags, @Param("bannedTags") Set<Tag> bannedTags);
+
+    @Query("select e from Exercise e where not exists (select t from e.tags t where t in :bannedTags)")
+    List<Exercise> getExercisesExcludingTags(@Param("bannedTags") Set<Tag> bannedTags);
 }

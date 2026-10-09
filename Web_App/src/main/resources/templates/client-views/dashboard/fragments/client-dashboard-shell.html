@@ -174,7 +174,7 @@
         </section>
     </th:block>
 
-    <th:block th:fragment="leftRailGoals">
+    <th:block th:fragment="leftRailGoals(goalScope)">
         <section class="cd-rail-card" aria-label="Goals summary" th:attr="aria-label=#{ui.00449}">
             <div class="cd-rail-card__header">
                 <div class="cd-section-head">
@@ -188,19 +188,16 @@
                 <span th:text="${completedGoalsCount}">0</span> <th:block th:text="#{ui.00453}">completed.</th:block>
             </p>
             <div class="cd-goal-slider" data-goal-slider>
-                <div class="cd-segmented cd-segmented--compact cd-goal-slider__tabs" role="tablist" aria-label="Goal sections" th:attr="aria-label=#{ui.00454}">
-                    <button type="button"
+                <div class="cd-segmented cd-segmented--compact cd-goal-slider__tabs" role="navigation" aria-label="Goal sections" th:attr="aria-label=#{ui.00454}">
+                    <a th:href="${'#dashboard-goal-panel-' + goalScope + '-' + section.key}"
                             th:each="section, iterStat : ${goalSections}"
                             class="cd-segmented__button"
                             th:classappend="${iterStat.index == 0 ? ' is-active' : ''}"
                             data-goal-tab
-                            role="tab"
-                            th:attr="id=${'dashboard-goal-tab-' + section.key},
+                            th:attr="id=${'dashboard-goal-tab-' + goalScope + '-' + section.key},
                                      data-goal-tab=${section.key},
-                                     aria-selected=${iterStat.index == 0 ? 'true' : 'false'},
-                                     aria-controls=${'dashboard-goal-panel-' + section.key},
-                                     tabindex=${iterStat.index == 0 ? '0' : '-1'}"
-                            th:text="${section.title}">Week goals</button>
+                                     aria-controls=${'dashboard-goal-panel-' + goalScope + '-' + section.key}"
+                            th:text="${section.title}">Week goals</a>
                 </div>
                 <div class="cd-goal-slider__mask">
                     <div class="cd-goal-slider__viewport" data-goal-slider-track>
@@ -208,12 +205,9 @@
                                  class="cd-goal-section"
                                  th:classappend="${iterStat.index == 0 ? ' is-active' : ''}"
                                  data-goal-view
-                                 role="tabpanel"
-                                 th:attr="id=${'dashboard-goal-panel-' + section.key},
+                                 th:attr="id=${'dashboard-goal-panel-' + goalScope + '-' + section.key},
                                           data-goal-view=${section.key},
-                                          aria-labelledby=${'dashboard-goal-tab-' + section.key},
-                                          aria-hidden=${iterStat.index == 0 ? 'false' : 'true'},
-                                          inert=${iterStat.index == 0 ? null : 'inert'}">
+                                          aria-labelledby=${'dashboard-goal-tab-' + goalScope + '-' + section.key}">
                             <div class="cd-goal-section__header">
                                 <h3 class="cd-goal-section__title" th:text="${section.title}">Week goals</h3>
                                 <span class="cd-goal-section__count"
@@ -397,12 +391,11 @@
 
     <th:block th:fragment="leftRail">
         <th:block th:replace="~{client-views/dashboard/fragments/client-dashboard-shell :: leftRailExplore}"></th:block>
-        <th:block th:replace="~{client-views/dashboard/fragments/client-dashboard-shell :: leftRailGoals}"></th:block>
+        <th:block th:replace="~{client-views/dashboard/fragments/client-dashboard-shell :: leftRailGoals('desktop')}"></th:block>
     </th:block>
 
     <th:block th:fragment="mainColumn">
         <h1 class="sr-only" th:text="#{ui.00480}">Client dashboard</h1>
-        <th:block th:replace="~{client-views/dashboard/fragments/client-dashboard-shell :: coachSpotlight('trainer-premium-tooltip-main')}"></th:block>
 
         <section aria-label="Action hub" class="cd-panel cd-action-hub" data-action-hub th:attr="aria-label=#{ui.00481}">
             <div class="cd-panel__header cd-panel__header--split" data-site-tour="client-dashboard">
@@ -416,15 +409,16 @@
                         <p class="cd-action-hub__route-copy" th:text="${actionHub.primaryCard.supportText}">Clear the most time-sensitive task before the rest of the board fans out.</p>
                     </div>
                 </div>
-                <div class="cd-segmented cd-segmented--slider" role="tablist" aria-label="Action hub views" data-selected-tab="recommended" th:attr="aria-label=#{ui.00483}">
-                    <button type="button" id="dashboard-action-tab-recommended" class="cd-segmented__button is-active" data-action-tab="recommended" role="tab" aria-selected="true" aria-controls="dashboard-action-panel-recommended" tabindex="0" th:text="#{ui.00484}">Recommended</button>
-                    <button type="button" id="dashboard-action-tab-all" class="cd-segmented__button" data-action-tab="all" role="tab" aria-selected="false" aria-controls="dashboard-action-panel-all" tabindex="-1" th:text="#{ui.00485}">All</button>
+                <div class="cd-segmented cd-segmented--slider" role="navigation" aria-label="Action hub views" data-selected-tab="recommended" th:attr="aria-label=#{ui.00483}">
+                    <a href="#dashboard-action-panel-recommended" id="dashboard-action-tab-recommended" class="cd-segmented__button is-active" data-action-tab="recommended" aria-controls="dashboard-action-panel-recommended" th:text="#{ui.00484}">Recommended</a>
+                    <a href="#dashboard-action-panel-all" id="dashboard-action-tab-all" class="cd-segmented__button" data-action-tab="all" aria-controls="dashboard-action-panel-all" th:text="#{ui.00485}">All</a>
                 </div>
             </div>
 
             <div class="cd-action-slider" data-action-slider>
                 <div class="cd-action-slider__track" data-action-track>
-                    <div id="dashboard-action-panel-recommended" class="cd-action-view is-active" data-action-view="recommended" role="tabpanel" aria-labelledby="dashboard-action-tab-recommended" aria-hidden="false">
+                    <div id="dashboard-action-panel-recommended" class="cd-action-view is-active" data-action-view="recommended" aria-labelledby="dashboard-action-tab-recommended">
+                        <h3 class="cd-action-view__fallback-title" th:text="#{ui.00484}">Recommended</h3>
                         <div th:if="${actionHub.primaryCard != null}" class="cd-action-layout">
                             <a th:with="card=${actionHub.primaryCard}"
                                th:href="@{${card.href}}"
@@ -509,7 +503,8 @@
                         </div>
                     </div>
 
-                    <div id="dashboard-action-panel-all" class="cd-action-view" data-action-view="all" role="tabpanel" aria-labelledby="dashboard-action-tab-all" aria-hidden="true" inert>
+                    <div id="dashboard-action-panel-all" class="cd-action-view" data-action-view="all" aria-labelledby="dashboard-action-tab-all">
+                        <h3 class="cd-action-view__fallback-title" th:text="#{ui.00485}">All</h3>
                         <div class="cd-action-grid cd-action-grid--all">
                             <a th:each="card : ${actionHub.allCards}"
                                th:href="@{${card.href}}"
@@ -536,6 +531,8 @@
                 </div>
             </div>
         </section>
+
+        <th:block th:replace="~{client-views/dashboard/fragments/client-dashboard-shell :: coachSpotlight('trainer-premium-tooltip-main')}"></th:block>
 
         <section aria-label="Primary dashboard actions" class="cd-primary-actions" th:attr="aria-label=#{ui.00487}">
             <a th:href="@{${bodyActionCard.href}}" class="cd-primary-cta cd-primary-cta--body">
@@ -620,8 +617,8 @@
 
                 <div class="cd-week-strip-wrap">
                     <div class="cd-week-strip-shell">
-                        <div class="dashboard-week-strip cd-week-strip" role="tablist" aria-label="7 day selector" data-week-strip th:attr="aria-label=#{ui.00500}">
-                        <button type="button"
+                        <div class="dashboard-week-strip cd-week-strip" role="navigation" aria-label="7 day selector" data-week-strip th:attr="aria-label=#{ui.00500}">
+                        <a th:href="@{${d.path}}"
                                 th:each="d, iterStat : ${weekDays}"
                                 class="dashboard-week-day-button cd-week-day-button"
                                 data-week-day-button
@@ -631,8 +628,7 @@
                                          data-task-count=${d.taskCount},
                                          data-workout-count=${d.workoutCount},
                                          data-day-selected=${d.today or iterStat.index == 0 ? 'true' : 'false'}"
-                                role="tab"
-                                th:attrappend="aria-selected=${d.today or iterStat.index == 0}">
+                                >
                             <div class="cd-week-day-button__top">
                                 <span class="cd-week-day-button__label" th:text="${d.dayLabel}">Mon</span>
                                 <span th:if="${d.today}" class="cd-mini-badge" th:text="#{ui.00495}">Today</span>
@@ -655,7 +651,7 @@
                                       data-week-item
                                       th:attr="data-title=${item.title},data-href=${item.href},data-kind=${item.kind}"></span>
                             </div>
-                        </button>
+                        </a>
                         </div>
                     </div>
                 </div>

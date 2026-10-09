@@ -29,7 +29,11 @@ public class DevModePageAccessService {
         this.settingRepository = settingRepository;
     }
 
-    public DevModeHubView buildHubView(boolean authenticated) {
+    public DevModeHubView buildHubView(org.springframework.security.core.Authentication authentication) {
+        boolean authenticated = authentication != null && authentication.isAuthenticated()
+                && !(authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
+        boolean clientAccount = authenticated && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_CLIENT".equals(authority.getAuthority()));
         Map<String, DevModePageAccessMode> overrides = loadOverrides();
         Map<DevModePageSection, List<DevModePageHubCard>> grouped = new EnumMap<>(DevModePageSection.class);
         grouped.put(DevModePageSection.PUBLIC, new ArrayList<>());
@@ -41,7 +45,7 @@ public class DevModePageAccessService {
             DevModePageSection section = mode == DevModePageAccessMode.ENABLED
                     ? definition.defaultSection()
                     : DevModePageSection.RESTRICTED;
-            grouped.get(section).add(toHubCard(definition, mode, authenticated));
+            grouped.get(section).add(toHubCard(definition, mode, authenticated, clientAccount));
         }
 
         return new DevModeHubView(
@@ -152,7 +156,7 @@ public class DevModePageAccessService {
 
     private DevModePageHubCard toHubCard(DevModePageDefinition definition,
                                          DevModePageAccessMode mode,
-                                         boolean authenticated) {
+                                         boolean authenticated, boolean clientAccount) {
         DevModePageSection section = mode == DevModePageAccessMode.ENABLED
                 ? definition.defaultSection()
                 : DevModePageSection.RESTRICTED;
@@ -167,9 +171,12 @@ public class DevModePageAccessService {
         } else if (definition.defaultSection() == DevModePageSection.PUBLIC) {
             href = definition.path();
             availabilityCopy = "Open now";
+        } else if (authenticated && "client-trainers".equals(definition.key()) && !clientAccount) {
+            href = "/dashboard";
+            availabilityCopy = "Client account required";
         } else if (authenticated) {
             href = definition.path();
-            availabilityCopy = "Open after login";
+            availabilityCopy = "Your account permissions apply";
         } else {
             href = "/login?next=" + urlEncode(definition.path());
             availabilityCopy = "Sign in to access";

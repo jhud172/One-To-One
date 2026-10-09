@@ -1,0 +1,379 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="experience">
+    <div class="logo-hero" data-logo-home>
+        <div
+            class="logo-experience"
+            data-logo-experience
+            data-mode="sculpture"
+            data-expanded="false"
+            data-details="false"
+            th:attr="data-model-url=@{/models/one-to-one/sculpture.glb(v=${assetVersion})},data-status-ready=#{logo.ready},data-status-fallback=#{logo.fallback},data-status-loading=#{logo.loading},data-reps-label=#{logo.reps},data-reps-complete=#{logo.repsComplete},data-expanded-hint=#{logo.expandedHint}"
+        >
+            <div class="logo-topline">
+                <span class="logo-eyebrow" th:text="#{logo.eyebrow}">ONE TO ONE / CONNECTED BY DESIGN</span>
+                <button
+                    type="button"
+                    class="logo-close"
+                    data-logo-close
+                    th:aria-label="#{logo.close}"
+                    th:text="#{logo.close}"
+                >
+                    Fold the logo
+                </button>
+            </div>
+            <div class="logo-workspace">
+                <div class="logo-viewport" data-logo-stage>
+                    <img
+                        class="logo-poster"
+                        data-logo-poster
+                        draggable="false"
+                        th:src="@{/models/one-to-one/sculpture-poster.png(v=${assetVersion})}"
+                        width="1100"
+                        height="1100"
+                        alt=""
+                        fetchpriority="high"
+                    />
+                    <canvas
+                        data-logo-canvas
+                        tabindex="0"
+                        role="button"
+                        th:aria-label="#{logo.canvasLabel}"
+                        aria-describedby="logo-hint"
+                    ></canvas>
+                    <div class="logo-node-labels" data-logo-node-labels hidden>
+                        <button type="button" data-logo-node="trainer" th:text="#{logo.trainer}">Trainer</button>
+                        <button type="button" data-logo-node="gym" th:text="#{logo.gym}">Gym</button>
+                        <button type="button" data-logo-node="workout" th:text="#{logo.workout}">Workout</button>
+                        <button type="button" data-logo-node="activity" th:text="#{logo.activity}">
+                            Activity
+                        </button>
+                    </div>
+                    <p id="logo-hint" class="logo-sr-only" th:text="#{logo.hint}">
+                        Move your pointer or use arrow keys to rotate. Press Enter to open connections.
+                    </p>
+                    <div class="logo-modes" role="group" th:aria-label="#{logo.view}">
+                        <button
+                            type="button"
+                            data-logo-mode="sculpture"
+                            aria-pressed="true"
+                            th:text="#{logo.sculpture}"
+                        >
+                            Sculpture
+                        </button>
+                        <button
+                            type="button"
+                            data-logo-mode="network"
+                            aria-pressed="false"
+                            th:text="#{logo.network}"
+                        >
+                            Connections
+                        </button>
+                        <button
+                            type="button"
+                            data-logo-mode="exploded"
+                            aria-pressed="false"
+                            th:text="#{logo.exploded}"
+                        >
+                            Explode
+                        </button>
+                    </div>
+                    <div class="logo-launch">
+                        <button
+                            type="button"
+                            class="logo-open"
+                            data-logo-open
+                            aria-expanded="false"
+                            aria-controls="logo-inspector"
+                            th:aria-label="#{logo.open}"
+                        >
+                            <svg class="logo-mouse-cue" viewBox="0 0 32 44" aria-hidden="true">
+                                <rect x="6" y="4" width="20" height="34" rx="10" />
+                                <path class="logo-cue-press" d="M16 4v14H6V14A10 10 0 0 1 16 4Z" />
+                                <path d="M16 10v8" />
+                                <circle class="logo-cue-ring" cx="11" cy="12" r="7" />
+                            </svg>
+                            <span th:text="#{logo.open}">Open connections</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="logo-inspector-reveal">
+                    <aside
+                        id="logo-inspector"
+                        class="logo-inspector"
+                        data-logo-inspector
+                        aria-labelledby="logo-experience-title"
+                        aria-hidden="true"
+                        inert
+                    >
+                        <header class="logo-journey-heading">
+                            <div>
+                                <p class="logo-eyebrow" th:text="#{logo.demoLabel}">YOUR CONNECTED WORLD</p>
+                                <h2 id="logo-experience-title" th:text="#{logo.title}">
+                                    A world built around you.
+                                </h2>
+                            </div>
+                            <p class="logo-intro" th:text="#{logo.intro}">
+                                Four connections. One continuous journey, from your first plan to your next
+                                breakthrough.
+                            </p>
+                        </header>
+                        <nav class="logo-journey-path" th:aria-label="#{logo.journeyLabel}">
+                            <button type="button" data-logo-node="trainer" aria-pressed="true">
+                                <span class="journey-planet journey-planet--trainer" aria-hidden="true"></span
+                                ><span class="journey-step">01</span
+                                ><strong th:text="#{logo.trainer}">Trainer</strong
+                                ><span class="journey-step-note" th:text="#{logo.trainerStep}"></span>
+                            </button>
+                            <button type="button" data-logo-node="gym" aria-pressed="false">
+                                <span class="journey-planet journey-planet--gym" aria-hidden="true"></span
+                                ><span class="journey-step">02</span><strong th:text="#{logo.gym}">Gym</strong
+                                ><span class="journey-step-note" th:text="#{logo.gymStep}"></span>
+                            </button>
+                            <button type="button" data-logo-node="workout" aria-pressed="false">
+                                <span class="journey-planet journey-planet--workout" aria-hidden="true"></span
+                                ><span class="journey-step">03</span
+                                ><strong th:text="#{logo.workout}">Workout</strong
+                                ><span class="journey-step-note" th:text="#{logo.workoutStep}"></span>
+                            </button>
+                            <button type="button" data-logo-node="activity" aria-pressed="false">
+                                <span class="journey-planet journey-planet--activity" aria-hidden="true"></span
+                                ><span class="journey-step">04</span
+                                ><strong th:text="#{logo.activity}">Activity</strong
+                                ><span class="journey-step-note" th:text="#{logo.activityStep}"></span>
+                            </button>
+                        </nav>
+                        <div class="logo-journey-body">
+                            <div class="logo-construction" data-logo-construction hidden>
+                                <p class="logo-story-index" th:text="#{logo.constructionIndex}">
+                                    BUILT IN LAYERS
+                                </p>
+                                <h3 th:text="#{logo.constructionTitle}">Take the connection apart.</h3>
+                                <p th:text="#{logo.constructionCopy}">
+                                    Explore the layers that bring the connection to life.
+                                </p>
+                                <ol>
+                                    <li th:text="#{logo.layerFace}">Enamel faces · the colour and identity</li>
+                                    <li th:text="#{logo.layerLight}">Light channels · the illuminated outline</li>
+                                    <li th:text="#{logo.layerShell}">Titanium backing · the supporting shell</li>
+                                    <li th:text="#{logo.layerCore}">Central cores · the people at the centre</li>
+                                </ol>
+                                <button
+                                    type="button"
+                                    class="logo-primary"
+                                    data-logo-implode
+                                    th:text="#{logo.implode}"
+                                >
+                                    Reassemble the logo
+                                </button>
+                            </div>
+                            <div class="logo-story" data-logo-story="trainer">
+                                <div class="logo-story-copy">
+                                    <p class="logo-story-index" th:text="#{logo.trainerIndex}">
+                                        01 / YOUR TRAINER
+                                    </p>
+                                    <h3 th:text="#{logo.trainerTitle}">A person behind your plan.</h3>
+                                    <p th:text="#{logo.trainerCopy}">
+                                        A verified trainer shapes your sessions and follows your progress. One
+                                        active coaching relationship, with everything in context.
+                                    </p>
+                                    <p class="logo-story-promise" th:text="#{logo.trainerPromise}"></p>
+                                </div>
+                                <div class="logo-story-art logo-story-art--trainer" aria-hidden="true">
+                                    <div class="story-orbit"></div>
+                                    <div class="story-photo">
+                                        <img
+                                            th:src="@{/img/home/verified-coach-alex.webp}"
+                                            alt=""
+                                            width="420"
+                                            height="420"
+                                            loading="lazy"
+                                            draggable="false"
+                                        />
+                                    </div>
+                                    <span class="story-satellite"
+                                        ><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-9" /></svg></span
+                                    ><span class="story-caption" th:text="#{logo.trainerVisual}"></span>
+                                </div>
+                            </div>
+                            <div class="logo-story" data-logo-story="gym" hidden>
+                                <div class="logo-story-copy">
+                                    <p class="logo-story-index" th:text="#{logo.gymIndex}">02 / YOUR GYM</p>
+                                    <h3 th:text="#{logo.gymTitle}">The right place to train.</h3>
+                                    <p th:text="#{logo.gymCopy}">
+                                        Your coach can work across gyms or independently. The location connects to
+                                        your session without breaking your coaching relationship.
+                                    </p>
+                                    <p class="logo-story-promise" th:text="#{logo.gymPromise}"></p>
+                                </div>
+                                <div class="logo-story-art logo-story-art--gym" aria-hidden="true">
+                                    <div class="story-orbit"></div>
+                                    <div class="story-photo">
+                                        <img
+                                            th:src="@{/img/home/role-gym.webp}"
+                                            alt=""
+                                            width="420"
+                                            height="420"
+                                            loading="lazy"
+                                            draggable="false"
+                                        />
+                                    </div>
+                                    <span class="story-satellite"
+                                        ><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-9" /></svg></span
+                                    ><span class="story-caption" th:text="#{logo.gymVisual}"></span>
+                                </div>
+                            </div>
+                            <div class="logo-story" data-logo-story="workout" hidden>
+                                <div class="logo-story-copy">
+                                    <p class="logo-story-index" th:text="#{logo.workoutIndex}">
+                                        03 / YOUR WORKOUT
+                                    </p>
+                                    <h3 th:text="#{logo.workoutTitle}">Turn the plan into action.</h3>
+                                    <p th:text="#{logo.workoutCopy}">
+                                        Try a six-rep demo set. Every rep sends a pulse through the network and
+                                        builds your activity record.
+                                    </p>
+                                    <p class="logo-story-promise" th:text="#{logo.workoutPromise}"></p>
+                                </div>
+                                <div class="logo-story-art logo-story-art--workout">
+                                    <div class="rep-dial" aria-hidden="true">
+                                        <strong data-logo-rep-count>0</strong><span>/ 6</span>
+                                    </div>
+                                    <div class="rep-moons" aria-hidden="true">
+                                        <i data-logo-rep-dot></i><i data-logo-rep-dot></i><i data-logo-rep-dot></i
+                                        ><i data-logo-rep-dot></i><i data-logo-rep-dot></i
+                                        ><i data-logo-rep-dot></i>
+                                    </div>
+                                    <p class="story-caption" th:text="#{logo.workoutVisual}"></p>
+                                </div>
+                            </div>
+                            <div class="logo-story" data-logo-story="activity" hidden>
+                                <div class="logo-story-copy">
+                                    <p class="logo-story-index" th:text="#{logo.activityIndex}">
+                                        04 / YOUR ACTIVITY
+                                    </p>
+                                    <h3 th:text="#{logo.activityTitle}">Your effort stays connected.</h3>
+                                    <p th:text="#{logo.activityCopy}">
+                                        Your completed session informs your progress and your trainer’s next
+                                        check-in. Useful feedback returns to the next plan.
+                                    </p>
+                                    <p class="logo-story-promise" th:text="#{logo.activityPromise}"></p>
+                                </div>
+                                <div class="logo-story-art logo-story-art--activity" aria-hidden="true">
+                                    <div class="momentum-world">
+                                        <span></span><span></span><span></span
+                                        ><svg viewBox="0 0 180 120">
+                                            <path d="M8 104C42 110 28 70 65 79S100 45 120 54 141 17 171 12" />
+                                            <circle cx="171" cy="12" r="5" />
+                                        </svg>
+                                    </div>
+                                    <span class="story-caption" th:text="#{logo.activityVisual}"></span>
+                                </div>
+                            </div>
+                            <div class="logo-demo-actions" data-logo-demo-actions>
+                                <button
+                                    type="button"
+                                    class="logo-primary"
+                                    data-logo-next
+                                    th:text="#{logo.follow}"
+                                >
+                                    Follow the connection
+                                </button>
+                                <button
+                                    type="button"
+                                    class="logo-primary"
+                                    data-logo-rep
+                                    hidden
+                                    th:text="#{logo.logRep}"
+                                >
+                                    Log a demo rep
+                                </button>
+                                <p
+                                    class="logo-demo-progress"
+                                    data-logo-demo-progress
+                                    aria-live="polite"
+                                    th:text="#{logo.demoNote}"
+                                >
+                                    Sample journey · no account or data saved
+                                </p>
+                            </div>
+                        </div>
+                        <div class="logo-tools">
+                            <details class="logo-customise">
+                                <summary th:text="#{logo.customise}">Make it yours</summary>
+                                <label
+                                    ><span th:text="#{logo.palette}">Colour palette</span
+                                    ><select data-logo-palette>
+                                        <option value="signature" th:text="#{logo.signature}">
+                                            Signature · cyan &amp; ember
+                                        </option>
+                                        <option value="aurora" th:text="#{logo.aurora}">
+                                            Aurora · violet &amp; mint
+                                        </option>
+                                        <option value="solar" th:text="#{logo.solar}">
+                                            Solar · rose &amp; gold
+                                        </option>
+                                    </select></label
+                                >
+                                <div class="logo-colours">
+                                    <label
+                                        ><span th:text="#{logo.leftColour}">Left colour</span
+                                        ><input type="color" value="#08baff" data-logo-colour="left" /></label
+                                    ><label
+                                        ><span th:text="#{logo.rightColour}">Right colour</span
+                                        ><input type="color" value="#ff761a" data-logo-colour="right"
+                                    /></label>
+                                </div>
+                                <label
+                                    ><span th:text="#{logo.separation}">Construction / separation</span
+                                    ><input type="range" min="0" max="100" value="0" data-logo-separation
+                                /></label>
+                                <label
+                                    ><span th:text="#{logo.glow}">Light intensity</span
+                                    ><input type="range" min="0" max="100" value="55" data-logo-glow
+                                /></label>
+                                <label
+                                    ><span th:text="#{logo.speed}">Animation speed</span
+                                    ><input type="range" min="0" max="150" value="70" data-logo-speed
+                                /></label>
+                                <label
+                                    ><span th:text="#{logo.zoom}">View distance</span
+                                    ><input type="range" min="75" max="125" value="100" data-logo-zoom
+                                /></label>
+                                <label class="logo-check"
+                                    ><input type="checkbox" data-logo-wireframe /><span
+                                        th:text="#{logo.wireframe}"
+                                        >Show mesh construction</span
+                                    ></label
+                                >
+                            </details>
+                            <div class="logo-utility">
+                                <button
+                                    type="button"
+                                    data-logo-pause
+                                    aria-pressed="false"
+                                    th:text="#{logo.pause}"
+                                >
+                                    Pause motion</button
+                                ><button type="button" data-logo-reset th:text="#{logo.reset}">Reset view</button>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+            <p class="logo-fallback-note" th:text="#{logo.fallback}">
+                3D is unavailable here. Explore the guided demo below.
+            </p>
+            <noscript>
+                <p class="v2-preview-label" th:text="#{logo.fallback}">3D is unavailable here. Explore the guided demo below.</p>
+                <nav class="logo-fallback-destinations" th:attr="aria-label=#{logo.title}">
+                    <a th:href="@{/explore}" th:text="#{logo.trainer}">Trainer</a>
+                    <a th:href="@{/signup/gym}" th:text="#{logo.gym}">Gym</a>
+                    <a th:href="@{/dashboard/public}" th:text="#{logo.workout}">Workout</a>
+                    <a th:href="@{/signup/client}" th:text="#{logo.activity}">Activity</a>
+                </nav>
+            </noscript>
+            <span class="logo-sr-only" role="status" data-logo-status th:text="#{logo.loading}"
+                >Preparing the sculpture…</span
+            >
+        </div>
+    </div>
+</th:block>

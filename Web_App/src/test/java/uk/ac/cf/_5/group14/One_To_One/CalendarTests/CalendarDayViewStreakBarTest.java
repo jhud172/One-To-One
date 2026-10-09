@@ -159,14 +159,14 @@ public class CalendarDayViewStreakBarTest {
                 .andExpect(view().name("shared-views/calendar/day"))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-testid=\"daily-streak-bar\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("0/0 completed (0%)")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("Remaining tasks: 0, Remaining workouts: 0")));
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Completion includes required logs. Each schedule workout counts once.")));
 
         mvc.perform(get("/calendar/day/2026-01-15").sessionAttr("user", sessionUser))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("data-testid=\"daily-streak-day\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("bg-emerald-500")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("data-status=\"complete\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("3/3 completed (100%)")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("Tasks left: 0")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("Workouts left: 0")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Tasks remaining: 0")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Workouts remaining: 0")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("Logs needed: 0")));
     }
 

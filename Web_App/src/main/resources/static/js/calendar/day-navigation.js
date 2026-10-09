@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (mainContent) {
         const enterDirection = sessionStorage.getItem('day-nav-enter-direction');
-        if (enterDirection) {
+        if (enterDirection && !reduceMotion) {
             mainContent.classList.add(enterDirection === 'from-next' ? 'day-nav-enter-left' : 'day-nav-enter-right');
             sessionStorage.removeItem('day-nav-enter-direction');
             window.setTimeout(() => {
@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    let swipeEnabled = false;
     let touchStartX = 0;
     let touchEndX = 0;
     let touchStartY = 0;
@@ -28,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
     /** Animate exit then navigate */
     function navigateWithTransition(href, direction) {
         if (!mainContent || reduceMotion) {
-            if (direction) {
+            if (direction && !reduceMotion) {
                 sessionStorage.setItem('day-nav-enter-direction', direction === 'next' ? 'from-next' : 'from-prev');
             }
             window.location.href = href;
@@ -53,22 +54,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (horizontalDistance > 0) {
             // Swiped right - go to previous day
-            const prevLink = document.querySelector('a[aria-label="Previous day"]');
+            const prevLink = document.querySelector('a[data-day-navigation="prev"]');
             if (prevLink) navigateWithTransition(prevLink.href, 'prev');
         } else {
             // Swiped left - go to next day
-            const nextLink = document.querySelector('a[aria-label="Next day"]');
+            const nextLink = document.querySelector('a[data-day-navigation="next"]');
             if (nextLink) navigateWithTransition(nextLink.href, 'next');
         }
     }
 
     // Touch events for mobile
-    document.addEventListener('touchstart', (e) => {
+    dayContainer.addEventListener('touchstart', (e) => {
+        swipeEnabled = !e.target.closest('a, button, input, select, textarea, [contenteditable]');
+        if (!swipeEnabled) return;
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
     });
 
-    document.addEventListener('touchend', (e) => {
+    dayContainer.addEventListener('touchend', (e) => {
+        if (!swipeEnabled) return;
         touchEndX = e.changedTouches[0].screenX;
         touchEndY = e.changedTouches[0].screenY;
         handleSwipe();
@@ -76,27 +80,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
-        // Don't interfere with form inputs
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-            return;
-        }
+        // Section tabs, dialogs and ordinary controls own their keyboard events.
+        if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey
+            || e.target.closest('a, button, input, textarea, select, [contenteditable], [role="tab"], [role="dialog"]')) return;
 
         if (e.key === 'ArrowLeft') {
             e.preventDefault();
-            const prevLink = document.querySelector('a[aria-label="Previous day"]');
+            const prevLink = document.querySelector('a[data-day-navigation="prev"]');
             if (prevLink) navigateWithTransition(prevLink.href, 'prev');
         } else if (e.key === 'ArrowRight') {
             e.preventDefault();
-            const nextLink = document.querySelector('a[aria-label="Next day"]');
+            const nextLink = document.querySelector('a[data-day-navigation="next"]');
             if (nextLink) navigateWithTransition(nextLink.href, 'next');
         }
     });
 
     // Smooth transition on nav link clicks (prev/next day buttons)
-    document.querySelectorAll('a[aria-label="Previous day"], a[aria-label="Next day"]').forEach(link => {
+    document.querySelectorAll('a[data-day-navigation="prev"], a[data-day-navigation="next"]').forEach(link => {
         link.addEventListener('click', (e) => {
+            if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.button !== 0) return;
             e.preventDefault();
-            const direction = link.getAttribute('aria-label') === 'Next day' ? 'next' : 'prev';
+            const direction = link.dataset.dayNavigation;
             navigateWithTransition(link.href, direction);
         });
     });

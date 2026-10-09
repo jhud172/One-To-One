@@ -33,7 +33,7 @@ public class SocialLinkValidator {
         if (url == null || url.isBlank()) {
             return true; // Empty is valid
         }
-        return INSTAGRAM_PATTERN.matcher(url.trim()).matches();
+        return isValidWebsiteUrl(url) && INSTAGRAM_PATTERN.matcher(url.trim()).matches();
     }
 
     /**
@@ -43,7 +43,7 @@ public class SocialLinkValidator {
         if (url == null || url.isBlank()) {
             return true;
         }
-        return TIKTOK_PATTERN.matcher(url.trim()).matches();
+        return isValidWebsiteUrl(url) && TIKTOK_PATTERN.matcher(url.trim()).matches();
     }
 
     /**
@@ -53,7 +53,7 @@ public class SocialLinkValidator {
         if (url == null || url.isBlank()) {
             return true;
         }
-        return YOUTUBE_PATTERN.matcher(url.trim()).matches();
+        return isValidWebsiteUrl(url) && YOUTUBE_PATTERN.matcher(url.trim()).matches();
     }
 
     /**
@@ -63,7 +63,7 @@ public class SocialLinkValidator {
         if (url == null || url.isBlank()) {
             return true;
         }
-        return LINKEDIN_PATTERN.matcher(url.trim()).matches();
+        return isValidWebsiteUrl(url) && LINKEDIN_PATTERN.matcher(url.trim()).matches();
     }
 
     /**
@@ -73,7 +73,13 @@ public class SocialLinkValidator {
         if (url == null || url.isBlank()) {
             return true;
         }
-        return HTTP_HTTPS_PATTERN.matcher(url.trim()).matches();
+        if (url.length() > 500 || !HTTP_HTTPS_PATTERN.matcher(url.trim()).matches()) return false;
+        try {
+            java.net.URI uri = java.net.URI.create(url.trim());
+            return uri.getHost() != null && uri.getUserInfo() == null;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     /**

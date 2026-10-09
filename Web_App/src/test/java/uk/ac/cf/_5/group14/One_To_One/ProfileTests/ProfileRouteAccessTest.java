@@ -12,6 +12,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.mockito.Mockito.never;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.hamcrest.Matchers.containsString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -62,7 +68,9 @@ import uk.ac.cf._5.group14.One_To_One.Config.DevModeProperties;
  * POST coverage verifies that /profile/update correctly delegates to role-specific profile
  * update helpers and sets the profileUpdated flash attribute on success.
  */
-@WebMvcTest(ProfileController.class)
+@WebMvcTest(value = ProfileController.class, excludeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+        type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+        classes = uk.ac.cf._5.group14.One_To_One.WorkoutTemplate.WorkoutDisplayAdvice.class))
 @ActiveProfiles("test")
 class ProfileRouteAccessTest {
 
@@ -125,7 +133,7 @@ class ProfileRouteAccessTest {
                 .willReturn(Collections.emptyList());
         given(exerciseLogService.getLogsByUser(eq(user))).willReturn(Collections.emptyList());
         given(savedPaymentMethodService.getCardsForUser(eq(user.getId()))).willReturn(Collections.emptyList());
-        given(merchOrderService.getOrdersForUser(eq(user.getId()))).willReturn(Collections.emptyList());
+        given(merchOrderService.getRecentOrdersForUser(eq(user.getId()))).willReturn(Collections.emptyList());
 
         mvc.perform(get("/profile").sessionAttr("user", user))
                 .andExpect(status().isOk())
@@ -218,6 +226,50 @@ class ProfileRouteAccessTest {
                 .andExpect(flash().attribute("profileUpdated", true));
 
         verify(gymProfileService).saveProfile(any());
+    }
+
+
+    @Test
+    void invalidGymDetailsRetainDraftAndDoNotMutateAccountOrSave() throws Exception {
+        User user = makeUser(30L, Role.GYM_ADMIN);
+        stubCommonMocks(user);
+        var result = mvc.perform(post("/profile/update").param("firstName", "Changed")
+                .param("gymName", "").param("gymAddress", "x".repeat(201)))
+            .andExpect(status().is3xxRedirection()).andExpect(flash().attributeExists("profileDraft", "profileFieldErrors"))
+            .andReturn();
+        assertEquals("Test", user.getFirstName());
+        verify(userRepository, never()).save(any());
+        verify(gymProfileService, never()).saveProfile(any());
+        var gym = new uk.ac.cf._5.group14.One_To_One.GymProfile.GymProfile(user.getId(), "Stored gym");
+        given(gymProfileRepository.findByUserId(user.getId())).willReturn(Optional.of(gym));
+        mvc.perform(get("/profile").flashAttrs(result.getFlashMap()))
+            .andExpect(status().isOk()).andExpect(content().string(containsString("x".repeat(201))))
+            .andExpect(content().string(containsString("Gym name is required")));
+    }
+
+    @Test
+    void rejectedAccountChangeCannotPartiallyChangeTheManagedUser() throws Exception {
+        User user = makeUser(31L, Role.GYM_ADMIN);
+        stubCommonMocks(user);
+        mvc.perform(post("/profile/update").param("firstName", "Changed").param("email", "not-an-email"))
+            .andExpect(flash().attributeExists("profileFieldErrors"));
+        assertEquals("Test", user.getFirstName());
+        assertEquals("test31@example.com", user.getEmail());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void failedPhotoReplacementCannotRemoveTheCurrentPhoto() throws Exception {
+        User user = makeUser(32L, Role.GYM_ADMIN);
+        user.setProfileImageUrl("/uploads/profiles/old-photo.png");
+        stubCommonMocks(user);
+        MockMultipartFile bad = new MockMultipartFile("profileImage", "bad.txt", "text/plain", "bad".getBytes());
+        mvc.perform(multipart("/profile/update").file(bad).param("removeProfileImage", "true").param("firstName", "Changed"))
+            .andExpect(flash().attributeExists("profileFieldErrors"));
+        assertEquals("/uploads/profiles/old-photo.png", user.getProfileImageUrl());
+        assertEquals("Test", user.getFirstName());
+        verify(fileStorageService, never()).deleteProfileImage(any());
+        verify(fileStorageService, never()).storeProfileImage(any(), any());
     }
 
     @TestConfiguration

@@ -16,6 +16,9 @@ import java.time.LocalDateTime;
 @Setter
 public class Note {
 
+    @Transient
+    private String revision;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -1,122 +1,42 @@
-<th:block th:replace="~{base :: layout(#{ui.01984}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-    <div th:fragment="styles">
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.01984}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content" class="client-workspace-v2 personal-records-v2">
+    <header class="detail-header"><div class="detail-header-content"><div><h1 class="detail-title" th:text="${editing} ? #{ui.log.editTitle} : #{ui.01984}"></h1><p class="detail-subtitle" th:text="#{ui.01968}"></p></div><a class="detail-btn-secondary" th:href="@{/exercise-log/list}" th:text="#{ui.01969}"></a></div></header>
+    <th:block th:replace="~{shared-views/exercise-log/fragments/log-origin :: logOrigin}"></th:block>
+    <div class="personal-record-layout">
+        <form class="detail-section profile-editor-form" th:action="${formAction}" th:object="${exerciseLog}" method="post" data-exercise-log-form>
+            <input type="hidden" th:field="*{occurrenceId}"><input type="hidden" th:field="*{calendarTaskId}"><input th:if="${editing}" type="hidden" th:field="*{expectedRevision}">
+            <div th:if="${#fields.hasAnyErrors()}" id="log-errors" class="profile-editor-errors" role="alert"><h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.log.invalid}"></p><ul>
+                <li th:if="${#fields.hasErrors('date')}"><a href="#date" th:text="#{ui.00660}"></a></li>
+                <li th:if="${#fields.hasErrors('moodBefore')}"><a href="#moodBefore1" th:text="#{ui.01971}"></a></li>
+                <li th:if="${#fields.hasErrors('moodAfter')}"><a href="#moodAfter1" th:text="#{ui.01972}"></a></li>
+                <li th:if="${#fields.hasErrors('confidence')}"><a href="#confidence1" th:text="#{ui.01973}"></a></li>
+                <li th:if="${#fields.hasErrors('durationMinutes')}"><a href="#durationMinutes" th:text="#{ui.01974}"></a></li>
+                <li th:if="${#fields.hasErrors('comments')}"><a href="#comments" th:text="#{ui.01976}"></a></li>
+            </ul></div>
+            <section th:if="${logConflict}" class="personal-log-conflict" role="alert" aria-labelledby="log-conflict-title">
+                <h2 id="log-conflict-title" class="detail-section-title" th:text="#{ui.log.changed}"></h2><p th:text="#{ui.log.changedHelp}"></p>
+                <h3 th:text="#{ui.log.latestSaved}"></h3>
+                <dl class="library-exercise-facts"><div><dt th:text="#{ui.00660}"></dt><dd><time dir="ltr" th:text="${latestLog.date}"></time></dd></div><div><dt th:text="#{ui.01974}"></dt><dd th:text="${latestLog.durationMinutes ?: '—'}"></dd></div><div><dt th:text="#{ui.01979}"></dt><dd><bdi dir="ltr"><span th:text="${latestLog.moodBefore ?: '—'}"></span> / 4</bdi></dd></div><div><dt th:text="#{ui.01980}"></dt><dd><bdi dir="ltr"><span th:text="${latestLog.moodAfter ?: '—'}"></span> / 4</bdi></dd></div><div><dt th:text="#{ui.01981}"></dt><dd><bdi dir="ltr"><span th:text="${latestLog.confidence ?: '—'}"></span> / 4</bdi></dd></div></dl>
+                <p class="plan-coaching-note" dir="auto" th:text="${#strings.isEmpty(latestLog.comments)} ? #{ui.01983} : ${latestLog.comments}"></p>
+            </section>
+            <h2 class="detail-section-title" th:text="#{ui.01998}"></h2>
+            <label for="date" th:text="#{ui.00660}"></label><input type="date" required th:field="*{date}" th:readonly="${logOriginLinked}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('date')},aria-describedby=${#fields.hasErrors('date') ? 'log-origin-help log-errors' : 'log-origin-help'}">
+            <p th:if="${logDateMalformed}" class="personal-history-rejected" dir="ltr" th:text="${logDateDraft}"></p>
+            <p id="log-rating-help" th:text="#{ui.log.ratingHint}"></p>
+            <fieldset class="personal-log-rating" th:attr="aria-describedby=${#fields.hasErrors('moodBefore') ? 'log-rating-help log-errors' : 'log-rating-help'}"><legend th:text="#{ui.01971}"></legend><div><label th:each="rating : ${#numbers.sequence(1,4)}"><input type="radio" required th:field="*{moodBefore}" th:value="${rating}" th:attr="aria-invalid=${#fields.hasErrors('moodBefore')}"><span th:text="${rating}"></span></label></div></fieldset>
+            <fieldset class="personal-log-rating" th:attr="aria-describedby=${#fields.hasErrors('moodAfter') ? 'log-rating-help log-errors' : 'log-rating-help'}"><legend th:text="#{ui.01972}"></legend><div><label th:each="rating : ${#numbers.sequence(1,4)}"><input type="radio" required th:field="*{moodAfter}" th:value="${rating}" th:attr="aria-invalid=${#fields.hasErrors('moodAfter')}"><span th:text="${rating}"></span></label></div></fieldset>
+            <fieldset class="personal-log-rating" th:attr="aria-describedby=${#fields.hasErrors('confidence') ? 'log-rating-help log-errors' : 'log-rating-help'}"><legend th:text="#{ui.01973}"></legend><div><label th:each="rating : ${#numbers.sequence(1,4)}"><input type="radio" required th:field="*{confidence}" th:value="${rating}" th:attr="aria-invalid=${#fields.hasErrors('confidence')}"><span th:text="${rating}"></span></label></div></fieldset>
+            <label for="durationMinutes" th:text="#{ui.01974}"></label><input type="text" inputmode="numeric" pattern="[0-9]{1,4}" maxlength="4" th:field="*{durationMinutes}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('durationMinutes')},aria-describedby=${#fields.hasErrors('durationMinutes') ? 'log-duration-help log-errors' : 'log-duration-help'}"><p id="log-duration-help" th:text="#{ui.log.durationHint}"></p>
+            <label for="comments" th:text="#{ui.01976}"></label><textarea dir="auto" rows="5" maxlength="300" th:field="*{comments}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('comments')},aria-describedby=${#fields.hasErrors('comments') ? 'log-comment-count log-errors' : 'log-comment-count'}"></textarea><p id="log-comment-count"><bdi dir="ltr" data-log-comment-count th:attr="data-count-format=#{ui.log.commentCount}" th:text="#{ui.log.commentCount(${#strings.length(exerciseLog.comments ?: '')})}"></bdi></p>
+            <div class="connection-actions"><button type="submit" class="detail-btn-primary" th:text="${logConflict} ? #{ui.log.saveReviewed} : #{ui.00109}"></button><a class="detail-btn-secondary" th:href="@{/exercise-log/list}" th:text="#{ui.00125}"></a></div>
+        </form>
+        <aside class="detail-section personal-log-preview" data-log-preview th:attr="data-empty-comments=#{ui.01983}">
+            <h2 class="detail-section-title" th:text="#{ui.00059}"></h2><p th:text="#{ui.log.draftHelp}"></p>
+            <dl class="library-exercise-facts"><div><dt th:text="#{ui.00660}"></dt><dd dir="ltr" data-preview-field="date" th:text="${exerciseLog.date ?: '—'}"></dd></div><div><dt th:text="#{ui.01974}"></dt><dd data-preview-field="durationMinutes" th:text="${exerciseLog.durationMinutes ?: '—'}"></dd></div>
+                <div><dt th:text="#{ui.01979}"></dt><dd><bdi dir="ltr"><span data-preview-field="moodBefore" th:text="${exerciseLog.moodBefore ?: '—'}"></span> / 4</bdi></dd></div>
+                <div><dt th:text="#{ui.01980}"></dt><dd><bdi dir="ltr"><span data-preview-field="moodAfter" th:text="${exerciseLog.moodAfter ?: '—'}"></span> / 4</bdi></dd></div>
+                <div><dt th:text="#{ui.01981}"></dt><dd><bdi dir="ltr"><span data-preview-field="confidence" th:text="${exerciseLog.confidence ?: '—'}"></span> / 4</bdi></dd></div>
+            </dl><h3 th:text="#{ui.01976}"></h3><p class="plan-coaching-note" dir="auto" data-preview-field="comments" th:text="${#strings.isEmpty(exerciseLog.comments)} ? #{ui.01983} : ${exerciseLog.comments}"></p>
+        </aside>
     </div>
-
-    <div th:fragment="content">
-        <div class="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-            <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            <h1 class="text-2xl font-bold tracking-tight text-slate-900"
-                                th:text="${editing} ? 'Edit Exercise Log' : 'Exercise Log'">Exercise Log</h1>
-                            <p class="mt-1 text-sm text-slate-600" th:text="#{ui.01968}">Record how you felt before and after exercising.</p>
-                        </div>
-                        <a th:href="@{/exercise-log/list}"
-                           class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50" th:text="#{ui.01969}">View history</a>
-                    </div>
-
-                    <div th:if="${exerciseLog.exerciseType != null && !#strings.isEmpty(exerciseLog.exerciseType)}"
-                         class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                        <th:block th:text="#{ui.01970}">Logging for</th:block> <span class="font-semibold" th:text="${exerciseLog.exerciseType}">Workout</span>.
-                    </div>
-
-                    <form th:action="${formAction}" th:object="${exerciseLog}" method="post" class="mt-6 space-y-6" data-exercise-log-form>
-                        <input th:if="${_csrf != null}" th:type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                        <input type="hidden" th:field="*{occurrenceId}">
-                        <input type="hidden" th:field="*{calendarTaskId}">
-                        <input type="hidden" th:field="*{exerciseType}">
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700" th:text="#{ui.00660}">Date</label>
-                            <input type="date" th:field="*{date}" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"/>
-                            <p class="mt-1 text-sm text-red-600" th:errors="*{date}" th:if="${#fields.hasErrors('date')}"></p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700" th:text="#{ui.01971}">How did you feel before exercising?</label>
-                            <div class="mt-2 flex flex-col items-center gap-3">
-                                <div id="moodBeforeEmoji" class="text-4xl transition-all duration-300">-</div>
-                                <input type="range" min="1" max="4" step="1" th:field="*{moodBefore}" class="w-full cursor-pointer accent-slate-900" data-slider-kind="mood-before">
-                            </div>
-                            <p class="mt-1 text-sm text-red-600" th:errors="*{moodBefore}" th:if="${#fields.hasErrors('moodBefore')}"></p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700" th:text="#{ui.01972}">How did you feel after exercising?</label>
-                            <div class="mt-2 flex flex-col items-center gap-3">
-                                <div id="moodAfterEmoji" class="text-4xl transition-all duration-300">-</div>
-                                <input type="range" min="1" max="4" step="1" th:field="*{moodAfter}" class="w-full cursor-pointer accent-slate-900" data-slider-kind="mood-after">
-                            </div>
-                            <p class="mt-1 text-sm text-red-600" th:errors="*{moodAfter}" th:if="${#fields.hasErrors('moodAfter')}"></p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700" th:text="#{ui.01973}">Confidence Level</label>
-                            <div class="mt-2 flex flex-col items-center gap-3">
-                                <div id="confidenceEmoji" class="text-4xl transition-all duration-300">-</div>
-                                <input type="range" min="1" max="4" step="1" th:field="*{confidence}" class="w-full cursor-pointer accent-slate-900" data-slider-kind="confidence">
-                            </div>
-                            <p class="mt-1 text-sm text-red-600" th:errors="*{confidence}" th:if="${#fields.hasErrors('confidence')}"></p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700" th:text="#{ui.01974}">Duration (minutes)</label>
-                            <input type="number" th:field="*{durationMinutes}" min="1" placeholder="e.g., 30" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"  th:placeholder="#{ui.01975}"/>
-                            <p class="mt-1 text-sm text-red-600" th:errors="*{durationMinutes}" th:if="${#fields.hasErrors('durationMinutes')}"></p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700" th:text="#{ui.01976}">Comments</label>
-                            <textarea th:field="*{comments}" rows="4" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10" placeholder="Anything to note about your session?" th:placeholder="#{ui.01977}"></textarea>
-                            <p class="mt-1 text-sm text-red-600" th:errors="*{comments}" th:if="${#fields.hasErrors('comments')}"></p>
-                        </div>
-
-                        <div class="flex flex-wrap gap-3">
-                            <button type="submit" class="inline-flex flex-1 items-center justify-center rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                                    th:text="${editing} ? 'Update Log' : 'Save Log'">Save Log</button>
-                            <a th:href="@{/exercise-log/list}"
-                               class="inline-flex flex-1 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10" th:text="#{ui.00125}">Cancel</a>
-                        </div>
-                    </form>
-                </section>
-
-                <aside class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-lg font-semibold text-slate-900" th:text="#{ui.00059}">Preview</h2>
-                    <p class="mt-1 text-sm text-slate-600" th:text="#{ui.01978}">Updates as you type.</p>
-
-                    <dl class="mt-6 space-y-3 text-sm">
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="font-medium text-slate-700" th:text="#{ui.00660}">Date</dt>
-                            <dd id="previewDate" class="text-slate-900">-</dd>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="font-medium text-slate-700" th:text="#{ui.01979}">Mood Before</dt>
-                            <dd id="previewMoodBefore" class="text-slate-900">-</dd>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="font-medium text-slate-700" th:text="#{ui.01980}">Mood After</dt>
-                            <dd id="previewMoodAfter" class="text-slate-900">-</dd>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="font-medium text-slate-700" th:text="#{ui.01981}">Confidence</dt>
-                            <dd id="previewConfidence" class="text-slate-900">-</dd>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <dt class="font-medium text-slate-700" th:text="#{ui.01982}">Duration</dt>
-                            <dd id="previewDuration" class="text-slate-900">-</dd>
-                        </div>
-                        <div class="pt-2">
-                            <dt class="font-medium text-slate-700" th:text="#{ui.01976}">Comments</dt>
-                            <dd id="previewComments" class="mt-1 text-slate-600" th:text="#{ui.01983}">No comments yet.</dd>
-                        </div>
-                    </dl>
-                </aside>
-            </div>
-        </div>
-    </div>
-
-    <div th:fragment="pageScripts">
-        <script src="/js/health/exerciselogform.js"></script>
-    </div>
-</th:block>
+</div><th:block th:fragment="pageScripts"><script th:src="@{/js/health/exerciselogform.js(v=${assetVersion})}" defer></script></th:block></th:block>

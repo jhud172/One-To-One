@@ -1,0 +1,54 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.gymLink.title}, null, ~{::content}, null)}">
+<div th:fragment="content" class="gym-affiliations-v2" aria-labelledby="affiliation-title">
+    <header class="gym-affiliations-v2__heading">
+        <p class="gym-affiliations-v2__eyebrow" th:text="#{ui.gymLink.eyebrow}">Your coaching network</p>
+        <h1 id="affiliation-title" th:text="${trainerSide} ? #{ui.gymLink.trainerTitle} : #{ui.gymLink.gymTitle}">Gym connections</h1>
+        <p th:text="#{ui.gymLink.intro}">A trainer can work independently or with several gyms. A new connection becomes active only when the other party accepts. Connecting does not grant trainer verification.</p>
+        <a th:href="${trainerSide} ? @{/trainer/dashboard} : @{/gym/admin/trainers}" th:text="#{ui.gymLink.back}">Back to your workspace</a>
+    </header>
+    <p th:if="${param.saved}" role="status" class="gym-affiliations-v2__notice" th:text="#{ui.gymLink.saved}">Connection updated.</p>
+    <p th:if="${operationError}" role="alert" class="gym-affiliations-v2__error" th:text="${operationError}"></p>
+    <section class="gym-affiliations-v2__request" aria-labelledby="connection-request-title">
+        <h2 id="connection-request-title" th:text="${trainerSide} ? #{ui.gymLink.request} : #{ui.gymLink.invite}">Start a connection</h2>
+        <form th:action="${trainerSide} ? @{/trainer/gyms/request} : @{/gym/admin/trainers/affiliations/invite}" method="post">
+            <label for="connection-identifier" th:text="${trainerSide} ? #{ui.gymLink.gymUsername} : #{ui.gymLink.username}">Gym or trainer username</label>
+            <input id="connection-identifier" th:name="${trainerSide} ? 'gymUsername' : 'trainerUsername'" th:value="${draftIdentifier}"
+                   pattern="[A-Za-z0-9_]{3,20}" maxlength="20" required autocomplete="off" aria-describedby="connection-request-help" />
+            <p id="connection-request-help" th:text="#{ui.gymLink.requestHelp}">Use the username shared by the other party. This sends an in-app request; no invitation email is sent.</p>
+            <button type="submit" th:text="#{ui.gymLink.send}">Send request</button>
+        </form>
+    </section>
+    <section aria-labelledby="connection-list-title">
+        <h2 id="connection-list-title" th:text="#{ui.gymLink.title}">Gym connections</h2>
+        <p th:if="${#lists.isEmpty(connections)}" class="gym-affiliations-v2__empty" th:text="#{ui.gymLink.empty}">No gym connections yet. Independent trainers can continue using their coaching workspace.</p>
+        <div class="gym-affiliations-v2__grid">
+            <article th:each="connection : ${connections}" class="gym-affiliations-v2__card">
+                <header>
+                    <h3 th:text="${trainerSide} ? ${connection.gymName} : ${connection.trainerName}"></h3>
+                    <span class="gym-affiliations-v2__status" th:text="${#messages.msg('ui.gymLink.' + connection.status)}"></span>
+                </header>
+                <p th:if="${connection.legacy}" th:text="#{ui.gymLink.legacy}">Existing connection preserved from your primary gym.</p>
+                <p th:if="${connection.status == 'PENDING'}" th:text="${connection.incoming} ? #{ui.gymLink.incoming} : #{ui.gymLink.outgoing}"></p>
+                <p th:if="${connection.status == 'ACTIVE'}" th:text="#{ui.gymLink.activeHelp}">This gym can include the trainer in its team and submit a professional review. Client coaching, payments and verification remain separate.</p>
+                <form th:if="${connection.status == 'ACTIVE' or connection.status == 'PENDING'}" th:action="${trainerSide} ? @{/trainer/gyms/decide} : @{/gym/admin/trainers/affiliations/decide}" method="post">
+                    <input type="hidden" name="trainerId" th:value="${connection.trainerId}" />
+                    <input type="hidden" name="gymId" th:value="${connection.gymId}" />
+                    <label class="gym-affiliations-v2__consent">
+                        <input type="checkbox" name="confirmed" value="true" required />
+                        <span th:text="#{ui.gymLink.confirm}">I understand this changes this gym connection. Ending it removes this gym's active team access without ending client coaching.</span>
+                    </label>
+                    <div class="gym-affiliations-v2__actions">
+                        <th:block th:if="${connection.status == 'PENDING' and connection.incoming}">
+                            <button type="submit" name="action" value="accept" th:text="#{ui.gymLink.accept}">Accept connection</button>
+                            <button class="gym-affiliations-v2__secondary" type="submit" name="action" value="decline" th:text="#{ui.gymLink.decline}">Decline</button>
+                        </th:block>
+                        <button th:if="${connection.status == 'PENDING' and !connection.incoming}" class="gym-affiliations-v2__secondary" type="submit" name="action" value="cancel" th:text="#{ui.gymLink.cancel}">Cancel request</button>
+                        <button th:if="${connection.status == 'ACTIVE'}" class="gym-affiliations-v2__secondary" type="submit" name="action" value="end" th:text="#{ui.gymLink.end}">End connection</button>
+                    </div>
+                </form>
+                <a th:href="${trainerSide} ? @{/trainer/gyms/history(trainerId=${connection.trainerId},gymId=${connection.gymId})} : @{/gym/admin/trainers/affiliations/history(trainerId=${connection.trainerId},gymId=${connection.gymId})}" th:text="#{ui.gymLink.history}">View history</a>
+            </article>
+        </div>
+    </section>
+</div>
+</th:block>

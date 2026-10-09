@@ -1,6 +1,7 @@
 package uk.ac.cf._5.group14.One_To_One.StrengthLog.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import uk.ac.cf._5.group14.One_To_One.StrengthLog.WorkoutSession;
@@ -18,9 +19,13 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
     Optional<WorkoutSession> findByUserAndDateAndSourceOccurrenceId(User user, LocalDate date, Long sourceOccurrenceId);
     List<WorkoutSession> findByUserAndDate(User user, LocalDate date);
 
+    boolean existsByUserAndSourceOccurrenceIdIn(User user, List<Long> sourceOccurrenceIds);
+
     List<WorkoutSession> findTop3ByUserOrderByDateDesc(User user);
 
     List<WorkoutSession> findTop20ByUserOrderByDateDesc(User user);
+
+    List<WorkoutSession> findByUserAndCompletedTrueOrderByDateDescIdDesc(User user, Pageable pageable);
 
     List<WorkoutSession> findByUserAndDateBetweenOrderByDateDesc(User user, LocalDate from, LocalDate to);
     List<WorkoutSession> findByUserAndDateBetweenOrderByDateAsc(User user, LocalDate from, LocalDate to);

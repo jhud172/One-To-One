@@ -1,51 +1,78 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.00222}, null, ~{::content}, null)}">
+          th:replace="~{base :: layout(${pageTitle} ?: #{ui.00222}, null, ~{::content}, ~{::pageScripts})}">
+    <div th:fragment="content" class="detail-container client-workspace-v2 client-checkin-v2">
+        <header class="detail-header">
+            <p class="detail-label" th:text="#{ui.00213}">Client check-in</p>
+            <h1 class="detail-title" th:text="#{ui.00214}">Weekly check-in</h1>
+            <p class="detail-subtitle" th:text="#{ui.00215}">Share your progress and blockers with your coach.</p>
+        </header>
 
-    <div th:fragment="content" class="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.00213}">Client check-in</p>
-                    <h1 class="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00214}">Weekly check-in</h1>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00215}">Share your progress and blockers with your coach.</p>
-                </div>
+        <p th:if="${checkInSubmitted == true}" class="checkin-feedback" role="status" th:text="#{ui.checkin.submitted}">Your check-in has been saved for your coach.</p>
+        <div th:if="${checkInError != null}" class="checkin-review-error" role="alert" th:switch="${checkInError}">
+            <p th:case="'invalid-week'" th:text="#{ui.checkin.errorDate}">Choose a valid week starting on or before today.</p>
+            <p th:case="'duplicate-week'" th:text="#{ui.checkin.errorDuplicate}">A check-in for this week is already saved. Your new draft has been kept here.</p>
+            <p th:case="*" th:text="#{ui.checkin.errorRequired}">Complete every required question before submitting. Your draft has been kept.</p>
+        </div>
+
+        <section class="detail-section client-checkin-history" th:if="${!#lists.isEmpty(recentCheckIns)}">
+            <h2 class="detail-section-title" th:text="#{ui.checkin.history}"></h2>
+            <div class="client-review-list detail-section-content">
+                <a th:each="checkIn : ${recentCheckIns}" th:href="@{/checkins/client-review/{id}(id=${checkIn.id})}">
+                    <time th:datetime="${checkIn.weekStartDate}" th:text="${#temporals.format(checkIn.weekStartDate, 'dd MMM yyyy', #locale)}"></time>
+                    <span th:text="${checkIn.status.name() == 'RESPONDED' ? #messages.msg('ui.checkin.responded') : #messages.msg('ui.00151')}"></span>
+                    <strong th:text="#{ui.coaching.review}"></strong>
+                </a>
             </div>
+        </section>
 
-            <div th:if="${activeLink == null}" class="mt-6 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00216}">
-                You need an active trainer link to submit a weekly check-in.
-            </div>
+        <section th:if="${activeLink == null}" class="detail-section client-checkin-empty">
+            <p th:text="#{ui.00216}">You need an active trainer link to submit a weekly check-in.</p>
+            <a class="detail-btn-primary" th:href="@{/client/trainers}" th:text="#{ui.00432}">Explore trainers</a>
+        </section>
+        <section th:if="${activeLink != null and #lists.isEmpty(templates)}" class="detail-section client-checkin-empty">
+            <p th:text="#{ui.checkin.noTemplates}">Your coach has not set up a check-in template yet. Contact your coach before submitting.</p>
+        </section>
 
-            <div th:if="${activeLink != null}">
-                <form class="mt-6 space-y-4" th:action="@{/checkins/client-submit}" method="post">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-
-                    <label class="block text-xs text-slate-500" th:text="#{ui.00217}">Template</label>
-                        <select name="templateId" data-auto-query-param="templateId"
-                            class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
-                        <option th:each="t : ${templates}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == selectedTemplateId}"></option>
-                    </select>
-
-                    <label class="block text-xs text-slate-500" th:text="#{ui.00218}">Week start (optional)</label>
-                    <input type="date" name="weekStart" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
-
-                    <div th:if="${#lists.isEmpty(questions)}" class="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00219}">
-                        No questions configured for this template.
+        <div th:if="${activeLink != null and !#lists.isEmpty(templates)}" class="detail-sections client-checkin-content">
+            <section class="detail-section">
+                <form id="checkinTemplatePicker" method="get" th:action="@{/checkins/client-submit}"
+                      th:attr="data-checkin-change-confirm=#{ui.checkin.changeTemplate}">
+                    <label for="checkinTemplate" th:text="#{ui.00217}">Template</label>
+                    <div class="client-checkin-picker">
+                        <select id="checkinTemplate" name="templateId" required>
+                            <option th:each="t : ${templates}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == selectedTemplateId}"></option>
+                        </select>
+                        <button type="submit" class="detail-btn-secondary" th:text="#{ui.checkin.loadTemplate}">Load questions</button>
                     </div>
-
-                    <div th:if="${!#lists.isEmpty(questions)}" class="space-y-3">
-                        <div th:each="q : ${questions}" class="rounded-xl border border-white/10 bg-white/5 p-4">
-                            <label class="block text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${q.prompt}">Question</label>
-                            <textarea th:name="${'q_' + q.id}" rows="2" class="mt-2 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"></textarea>
-                        </div>
-                    </div>
-
-                    <label class="block text-xs text-slate-500" th:text="#{ui.00220}">Anything else to share?</label>
-                    <textarea name="clientNotes" rows="3" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"></textarea>
-
-                    <button type="submit" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.00221}">Submit check-in</button>
                 </form>
-            </div>
+            </section>
+
+            <section class="detail-section">
+                <h2 class="detail-section-title" id="checkinLoadedTemplate" th:text="${selectedTemplateName}">Current template</h2>
+                <form id="clientCheckinForm" class="client-checkin-form" th:action="@{/checkins/client-submit}" method="post"
+                      aria-labelledby="checkinLoadedTemplate" th:attr="data-checkin-draft=${checkInError != null}">
+                    <input type="hidden" name="templateId" th:value="${selectedTemplateId}">
+                    <div>
+                        <label for="checkinWeek" th:text="#{ui.00218}">Week start (optional)</label>
+                        <input id="checkinWeek" type="date" name="weekStart" th:value="${weekInput}"
+                               th:attr="max=${today},aria-invalid=${checkInError == 'invalid-week'}">
+                    </div>
+                    <p th:if="${#lists.isEmpty(questions)}" class="detail-empty" th:text="#{ui.00219}">No questions configured for this template.</p>
+                    <div th:each="q : ${questions}" class="detail-card">
+                        <label th:for="${'checkinQuestion_' + q.id}" th:text="${q.prompt}">Question</label>
+                        <textarea th:id="${'checkinQuestion_' + q.id}" th:name="${'q_' + q.id}" rows="3"
+                                  th:required="${q.required}" th:text="${draftAnswers != null ? draftAnswers.get('q_' + q.id) : ''}"></textarea>
+                    </div>
+                    <div>
+                        <label for="checkinNotes" th:text="#{ui.00220}">Anything else to share?</label>
+                        <textarea id="checkinNotes" name="clientNotes" rows="4" th:text="${clientNotesInput}"></textarea>
+                    </div>
+                    <button type="submit" id="clientCheckinSubmit" class="detail-btn-primary" th:text="#{ui.00221}">Submit check-in</button>
+                </form>
+            </section>
         </div>
     </div>
-
+    <th:block th:fragment="pageScripts">
+        <script th:src="@{/js/training/client-checkin.js(v=${uiCssVersion})}" defer></script>
+    </th:block>
 </th:block>

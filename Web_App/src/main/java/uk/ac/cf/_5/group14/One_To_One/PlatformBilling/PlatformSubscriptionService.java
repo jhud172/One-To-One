@@ -43,6 +43,12 @@ public class PlatformSubscriptionService {
         PlatformSubscription subscription = repository.findByUserId(userId)
                 .orElseGet(PlatformSubscription::new);
 
+        // Revisited success URLs and duplicate provider callbacks must not undo cancellation.
+        if (subscription.getPlan() == PlatformPlan.INFINITE
+                || (providerSubId != null && providerSubId.equals(subscription.getProviderSubId()))) {
+            return subscription;
+        }
+
         subscription.setUserId(userId);
         subscription.setPlan(plan);
         subscription.setStatus(PlatformSubscriptionStatus.ACTIVE);

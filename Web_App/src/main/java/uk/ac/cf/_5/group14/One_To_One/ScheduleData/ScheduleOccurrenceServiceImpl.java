@@ -1,29 +1,20 @@
 package uk.ac.cf._5.group14.One_To_One.ScheduleData;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
-import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleEntryService;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class ScheduleOccurrenceServiceImpl implements ScheduleOccurrenceService {
-    public ScheduleOccurrenceServiceImpl(
-            ScheduleEntryService scheduleEntryService
-    ) {
-        this.scheduleEntryService = scheduleEntryService;
-    }
-
-    @Autowired
     private final ScheduleEntryService scheduleEntryService;
-
-    @Autowired
-    private ScheduleEntryRepository scheduleEntryRepository;
-
-    @Autowired
-    private ScheduleOccurrenceRepository scheduleOccurrenceRepository;
+    private final ScheduleOccurrenceRepository scheduleOccurrenceRepository;
+    private final ScheduleAppliedRepository scheduleAppliedRepository;
+    private final ScheduleDeploymentPlanner planner;
 
     @Override
     public List<ScheduleOccurrence> getActiveSchedulesForUser(User user) {
@@ -42,42 +33,28 @@ public class ScheduleOccurrenceServiceImpl implements ScheduleOccurrenceService 
             return;
         }
 
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        if (days < 1 || days > 366 || everyNWeeks < 1 || everyNWeeks > 52) return;
         List<ScheduleEntry> entries = scheduleEntryService.getEntries(schedule.getId());
-        if (entries.isEmpty()) {
-            return;
-        }
-
-        LocalDate cursor = startDate;
-        while (!cursor.isAfter(endDate)) {
-            int dow = cursor.getDayOfWeek().getValue(); // 1-7
-
-            for (ScheduleEntry entry : entries) {
-                if (entry.getDayOfWeek() == dow) {
-                    ScheduleOccurrence occ = new ScheduleOccurrence();
-                    occ.setUser(user);
-                    if (entry.getExercise() != null) {
-                        occ.setExercise(entry.getExercise());
-                    }
-                    if (entry.getCustomExercise() != null) {
-                        occ.setCustomExercise(entry.getCustomExercise());
-                    }
-                    if (occ.getExercise() == null && occ.getCustomExercise() == null) {
-                        continue;
-                    }
-                    occ.setSchedule(schedule);
-                    occ.setScheduleName(schedule.getName());
-                    occ.setDate(cursor);
-                    scheduleOccurrenceRepository.save(occ);
-                }
-            }
-
-            cursor = cursor.plusDays(1);
+        if (entries.isEmpty()) return;
+        var window = new ScheduleDeploymentPlanner.Window(startDate, endDate, (int) ((days + 6) / 7),
+                everyNWeeks == 1 ? "weekly" : "custom", everyNWeeks, "week");
+        var planned = planner.plan(window, entries);
+        if (planned.isEmpty()) return;
+        var missing = planner.missingOccurrences(planned,
+                scheduleOccurrenceRepository.findByUserAndDateBetween(user, startDate, endDate), schedule.getId());
+        for (var row : missing) {
+            var occurrence = new ScheduleOccurrence();
+            occurrence.setUser(user); occurrence.setExercise(row.entry().getExercise());
+            occurrence.setCustomExercise(row.entry().getCustomExercise()); occurrence.setSchedule(schedule);
+            occurrence.setScheduleName(schedule.getName()); occurrence.setDate(row.date());
+            scheduleOccurrenceRepository.save(occurrence);
         }
     }
 
     @Override
     public List<ScheduleOccurrence> getOccurrencesForUserOnDate(User user, LocalDate date) {
-        return scheduleOccurrenceRepository.findByUserAndDate(user, date);
+        return visibleForCalendar(user, scheduleOccurrenceRepository.findByUserAndDate(user, date));
     }
 
     @Override
@@ -93,7 +70,7 @@ public class ScheduleOccurrenceServiceImpl implements ScheduleOccurrenceService 
                 scheduleOccurrenceRepository.findByUserAndDateBetween(user, from, to);
 
         Map<LocalDate, List<ScheduleOccurrence>> map = new HashMap<>();
-        for (ScheduleOccurrence occ : all) {
+        for (ScheduleOccurrence occ : visibleForCalendar(user, all)) {
             map.computeIfAbsent(occ.getDate(), d -> new ArrayList<>()).add(occ);
         }
         return map;
@@ -106,10 +83,34 @@ public class ScheduleOccurrenceServiceImpl implements ScheduleOccurrenceService 
         List<ScheduleOccurrence> list =
                 scheduleOccurrenceRepository.findByUserAndDateBetween(user, start, end);
 
-        for (ScheduleOccurrence occ : list) {
+        for (ScheduleOccurrence occ : visibleForCalendar(user, list)) {
             map.computeIfAbsent(occ.getDate(), d -> new ArrayList<>()).add(occ);
         }
 
         return map;
+    }
+
+    private List<ScheduleOccurrence> visibleForCalendar(User user, List<ScheduleOccurrence> occurrences) {
+        if (occurrences.isEmpty()) return occurrences;
+        Map<Long, List<ScheduleApplied>> bySchedule = new HashMap<>();
+        for (ScheduleApplied applied : scheduleAppliedRepository.findByUser(user)) {
+            if (applied.getSchedule() != null) {
+                bySchedule.computeIfAbsent(applied.getSchedule().getId(), ignored -> new ArrayList<>()).add(applied);
+            }
+        }
+        return occurrences.stream().filter(occurrence -> {
+            List<ScheduleApplied> matching = occurrence.getSchedule() == null ? List.of()
+                    : bySchedule.getOrDefault(occurrence.getSchedule().getId(), List.of()).stream()
+                        .filter(applied -> covers(applied, occurrence.getDate())).toList();
+            occurrence.setLoggingRequested(matching.stream().anyMatch(applied -> applied.isShownOnCalendar() && applied.isRequiresLogging()));
+            // Legacy occurrences without a deployment remain visible. Overlapping windows use a union.
+            return matching.isEmpty() || matching.stream().anyMatch(ScheduleApplied::isShownOnCalendar);
+        }).toList();
+    }
+
+    static boolean covers(ScheduleApplied applied, LocalDate date) {
+        if (applied.getDateApplied() == null || date == null) return false;
+        return !date.isBefore(applied.getDateApplied())
+                && date.isBefore(applied.getDateApplied().plusWeeks(Math.max(1, applied.getDurationWeeks())));
     }
 }

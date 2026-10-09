@@ -101,6 +101,9 @@ public class StripeWebhookService {
         if (!verification.active()) {
             return new StripeWebhookHandlingResult(false, verification.message());
         }
+        if (!verification.belongsTo(userId, plan)) {
+            return new StripeWebhookHandlingResult(false, "Verified checkout does not match event metadata.");
+        }
 
         platformSubscriptionService.activateSubscription(
                 userId,
@@ -113,7 +116,7 @@ public class StripeWebhookService {
 
     private StripeWebhookHandlingResult handleSubscriptionUpdated(JsonNode object) {
         String subscriptionId = object.path("id").asText("");
-        Instant currentPeriodEnd = parseEpochSeconds(object.path("current_period_end").asLong(0L));
+        Instant currentPeriodEnd = StripeSubscriptionPayload.periodEnd(object);
         boolean cancelAtPeriodEnd = object.path("cancel_at_period_end").asBoolean(false);
         String status = object.path("status").asText("");
         boolean active = "active".equalsIgnoreCase(status) || "trialing".equalsIgnoreCase(status);
@@ -124,7 +127,7 @@ public class StripeWebhookService {
 
     private StripeWebhookHandlingResult handleSubscriptionDeleted(JsonNode object) {
         String subscriptionId = object.path("id").asText("");
-        Instant currentPeriodEnd = parseEpochSeconds(object.path("current_period_end").asLong(0L));
+        Instant currentPeriodEnd = StripeSubscriptionPayload.periodEnd(object);
         platformSubscriptionService.cancelByProviderSubscriptionId(subscriptionId, currentPeriodEnd);
         return new StripeWebhookHandlingResult(true, "Platform subscription cancellation applied.");
     }

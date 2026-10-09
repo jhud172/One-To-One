@@ -49,6 +49,9 @@ import uk.ac.cf._5.group14.One_To_One.Messaging.MessageThreadRepository;
 import uk.ac.cf._5.group14.One_To_One.Messaging.MessagingService;
 import uk.ac.cf._5.group14.One_To_One.Messaging.ThreadMessageRepository;
 import uk.ac.cf._5.group14.One_To_One.Notifications.NotificationService;
+import uk.ac.cf._5.group14.One_To_One.Nutrition.DailyNutritionLog;
+import uk.ac.cf._5.group14.One_To_One.Nutrition.DailyNutritionLogRepository;
+import uk.ac.cf._5.group14.One_To_One.Dashboard.dto.ClientDashboardActionHubView;
 import uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformSubscriptionService;
 import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleOccurrence;
 import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleOccurrenceRepository;
@@ -75,6 +78,8 @@ class ClientDashboardMvcTest {
     @Autowired
     private MockMvc mvc;
 
+    @MockitoBean private uk.ac.cf._5.group14.One_To_One.GymProfile.GymOperationsService gymOperationsService;
+
     @MockitoBean(name = "authHelper")
     private AuthHelper authHelper;
 
@@ -98,6 +103,9 @@ class ClientDashboardMvcTest {
 
     @MockitoBean
     private HealthRecordRepository healthRecordRepository;
+
+    @MockitoBean
+    private DailyNutritionLogRepository dailyNutritionLogRepository;
 
     @MockitoBean
     private GoalService goalService;
@@ -280,6 +288,61 @@ class ClientDashboardMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("nav-premium-badge premium-orb-badge")))
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Personal snapshot"))));
+    }
+
+    @Test
+    void completedWorkoutsDoNotInventNutritionIntakeOrMissedMeals() throws Exception {
+        MvcResult result = mvc.perform(get("/dashboard").with(user("ava").roles("CLIENT")))
+                .andExpect(status().isOk()).andReturn();
+        var model = result.getModelAndView().getModel();
+        var body = (DashboardController.TopActionCard) model.get("bodyActionCard");
+        assertThat(body.headline()).isEqualTo("Ready to log");
+        var hub = (ClientDashboardActionHubView) model.get("actionHub");
+        var meal = hub.getAllCards().stream().filter(card -> card.getKey().equals("meal")).findFirst().orElseThrow();
+        assertThat(meal.getStats()).contains("No intake logged today", "Last entry Not logged yet");
+        assertThat(meal.isMissed()).isFalse();
+        assertThat(meal.isTimed()).isFalse();
+    }
+
+    @Test
+    void dashboardShowsSavedNutritionAndActualWeeklyNutritionCount() throws Exception {
+        LocalDate today = LocalDate.of(2026, 3, 13);
+        DailyNutritionLog log = new DailyNutritionLog();
+        log.setDate(today);
+        log.setCalories(2375);
+        given(dailyNutritionLogRepository.findByUserAndDate(client, today)).willReturn(Optional.of(log));
+        given(dailyNutritionLogRepository.findByUserAndDateBetweenOrderByDateAsc(client, today.minusDays(4), today))
+                .willReturn(List.of(log));
+        MvcResult result = mvc.perform(get("/dashboard").with(user("ava").roles("CLIENT")))
+                .andExpect(status().isOk()).andReturn();
+        var model = result.getModelAndView().getModel();
+        assertThat(((DashboardController.TopActionCard) model.get("bodyActionCard")).headline()).isEqualTo("2375 kcal");
+        var hub = (ClientDashboardActionHubView) model.get("actionHub");
+        assertThat(hub.getAllCards().stream().filter(card -> card.getKey().equals("meal")).findFirst().orElseThrow().getStats())
+                .contains("2375 kcal logged", "Last entry Today");
+        @SuppressWarnings("unchecked")
+        var weekly = (List<DashboardController.WeeklySummaryCard>) model.get("weeklySummaryCards");
+        assertThat(weekly.stream().filter(card -> card.subtitle().equals("Nutrition logs recorded")).findFirst().orElseThrow().value())
+                .isEqualTo("1");
+    }
+
+    @Test
+    void trainerDashboardUsesOwnedRelationshipsAndPersonalDisplayName() throws Exception {
+        User trainer = buildTrainer();
+        given(authHelper.getAuthenticatedUser()).willReturn(trainer);
+        given(dashboardSummaryService.getSummary(trainer)).willReturn(buildSummary(true));
+        given(trainerClientLinkRepository.findByTrainerUserIdAndStatusOrderByUpdatedAtDesc(trainer.getId(), TrainerClientLinkStatus.ACTIVE))
+                .willReturn(List.of(buildActiveLink(90L, trainer.getId())));
+        given(trainerClientLinkRepository.findPendingByTrainerId(trainer.getId()))
+                .willReturn(List.of(new TrainerClientLink(22L, trainer.getId(), TrainerClientLinkStatus.REQUESTED)));
+        MvcResult result = mvc.perform(get("/trainer/dashboard").with(user(trainer.getUsername()).roles("TRAINER")))
+                .andExpect(status().isOk()).andReturn();
+        assertThat(result.getModelAndView().getModel())
+                .containsEntry("activeClientCount", 1).containsEntry("pendingClientCount", 1)
+                .containsEntry("trainerDisplayName", trainer.getFirstName());
+        String html = result.getResponse().getContentAsString();
+        assertThat(html.indexOf("trainer-client-priorities")).isLessThan(html.indexOf("trainer-personal-schedule"));
+        assertThat(html).contains("/trainer/clients#clientRequests", "Your planned workouts");
     }
 
     private DashboardSummaryDto buildSummary(boolean premium) {

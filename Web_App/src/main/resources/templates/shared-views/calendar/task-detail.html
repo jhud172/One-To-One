@@ -1,148 +1,131 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
-          th:with="pageTitle=${'Calendar — Task: ' + task.title}"
-          th:replace="~{base :: layout(${pageTitle}, null, ~{::content}, null)}">
-
-<div th:fragment="content" class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-    <header class="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm dark:border-slate-800 dark:from-slate-950 dark:to-slate-900/80">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400" th:text="#{ui.01827}">Task workspace</p>
-                <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100" th:text="${task.title}">Task detail</h1>
-                <p class="mt-2 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.01828}">Deep edit and configure scheduling, reminders, and completion behavior.</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold"
-                      th:classappend="${task.completed} ? ' border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-300' : ' border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'"
-                      th:text="${task.completed ? 'Completed' : 'In progress'}">In progress</span>
-                <a th:href="@{'/calendar/day/' + ${date}}"
-                   class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800" th:text="#{ui.01829}">Back to day</a>
-            </div>
+          th:replace="~{base :: layout(${#messages.msg('ui.01637') + ' — ' + task.title}, null, ~{::content}, null)}">
+<div th:fragment="content" class="task-workspace">
+    <nav class="task-navigation" th:attr="aria-label=#{ui.task.navigation}">
+        <a th:href="@{'/calendar/day/' + ${date}}"><span aria-hidden="true">←</span> <span th:text="#{ui.01829}">Back to day</span></a>
+        <a th:href="@{'/calendar/focus/' + ${date}}" th:text="#{ui.focus.title}">Focus mode</a>
+        <a th:href="@{'/calendar/day/' + ${date} + '#tab-panel-timeline'}" th:text="#{ui.01830}">Open timeline</a>
+    </nav>
+    <header class="task-heading">
+        <div>
+            <p class="task-eyebrow" th:text="#{ui.01827}">Task workspace</p>
+            <h1><bdi th:text="${task.title}">Task detail</bdi></h1>
+            <p class="task-muted" th:text="#{ui.task.intro}">Keep the task, timing and follow-up rules in one place.</p>
         </div>
-
-        <div class="mt-4 flex flex-wrap gap-2">
-            <form th:action="@{'/calendar/day/' + ${date} + '/toggle-complete'}" method="post" class="inline-flex">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <input type="hidden" name="taskId" th:value="${task.id}"/>
-                <button class="inline-flex items-center rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                        th:text="${task.completed ? 'Mark incomplete' : 'Mark complete'}">Mark complete</button>
-            </form>
-            <a th:href="@{'/calendar/day/' + ${date} + '#timeline'}"
-               class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800" th:text="#{ui.01830}">Open timeline</a>
-            <form th:action="@{'/calendar/task/' + ${task.id} + '/delete'}" method="post" data-confirm="Delete this task?" class="inline-flex">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <button class="inline-flex items-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50" th:text="#{ui.00139}">Delete</button>
-            </form>
-        </div>
+        <form class="task-completion" th:action="@{'/calendar/day/' + ${date} + '/toggle-complete'}" method="post">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="hidden" name="taskId" th:value="${task.id}"/>
+            <input type="hidden" name="returnTo" value="detail"/>
+            <p class="task-state" th:classappend="${task.completed} ? 'is-complete' : (${task.late} ? 'is-late' : '')"
+               th:text="${task.completed} ? #{ui.focus.completed} : (${task.late} ? #{ui.task.late} : (${task.inGrace} ? #{ui.task.inGrace} : #{ui.task.pending}))">Planned</p>
+            <button type="submit" class="task-button task-button-primary" th:attr="aria-pressed=${task.completed}"
+                    th:text="${task.completed} ? #{ui.task.reopen} : #{ui.task.complete}">Mark complete</button>
+        </form>
     </header>
-
-    <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <section class="space-y-5">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <h2 class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" th:text="#{ui.01831}">Task profile</h2>
-                <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.00055}">Time</p>
-                        <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100" th:text="${task.time != null ? task.time : 'No fixed time'}">No fixed time</p>
-                    </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.00623}">Type</p>
-                        <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100"
-                           th:text="${task.activityType != null ? (task.activityType.icon + ' ' + task.activityType.label) : (task.exercise ? 'Exercise task' : 'General task')}">General task</p>
-                    </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.01832}">Grace period</p>
-                        <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100" th:text="${task.gracePeriodMinutes != null ? task.gracePeriodMinutes + ' min' : 'Not set'}">Not set</p>
-                    </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.01833}">Activity state</p>
-                        <p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100" th:text="${task.completed ? 'Marked complete' : 'Awaiting completion'}">Awaiting completion</p>
-                    </div>
+    <div th:if="${taskFeedback != null}" class="task-feedback" th:classappend="${taskFeedbackError == true} ? 'is-error' : ''"
+         th:attr="role=${taskFeedbackError == true ? 'alert' : 'status'}" th:text="${#messages.msg(taskFeedback)}"></div>
+    <dl class="task-facts">
+        <div><dt th:text="#{ui.00660}">Date</dt><dd><time th:attr="datetime=${date}" th:text="${#temporals.format(date, 'd MMMM yyyy')}"></time></dd></div>
+        <div><dt th:text="#{ui.task.time}">Time</dt><dd th:text="${task.time != null} ? ${#temporals.format(task.time, 'HH:mm')} : #{ui.focus.unplanned}">No fixed time</dd></div>
+        <div><dt th:text="#{ui.task.type}">Type</dt><dd th:text="${task.activityType != null} ? ${#messages.msg('ui.task.activity.' + task.activityType.name())} : (${task.exercise} ? #{ui.task.exercise} : #{ui.task.general})">General task</dd></div>
+    </dl>
+    <div class="task-layout">
+        <section class="task-editor" aria-labelledby="task-edit-heading">
+            <h2 id="task-edit-heading" th:text="#{ui.task.edit}">Edit task</h2>
+            <form th:action="@{'/calendar/task/' + ${task.id} + '/edit-inline'}" method="post" class="task-form">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="hidden" name="returnTo" value="detail"/>
+                <input type="hidden" name="exercise" th:value="${task.exercise}"/>
+                <input type="hidden" name="activityType" th:if="${task.activityType != null}" th:value="${task.activityType.name()}"/>
+                <div class="task-field">
+                    <label for="task-title" th:text="#{ui.task.name}">Task title</label>
+                    <input id="task-title" name="title" dir="auto" required maxlength="255" th:value="${taskEditTitle != null ? taskEditTitle : task.title}"/>
                 </div>
-
-                <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/50">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.01834}">Schedule control</p>
-                        <p class="mt-1 text-sm text-slate-700 dark:text-slate-200" th:text="#{ui.01835}">Use the Day timeline or warning controls on this page to keep this task anchored to today.</p>
-                    </div>
-                    <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/50">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.01836}">Completion history</p>
-                        <p class="mt-1 text-sm text-slate-700 dark:text-slate-200" th:text="${task.completed ? 'Completed for this date.' : 'Not completed yet for this date.'}">Not completed yet.</p>
-                    </div>
+                <div class="task-field">
+                    <label for="task-time" th:text="#{ui.task.time}">Time</label>
+                    <input id="task-time" name="time" type="time" th:value="${taskEditTime != null ? taskEditTime : task.time}" aria-describedby="task-time-hint"/>
+                    <p id="task-time-hint" class="task-hint" th:text="#{ui.task.timeHint}">Leave blank to keep the task without a fixed time.</p>
                 </div>
-
-                <div class="mt-4 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/50">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.01837}">Rich notes</p>
-                    <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-200"
-                       th:text="${task.notes != null && !#strings.isEmpty(task.notes) ? task.notes : 'No notes yet. Add intent, constraints, or cues to improve execution quality.'}"></p>
+                <div class="task-field">
+                    <label for="task-notes" th:text="#{ui.focus.notes}">Task notes</label>
+                    <textarea id="task-notes" name="notes" dir="auto" rows="7" th:text="${taskEditNotes != null ? taskEditNotes : task.notes}"></textarea>
                 </div>
-
-                <div class="mt-4 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/50">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.01838}">Metadata</p>
-                    <dl class="mt-2 grid gap-2 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2">
-                        <div>
-                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.01839}">Task ID</dt>
-                            <dd th:text="${task.id}">0</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.00660}">Date</dt>
-                            <dd th:text="${task.date}">2026-01-01</dd>
-                        </div>
-                    </dl>
-                </div>
-            </article>
-
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <h2 class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" th:text="#{ui.01840}">Warnings and reminders</h2>
-                <div th:if="${taskWarnings == null || #lists.isEmpty(taskWarnings)}" class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300" th:text="#{ui.01841}">No warnings configured.</div>
-                <ul th:if="${taskWarnings != null && !#lists.isEmpty(taskWarnings)}" class="mt-4 space-y-2">
-                    <li th:each="w : ${taskWarnings}" class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/50">
-                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100" th:text="${w.triggerType}">Trigger type</p>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                            <span th:if="${w.triggerType.name() == 'TIME'}"><th:block th:text="#{ui.01842}">Time trigger at</th:block> <strong th:text="${w.triggerTime}"></strong></span>
-                            <span th:if="${w.triggerType.name() == 'ON_TASK_COMPLETE'}"><th:block th:text="#{ui.01843}">Runs when</th:block> <strong th:text="${w.triggerTask != null ? w.triggerTask.title : 'another task'}"></strong> <th:block th:text="#{ui.01844}">is completed</th:block></span>
-                        </p>
-                    </li>
-                </ul>
-            </article>
+                <p th:if="${task.requiresLog}" class="task-hint" th:text="#{ui.task.logHint}">This task also needs its exercise log to count towards your streak.</p>
+                <button type="submit" class="task-button task-button-primary" th:text="#{ui.task.save}">Save task</button>
+            </form>
+            <details class="task-delete">
+                <summary th:text="#{ui.task.deleteTitle}">Delete task</summary>
+                <p class="task-hint" id="task-delete-impact" th:text="#{ui.task.deleteImpact}">This removes the task and every calendar rule that uses it, including rules on other tasks. This cannot be undone.</p>
+                <form th:action="@{'/calendar/task/' + ${task.id} + '/delete'}" method="post" th:attr="data-confirm=#{ui.task.deleteConfirm}">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <label class="task-confirm-label" for="task-delete-acknowledge">
+                        <input id="task-delete-acknowledge" type="checkbox" required aria-describedby="task-delete-impact"/>
+                        <span th:text="#{ui.task.deleteAcknowledge}">I understand that the task and linked rules will be removed.</span>
+                    </label>
+                    <button type="submit" class="task-button task-button-danger" th:text="#{ui.00139}">Delete</button>
+                </form>
+            </details>
         </section>
-
-        <aside class="space-y-5">
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <h2 class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" th:text="#{ui.01845}">Scheduling controls</h2>
-                <form th:action="@{'/calendar/task/' + ${task.id} + '/grace-period'}" method="post" class="mt-4 space-y-3">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" for="grace-minutes" th:text="#{ui.01846}">Grace period minutes</label>
-                    <input id="grace-minutes" name="gracePeriodMinutes" type="number" min="1" step="1"
-                           th:value="${task.gracePeriodMinutes}"
-                           class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"/>
-                    <button class="inline-flex items-center rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white" th:text="#{ui.01847}">Save grace period</button>
-                </form>
-            </section>
-
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <h2 class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" th:text="#{ui.01848}">Add warning rules</h2>
-                <form th:action="@{'/calendar/task/' + ${task.id} + '/warning-time'}" method="post" class="mt-4 space-y-3">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" for="warning-time" th:text="#{ui.01849}">Time warning</label>
-                    <input id="warning-time" name="triggerTime" type="time" required
-                           class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"/>
-                    <button class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800" th:text="#{ui.01850}">Add time warning</button>
-                </form>
-
-                <form th:action="@{'/calendar/task/' + ${task.id} + '/warning-on-complete'}" method="post" class="mt-4 space-y-3">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" for="warning-trigger-task" th:text="#{ui.01851}">Completion warning trigger</label>
-                    <select id="warning-trigger-task" name="triggerTaskId"
-                            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                        <option th:if="${warningTriggerTasks == null || #lists.isEmpty(warningTriggerTasks)}" value="" selected disabled th:text="#{ui.01852}">No other tasks available</option>
-                        <option th:each="t : ${warningTriggerTasks}" th:value="${t.id}" th:text="${t.title}"></option>
-                    </select>
-                    <button class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                            th:disabled="${warningTriggerTasks == null || #lists.isEmpty(warningTriggerTasks)}" th:text="#{ui.01853}">Add completion warning</button>
-                </form>
-            </section>
+        <aside class="task-rules" aria-labelledby="task-rules-heading">
+            <h2 id="task-rules-heading" th:text="#{ui.01840}">Warnings and reminders</h2>
+            <p class="task-hint" th:text="#{ui.task.rulesHint}">Rules update this task’s calendar status when you open the calendar. They do not send email, SMS or push notifications.</p>
+            <p class="task-hint" th:text="#{ui.task.zone(${calendarWarningZone})}">Times use the calendar server’s timezone.</p>
+            <p class="task-hint" th:if="${task.gracePeriodMinutes != null}" th:text="#{ui.task.graceValue(${task.gracePeriodMinutes})}"></p>
+            <p class="task-empty" th:if="${#lists.isEmpty(taskWarnings)}" th:text="#{ui.01841}">No warnings configured.</p>
+            <ul class="task-rule-list" th:if="${!#lists.isEmpty(taskWarnings)}">
+                <li th:each="w : ${taskWarnings}" th:attr="data-warning-id=${w.id}">
+                    <div class="task-rule-content">
+                        <p class="task-rule-title" th:if="${w.triggerType.name() == 'TIME'}" th:text="#{ui.task.atTime(${#temporals.format(w.triggerTime, 'HH:mm')})}"></p>
+                        <p class="task-rule-title" th:if="${w.triggerType.name() == 'ON_TASK_COMPLETE'}" th:text="#{ui.task.afterTask(${w.triggerTask != null ? w.triggerTask.title : #messages.msg('ui.01637')})}"></p>
+                        <p class="task-hint" th:text="${w.triggeredAt != null} ? #{ui.task.triggered} : #{ui.task.waiting}">Waiting for trigger</p>
+                    </div>
+                    <form th:action="@{'/calendar/task/' + ${task.id} + '/warning/' + ${w.id} + '/delete'}" method="post">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="task-button task-button-quiet" th:text="#{ui.task.removeRule}">Remove rule</button>
+                    </form>
+                </li>
+            </ul>
+            <details class="task-rule-settings" th:attr="open=${taskFeedbackError == true} ? 'open' : null">
+                <summary th:text="#{ui.task.configure}">Configure rules</summary>
+                <section aria-labelledby="task-grace-heading">
+                    <h3 id="task-grace-heading" th:text="#{ui.01832}">Grace period</h3>
+                    <p id="task-grace-hint" class="task-hint" th:text="#{ui.task.graceHint}">After the first rule triggers, this gives you extra minutes before an unfinished task is shown as late. Leave blank to switch it off.</p>
+                    <form th:action="@{'/calendar/task/' + ${task.id} + '/grace-period'}" method="post" class="task-form">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <div class="task-field">
+                            <label for="grace-minutes" th:text="#{ui.01846}">Grace period minutes</label>
+                            <input id="grace-minutes" name="gracePeriodMinutes" type="number" min="1" step="1" th:value="${task.gracePeriodMinutes}" aria-describedby="task-grace-hint"/>
+                        </div>
+                        <button type="submit" class="task-button task-button-secondary" th:text="#{ui.01847}">Save grace period</button>
+                    </form>
+                </section>
+                <section aria-labelledby="task-time-rule-heading">
+                    <h3 id="task-time-rule-heading" th:text="#{ui.01849}">Time warning</h3>
+                    <form th:action="@{'/calendar/task/' + ${task.id} + '/warning-time'}" method="post" class="task-form">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <div class="task-field">
+                            <label for="warning-time" th:text="#{ui.task.triggerTime}">Trigger time on this date</label>
+                            <input id="warning-time" name="triggerTime" type="time" required/>
+                        </div>
+                        <button type="submit" class="task-button task-button-secondary" th:text="#{ui.01850}">Add time warning</button>
+                    </form>
+                </section>
+                <section aria-labelledby="task-completion-rule-heading">
+                    <h3 id="task-completion-rule-heading" th:text="#{ui.01851}">Completion warning trigger</h3>
+                    <form th:action="@{'/calendar/task/' + ${task.id} + '/warning-on-complete'}" method="post" class="task-form">
+                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <div class="task-field">
+                            <label for="warning-trigger-task" th:text="#{ui.task.triggerTask}">Another task on this date</label>
+                            <select id="warning-trigger-task" name="triggerTaskId" required th:disabled="${#lists.isEmpty(warningTriggerTasks)}">
+                                <option th:if="${#lists.isEmpty(warningTriggerTasks)}" value="" selected disabled th:text="#{ui.01852}">No other tasks available</option>
+                                <option th:each="t : ${warningTriggerTasks}" th:value="${t.id}" th:text="${t.title}"></option>
+                            </select>
+                        </div>
+                        <button type="submit" class="task-button task-button-secondary" th:disabled="${#lists.isEmpty(warningTriggerTasks)}" th:text="#{ui.01853}">Add completion warning</button>
+                    </form>
+                </section>
+            </details>
         </aside>
     </div>
 </div>
-
 </th:block>

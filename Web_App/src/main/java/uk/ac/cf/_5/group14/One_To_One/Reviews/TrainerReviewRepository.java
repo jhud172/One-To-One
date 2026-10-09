@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TrainerReviewRepository extends JpaRepository<TrainerReview, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from TrainerReview r where r.id = :id")
+    Optional<TrainerReview> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
 
     /**
      * Find all visible reviews for a trainer.

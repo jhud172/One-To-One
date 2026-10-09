@@ -12,8 +12,7 @@ import uk.ac.cf._5.group14.One_To_One.Chat.CreateTaskActionHandler;
 import uk.ac.cf._5.group14.One_To_One.Chat.CreateTaskActionPayload;
 import uk.ac.cf._5.group14.One_To_One.Chat.CoachActionExecution;
 import uk.ac.cf._5.group14.One_To_One.ScheduleData.Schedule;
-import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleAppliedRepository;
-import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleOccurrenceService;
+import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleApplicationService;
 import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleRepository;
 import uk.ac.cf._5.group14.One_To_One.TrainerClient.TrainerClientLinkRepository;
 import uk.ac.cf._5.group14.One_To_One.TrainerClient.TrainerClientLinkStatus;
@@ -40,10 +39,7 @@ class CoachActionHandlersTest {
     private ScheduleRepository scheduleRepository;
 
     @Mock
-    private ScheduleOccurrenceService scheduleOccurrenceService;
-
-    @Mock
-    private ScheduleAppliedRepository scheduleAppliedRepository;
+    private ScheduleApplicationService scheduleApplicationService;
 
     @Mock
     private TrainerClientLinkRepository trainerClientLinkRepository;
@@ -83,7 +79,26 @@ class CoachActionHandlersTest {
         CoachActionExecution execution = applyScheduleActionHandler.execute(payload, user);
 
         assertFalse(execution.success());
-        verify(scheduleOccurrenceService, never()).generateOccurrencesForSchedule(any(), any(), any(), any(), anyInt());
-        verify(scheduleAppliedRepository, never()).save(any());
+        verifyNoInteractions(scheduleApplicationService);
+    }
+
+    @Test
+    void directExecutionRejectsInvalidDetailsBeforeReadingOrSaving() {
+        assertFalse(applyScheduleActionHandler.execute(null, null).success());
+        User user = new User(); user.setId(1L);
+        assertFalse(applyScheduleActionHandler.execute(new ApplyScheduleActionPayload(" ", null, 13), user).success());
+        verifyNoInteractions(scheduleRepository, trainerClientLinkRepository, scheduleApplicationService);
+    }
+
+    @Test
+    void emptyPlanReturnsUsefulFailureInsteadOfClaimingApplication() {
+        User user = new User(); user.setId(1L);
+        Schedule plan = new Schedule(); plan.setId(10L); plan.setUser(user); plan.setName("Empty plan");
+        when(scheduleRepository.findByUserAndNameIgnoreCase(user, "Empty plan")).thenReturn(Optional.of(plan));
+        when(scheduleApplicationService.apply(plan, user, "2027-01-04", "4"))
+                .thenThrow(new IllegalArgumentException("empty"));
+        var result = applyScheduleActionHandler.execute(new ApplyScheduleActionPayload("Empty plan", LocalDate.of(2027,1,4), 4), user);
+        assertFalse(result.success());
+        assertTrue(result.errorMessage().contains("no movements"));
     }
 }

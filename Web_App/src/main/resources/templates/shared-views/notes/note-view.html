@@ -4,24 +4,25 @@
 <div th:fragment="styles">
 </div>
 
-<div th:fragment="content" class="detail-container">
+<div th:fragment="content" class="detail-container notes-workspace-v2">
 
 
         <div class="mt-6" th:if="${note != null}">
+            <p th:if="${noteSaved}" class="notes-save-feedback" role="status" th:text="#{preferences.saved}"></p>
             <!-- Header with key metadata at top -->
             <div class="detail-header">
                 <div class="detail-header-content">
                     <div class="detail-header-meta">
                         <a class="detail-label hover:underline" th:if="${note.folder != null}" th:href="@{/notes/folders/{id}(id=${note.folder.id})}" th:text="#{ui.02166}">← Back to folder</a>
-                        <h1 class="detail-title" th:text="${note.title}">Title</h1>
-                        <p class="detail-subtitle" th:text="${#temporals.format(note.updatedAt,'dd MMM yyyy HH:mm')}">Date</p>
+                        <h1 class="detail-title" dir="auto" th:text="${note.title}">Title</h1>
+                        <time class="detail-subtitle" dir="ltr" th:datetime="${note.updatedAt}" th:text="${#temporals.format(note.updatedAt,'dd MMM yyyy HH:mm')}">Date</time>
                     </div>
 
                     <!-- Primary actions - sticky on larger screens -->
                     <div class="detail-actions-sticky">
                         <a class="detail-btn-secondary" th:href="@{/notes/{id}/edit(id=${note.id})}" th:text="#{ui.00138}">Edit</a>
                         <form th:action="@{/notes/{id}/delete(id=${note.id})}" method="post"
-                              data-confirm data-confirm-title="Delete note?" data-confirm-message="This will permanently remove the note.">
+                              th:attr="data-confirm=#{ui.notes.deleteNote}">
                             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                             <button class="detail-btn-destructive" type="submit" th:text="#{ui.00139}">Delete</button>
                         </form>
@@ -34,7 +35,7 @@
                 <section class="detail-section">
                     <h2 class="detail-section-title" th:text="#{ui.02167}">Content</h2>
                     <div class="detail-section-content">
-                        <article class="text-sm leading-6 text-slate-800 dark:text-slate-300" th:utext="${note.content}"></article>
+                        <article dir="auto" class="notes-rich-content text-sm leading-6 text-slate-800 dark:text-slate-300" th:utext="${note.content}"></article>
                     </div>
                 </section>
 
@@ -57,22 +58,11 @@
             </div>
         </div>
 
-    <!-- Confirm modal -->
-    <div id="confirmOverlay"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 opacity-0 pointer-events-none transition-opacity [&.show]:opacity-100 [&.show]:pointer-events-auto">
-        <div class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-            <h3 id="confirmTitle" class="text-lg font-semibold text-slate-900" th:text="#{ui.01783}">Confirm</h3>
-            <p id="confirmMessage" class="mt-2 text-sm text-slate-600" th:text="#{ui.02120}">Are you sure?</p>
-            <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button id="confirmCancel" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10" type="button" th:text="#{ui.00125}">Cancel</button>
-                <button id="confirmOk" class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/20" type="button" th:text="#{ui.00139}">Delete</button>
-            </div>
-        </div>
-    </div>
+
 </div>
 
 <div th:fragment="pageScripts">
-    <script src="/js/notes/notes.js" defer></script>
+
 </div>
 
 </th:block>

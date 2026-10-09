@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 
 @Entity
 @Table(name = "trainer_reviews", 
@@ -103,6 +105,15 @@ public class TrainerReview {
     public String getTags() {
         return tags;
     }
+
+    @Transient
+    public List<DisplayTag> getDisplayTags() {
+        return tags == null || tags.isBlank() ? List.of() : Arrays.stream(tags.split(","))
+                .map(String::trim).filter(tag -> !tag.isEmpty()).distinct()
+                .map(tag -> new DisplayTag(tag, TrainerReviewTag.labelKey(tag))).toList();
+    }
+
+    public record DisplayTag(String value, String labelKey) { }
 
     public void setTags(String tags) {
         this.tags = tags;

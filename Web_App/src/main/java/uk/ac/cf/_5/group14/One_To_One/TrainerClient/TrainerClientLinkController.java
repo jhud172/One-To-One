@@ -15,6 +15,7 @@ import uk.ac.cf._5.group14.One_To_One.Users.UserService;
 import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.ui.Model;
 
 @Controller
 public class TrainerClientLinkController {
@@ -69,7 +70,7 @@ public class TrainerClientLinkController {
 
         try {
             trainerClientLinkService.requestLink(client.getId(), trainerId);
-            redirectAttributes.addFlashAttribute("successMessage", "Trainer request sent.");
+            redirectAttributes.addFlashAttribute("trainerRequestSent", true);
         } catch (TrainerClientLinkException ex) {
             return redirectClientTrainerError(ex.getReason());
         } catch (IllegalArgumentException ex) {
@@ -88,16 +89,33 @@ public class TrainerClientLinkController {
         return emailUnverified || phoneUnverified;
     }
 
+    @PostMapping("/client/trainers/{trainerId}/withdraw")
+    public ModelAndView withdrawTrainerRequest(@PathVariable Long trainerId, RedirectAttributes redirectAttributes) {
+        User client = currentUserOrThrow();
+        if (client.getRole() != Role.CLIENT) throw new org.springframework.security.access.AccessDeniedException("Client access required");
+        try {
+            trainerClientLinkService.withdrawRequest(client.getId(), trainerId);
+            redirectAttributes.addFlashAttribute("trainerRequestWithdrawn", true);
+            return new ModelAndView("redirect:/client/trainers");
+        } catch (IllegalArgumentException ex) {
+            return new ModelAndView("redirect:/client/trainers?error=invalid");
+        }
+    }
+
     @GetMapping("/trainer/requests")
     public ModelAndView trainerRequestsRedirect() {
         return new ModelAndView("redirect:/trainer/clients");
     }
 
     @GetMapping("/trainer/clients")
-    public ModelAndView trainerClients(@RequestParam(value = "error", required = false) String error) {
+    public ModelAndView trainerClients(@RequestParam(value = "error", required = false) String error, Model model) {
         User trainer = currentUserOrThrow();
         ModelAndView mav = new ModelAndView("trainer-views/trainer/clients");
+        for (String key : new String[]{"relationshipAccepted", "relationshipDeclined", "relationshipPaused", "relationshipEnded", "relationshipResumed"}) {
+            if (model.containsAttribute(key)) mav.addObject(key, model.getAttribute(key));
+        }
         mav.addObject("pageTitle", "Trainer Clients");
+        mav.addObject("trainerReady", trainer.isEnabled() && trainer.isTrainerVerified());
 
         List<TrainerClientLink> allLinks = trainerClientLinkService.listTrainerClients(trainer.getId());
         List<TrainerClientLink> requests = allLinks.stream()
@@ -124,7 +142,23 @@ public class TrainerClientLinkController {
         User trainer = currentUserOrThrow();
         try {
             trainerClientLinkService.acceptRequest(trainer.getId(), clientId);
-            redirectAttributes.addFlashAttribute("successMessage", "Client request accepted.");
+            redirectAttributes.addFlashAttribute("relationshipAccepted", true);
+        } catch (org.springframework.security.access.AccessDeniedException ex) {
+            return new ModelAndView("redirect:/access-denied");
+        } catch (TrainerClientLinkException ex) {
+            return redirectTrainerClientError(ex.getReason());
+        } catch (IllegalArgumentException ex) {
+            return new ModelAndView("redirect:/trainer/clients?error=invalid");
+        }
+        return new ModelAndView("redirect:/trainer/clients");
+    }
+
+    @PostMapping("/trainer/clients/{clientId}/decline")
+    public ModelAndView decline(@PathVariable Long clientId, RedirectAttributes redirectAttributes) {
+        User trainer = currentUserOrThrow();
+        try {
+            trainerClientLinkService.declineRequest(trainer.getId(), clientId);
+            redirectAttributes.addFlashAttribute("relationshipDeclined", true);
         } catch (org.springframework.security.access.AccessDeniedException ex) {
             return new ModelAndView("redirect:/access-denied");
         } catch (TrainerClientLinkException ex) {
@@ -140,7 +174,23 @@ public class TrainerClientLinkController {
         User trainer = currentUserOrThrow();
         try {
             trainerClientLinkService.pauseLink(trainer.getId(), clientId);
-            redirectAttributes.addFlashAttribute("successMessage", "Client relationship paused.");
+            redirectAttributes.addFlashAttribute("relationshipPaused", true);
+        } catch (org.springframework.security.access.AccessDeniedException ex) {
+            return new ModelAndView("redirect:/access-denied");
+        } catch (TrainerClientLinkException ex) {
+            return redirectTrainerClientError(ex.getReason());
+        } catch (IllegalArgumentException ex) {
+            return new ModelAndView("redirect:/trainer/clients?error=invalid");
+        }
+        return new ModelAndView("redirect:/trainer/clients");
+    }
+
+    @PostMapping("/trainer/clients/{clientId}/resume")
+    public ModelAndView resume(@PathVariable Long clientId, RedirectAttributes redirectAttributes) {
+        User trainer = currentUserOrThrow();
+        try {
+            trainerClientLinkService.resumeLink(trainer.getId(), clientId);
+            redirectAttributes.addFlashAttribute("relationshipResumed", true);
         } catch (org.springframework.security.access.AccessDeniedException ex) {
             return new ModelAndView("redirect:/access-denied");
         } catch (TrainerClientLinkException ex) {
@@ -156,7 +206,7 @@ public class TrainerClientLinkController {
         User trainer = currentUserOrThrow();
         try {
             trainerClientLinkService.endLink(trainer.getId(), clientId);
-            redirectAttributes.addFlashAttribute("successMessage", "Client relationship ended.");
+            redirectAttributes.addFlashAttribute("relationshipEnded", true);
         } catch (org.springframework.security.access.AccessDeniedException ex) {
             return new ModelAndView("redirect:/access-denied");
         } catch (TrainerClientLinkException ex) {
@@ -188,14 +238,25 @@ public class TrainerClientLinkController {
 
     @GetMapping("/client/trainers")
     public ModelAndView myTrainers(@RequestParam(value = "error", required = false) String error,
-                                   @RequestParam(value = "q", required = false) String q) {
+                                   @RequestParam(value = "q", required = false) String q, Model model) {
         User client = currentUserOrThrow();
+        if (client.getRole() != Role.CLIENT) throw new org.springframework.security.access.AccessDeniedException("Client access required");
 
         ModelAndView mav = new ModelAndView("client-views/client/trainers");
+        for (String key : new String[]{"trainerRequestSent", "trainerRequestWithdrawn", "verifyError"}) {
+            if (model.containsAttribute(key)) mav.addObject(key, model.getAttribute(key));
+        }
         mav.addObject("pageTitle", "Trainers");
 
         TrainerClientLink active = trainerClientLinkService.getActiveLinkForClient(client.getId());
         mav.addObject("activeLink", active);
+        List<TrainerClientLink> clientLinks = trainerClientLinkService.listClientTrainerLinks(client.getId());
+        List<TrainerClientLink> pending = clientLinks.stream().filter(link -> link.getStatus() == TrainerClientLinkStatus.REQUESTED).toList();
+        mav.addObject("pendingLinks", pending);
+        mav.addObject("pausedLinks", clientLinks.stream().filter(link -> link.getStatus() == TrainerClientLinkStatus.PAUSED).toList());
+        mav.addObject("pendingTrainerIds", pending.stream().map(TrainerClientLink::getTrainerUserId).collect(Collectors.toSet()));
+        mav.addObject("trainersById", userRepository.findAllById(clientLinks.stream().map(TrainerClientLink::getTrainerUserId).distinct().toList())
+                .stream().collect(Collectors.toMap(User::getId, trainer -> trainer)));
 
         if (active != null) {
             mav.addObject("trainer", userRepository.findById(active.getTrainerUserId()).orElse(null));
@@ -205,11 +266,11 @@ public class TrainerClientLinkController {
 
         List<User> trainers = userRepository.findByRoleAndTrainerVerifiedTrueAndEnabledTrue(Role.TRAINER);
         if (q != null && !q.isBlank()) {
-            String query = q.trim().toLowerCase();
+            String query = q.trim().toLowerCase(java.util.Locale.ROOT);
             trainers = trainers.stream()
                     .filter(t -> {
-                        String fullName = (t.getFullName() == null) ? "" : t.getFullName().toLowerCase();
-                        String username = (t.getUsername() == null) ? "" : t.getUsername().toLowerCase();
+                        String fullName = (t.getFullName() == null) ? "" : t.getFullName().toLowerCase(java.util.Locale.ROOT);
+                        String username = (t.getUsername() == null) ? "" : t.getUsername().toLowerCase(java.util.Locale.ROOT);
                         return fullName.contains(query) || username.contains(query);
                     })
                     .toList();

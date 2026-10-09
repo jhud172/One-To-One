@@ -2,5 +2,6 @@
 @import "../components/dashboard/dashboard-enhanced.css";
 @import "../components/dashboard/client-dashboard-refresh.css";
 @import "../components/dashboard/dashboard-consistency.css";
+@import "../components/dashboard/dashboard-v2.css";
 
 @tailwind components;

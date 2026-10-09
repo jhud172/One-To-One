@@ -1,59 +1,53 @@
 package uk.ac.cf._5.group14.One_To_One.Vault;
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformSubscriptionService;
 import uk.ac.cf._5.group14.One_To_One.StrengthLog.Repository.WorkoutSessionRepository;
 import uk.ac.cf._5.group14.One_To_One.StrengthLog.WorkoutSession;
 import uk.ac.cf._5.group14.One_To_One.Users.AuthHelper;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
 import uk.ac.cf._5.group14.One_To_One.Users.UserService;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.*;
 
 @Controller
 @RequestMapping("/vault")
 public class VaultController {
-
-    private static final String[] MOOD_OPTIONS = {"GREAT", "GOOD", "NEUTRAL", "LOW", "POOR"};
-
+    private static final String[] MOODS = {"GREAT", "GOOD", "NEUTRAL", "LOW", "POOR"};
     private final AuthHelper authHelper;
     private final UserService userService;
-    private final VaultNoteService vaultNoteService;
-    private final VaultAiService vaultAiService;
-    private final WorkoutSessionRepository workoutSessionRepository;
+    private final VaultNoteService notes;
+    private final VaultAiService ai;
+    private final WorkoutSessionRepository sessions;
+    private final PlatformSubscriptionService subscriptions;
+    private final Clock clock;
 
-    public VaultController(AuthHelper authHelper,
-                           UserService userService,
-                           VaultNoteService vaultNoteService,
-                           VaultAiService vaultAiService,
-                           WorkoutSessionRepository workoutSessionRepository) {
-        this.authHelper = authHelper;
-        this.userService = userService;
-        this.vaultNoteService = vaultNoteService;
-        this.vaultAiService = vaultAiService;
-        this.workoutSessionRepository = workoutSessionRepository;
+    public VaultController(AuthHelper authHelper, UserService userService, VaultNoteService notes,
+                           VaultAiService ai, WorkoutSessionRepository sessions,
+                           PlatformSubscriptionService subscriptions, Clock clock) {
+        this.authHelper = authHelper; this.userService = userService; this.notes = notes;
+        this.ai = ai; this.sessions = sessions; this.subscriptions = subscriptions; this.clock = clock;
     }
 
-    private User currentUserOrThrow() {
-        User sessionUser = authHelper.getAuthenticatedUser();
-        if (sessionUser != null) {
-            return sessionUser;
-        }
-
+    private User currentUser() {
+        User user = authHelper.getAuthenticatedUser();
+        if (user != null) return user;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new AccessDeniedException("Not authenticated");
-        }
-        User user = userService.findByUsername(auth.getName());
-        if (user == null) {
-            throw new AccessDeniedException("User not found");
-        }
+        if (auth == null || !auth.isAuthenticated()) throw new AccessDeniedException("Not authenticated");
+        user = userService.findByUsername(auth.getName());
+        if (user == null) throw new AccessDeniedException("User not found");
         return user;
     }
 
@@ -62,258 +56,252 @@ public class VaultController {
                         @RequestParam(required = false) String search,
                         @RequestParam(required = false) String from,
                         @RequestParam(required = false) String to,
-                        @RequestParam(required = false, defaultValue = "false") boolean pinned,
-                        @RequestParam(required = false) String sort,
-                        Model model) {
-        User user = currentUserOrThrow();
-
-        VaultNoteType selectedType = parseType(type);
-        LocalDate fromDate = parseDate(from);
-        LocalDate toDate = parseDate(to);
-
-        List<VaultNote> notes;
-        boolean hasFilters = (search != null && !search.isBlank())
-                || fromDate != null || toDate != null || pinned
-                || selectedType != null;
-
-        if (hasFilters) {
-            notes = vaultNoteService.search(user.getId(), search, selectedType, pinned, fromDate, toDate);
-        } else {
-            notes = vaultNoteService.listForUser(user.getId(), null);
+                        @RequestParam(defaultValue = "false") boolean pinned,
+                        @RequestParam(defaultValue = "1") int page,
+                        Model model, HttpServletResponse response) {
+        User user = currentUser();
+        List<VaultNote> found = List.of();
+        VaultNoteType selectedType = null;
+        VaultNotePage library = new VaultNotePage(List.of(), 1, 1, 0);
+        try {
+            selectedType = parseType(type);
+            library = notes.searchPage(user.getId(), search, selectedType, pinned, parseDate(from), parseDate(to), page);
+            found = library.notes();
+        } catch (IllegalArgumentException ex) {
+            response.setStatus(400); model.addAttribute("vaultInvalid", true);
         }
-
-        Map<Long, WorkoutSession> sessionsById = loadSessionsById(notes);
-        Map<String, Object> metrics = vaultNoteService.getMetrics(user.getId());
-
-        model.addAttribute("pageTitle", "Training Vault");
         model.addAttribute("noteTypes", VaultNoteType.values());
         model.addAttribute("selectedType", selectedType);
-        model.addAttribute("notes", notes);
-        model.addAttribute("sessionsById", sessionsById);
+        model.addAttribute("notes", found);
+        model.addAttribute("sessionsById", loadSessions(found, user));
         model.addAttribute("searchQuery", search);
         model.addAttribute("fromDate", from);
         model.addAttribute("toDate", to);
         model.addAttribute("pinnedOnly", pinned);
-        model.addAttribute("metrics", metrics);
-        model.addAttribute("moods", MOOD_OPTIONS);
+        model.addAttribute("vaultPage", library);
+        model.addAttribute("vaultReturnTo", libraryUrl(type, search, from, to, pinned, library.page()));
+        model.addAttribute("vaultPrevious", libraryUrl(type, search, from, to, pinned, Math.max(1, library.page() - 1)));
+        model.addAttribute("vaultNext", libraryUrl(type, search, from, to, pinned, library.page() + 1));
+        model.addAttribute("metrics", notes.getMetrics(user.getId()));
+        aiState(model, user);
         return "shared-views/vault/index";
     }
 
     @GetMapping("/new")
-    public String newNote(Model model) {
-        User user = currentUserOrThrow();
-
-        VaultNote note = new VaultNote();
-        note.setNoteType(VaultNoteType.TRAINING);
-
-        model.addAttribute("pageTitle", "New Vault Note");
-        model.addAttribute("note", note);
-        model.addAttribute("noteTypes", VaultNoteType.values());
-        model.addAttribute("moods", MOOD_OPTIONS);
-        model.addAttribute("recentSessions", workoutSessionRepository.findTop20ByUserOrderByDateDesc(user));
+    public String newNote(@RequestParam(required = false) String returnTo, Model model) {
+        form(model, currentUser(), null, Map.of("returnTo", safeReturnTo(returnTo, "/vault")));
         return "shared-views/vault/note-form";
     }
 
     @PostMapping("/new")
-    public String createNote(@RequestParam VaultNoteType noteType,
-                             @RequestParam String title,
-                             @RequestParam String content,
-                             @RequestParam(required = false) LocalDate linkedDate,
-                             @RequestParam(required = false) Long linkedWorkoutSessionId,
-                             @RequestParam(required = false, defaultValue = "") String tags,
-                             @RequestParam(required = false) String mood) {
-        User user = currentUserOrThrow();
-
-        VaultNote created = vaultNoteService.create(user.getId(), noteType, title, content,
-                linkedDate, linkedWorkoutSessionId, tags, mood);
-        return "redirect:/vault/" + created.getId();
-    }
-
-    @GetMapping("/{id}")
-    public String view(@PathVariable Long id, Model model) {
-        User user = currentUserOrThrow();
-
-        Optional<VaultNote> noteOpt = vaultNoteService.getForUser(id, user.getId());
-        if (noteOpt.isEmpty()) {
-            return "redirect:/access-denied";
-        }
-
-        VaultNote note = noteOpt.get();
-        WorkoutSession linkedSession = null;
-        if (note.getLinkedWorkoutSessionId() != null) {
-            linkedSession = workoutSessionRepository.findById(note.getLinkedWorkoutSessionId()).orElse(null);
-            if (linkedSession != null && linkedSession.getUser() != null && !Objects.equals(linkedSession.getUser().getId(), user.getId())) {
-                linkedSession = null;
-            }
-        }
-
-        model.addAttribute("pageTitle", "Training Vault");
-        model.addAttribute("note", note);
-        model.addAttribute("linkedSession", linkedSession);
-        return "shared-views/vault/note-view";
+    public String create(@RequestParam Map<String, String> values, Model model,
+                         HttpServletResponse response, RedirectAttributes flash) {
+        return save(null, values, model, response, flash);
     }
 
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model) {
-        User user = currentUserOrThrow();
-
-        Optional<VaultNote> noteOpt = vaultNoteService.getForUser(id, user.getId());
-        if (noteOpt.isEmpty()) {
-            return "redirect:/access-denied";
-        }
-
-        model.addAttribute("pageTitle", "Edit Vault Note");
-        model.addAttribute("note", noteOpt.get());
-        model.addAttribute("noteTypes", VaultNoteType.values());
-        model.addAttribute("moods", MOOD_OPTIONS);
-        model.addAttribute("recentSessions", workoutSessionRepository.findTop20ByUserOrderByDateDesc(user));
+    public String edit(@PathVariable Long id, @RequestParam(required = false) String returnTo, Model model) {
+        User user = currentUser(); form(model, user, owned(id, user), Map.of("returnTo", safeReturnTo(returnTo, "/vault")));
         return "shared-views/vault/note-form";
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id,
-                         @RequestParam VaultNoteType noteType,
-                         @RequestParam String title,
-                         @RequestParam String content,
-                         @RequestParam(required = false) LocalDate linkedDate,
-                         @RequestParam(required = false) Long linkedWorkoutSessionId,
-                         @RequestParam(required = false, defaultValue = "") String tags,
-                         @RequestParam(required = false) String mood) {
-        User user = currentUserOrThrow();
+    public String update(@PathVariable Long id, @RequestParam Map<String, String> values,
+                         Model model, HttpServletResponse response, RedirectAttributes flash) {
+        return save(id, values, model, response, flash);
+    }
 
-        Optional<VaultNote> updated = vaultNoteService.update(id, user.getId(), noteType, title, content,
-                linkedDate, linkedWorkoutSessionId, tags, mood);
-        if (updated.isEmpty()) {
-            return "redirect:/access-denied";
+    private String save(Long id, Map<String, String> values, Model model,
+                        HttpServletResponse response, RedirectAttributes flash) {
+        User user = currentUser();
+        VaultNote original = id == null ? null : owned(id, user);
+        try {
+            VaultNoteType type = parseType(values.get("noteType"));
+            if (type == null) throw new IllegalArgumentException("Select a type");
+            LocalDate date = parseDate(values.get("linkedDate"));
+            Long session = parseId(values.get("linkedWorkoutSessionId"));
+            VaultNote saved = id == null
+                    ? notes.create(user.getId(), type, values.get("title"), values.get("content"), date, session, values.get("tags"), values.get("mood"))
+                    : notes.updateChecked(id, user.getId(), type, values.get("title"), values.get("content"), date, session, values.get("tags"), values.get("mood"), values.get("revision"))
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            flash.addFlashAttribute("vaultSaved", true);
+            return "redirect:" + detailUrl(saved.getId(), safeReturnTo(values.get("returnTo"), "/vault"));
+        } catch (StaleReflectionException ex) {
+            response.setStatus(409);
+            VaultNote current = owned(id, user);
+            var retained = new HashMap<>(values);
+            // The displayed comparison is the only route to an intentional subsequent save.
+            retained.put("revision", current.getRevision());
+            form(model, user, current, retained);
+            model.addAttribute("vaultConflict", current);
+            model.addAttribute("vaultConflictSession", current.getLinkedWorkoutSessionId() == null ? null :
+                    sessions.findById(current.getLinkedWorkoutSessionId()).filter(s -> isOwned(s, user)).orElse(null));
+            return "shared-views/vault/note-form";
+        } catch (IllegalArgumentException ex) {
+            response.setStatus(400); form(model, user, original, values);
+            model.addAttribute("vaultInvalid", true); return "shared-views/vault/note-form";
         }
-        return "redirect:/vault/" + id;
+    }
+
+    private void form(Model model, User user, VaultNote original, Map<String, String> draft) {
+        Map<String, String> values = new HashMap<>();
+        values.put("noteType", original == null ? "TRAINING" : original.getNoteType().name());
+        if (original != null) {
+            values.put("revision", original.getRevision());
+            values.put("title", original.getTitle()); values.put("content", original.getContent());
+            values.put("linkedDate", Objects.toString(original.getLinkedDate(), ""));
+            values.put("linkedWorkoutSessionId", Objects.toString(original.getLinkedWorkoutSessionId(), ""));
+            values.put("tags", original.getTags()); values.put("mood", original.getMood());
+        }
+        if (draft != null) values.putAll(draft);
+        values.put("returnTo", safeReturnTo(values.get("returnTo"), "/vault"));
+        var recent = new ArrayList<>(sessions.findTop20ByUserOrderByDateDesc(user));
+        Long draftSession = null;
+        try { draftSession = parseId(values.get("linkedWorkoutSessionId")); } catch (IllegalArgumentException ignored) { }
+        if (draftSession != null) {
+            var linked = sessions.findById(draftSession).filter(s -> isOwned(s, user));
+            linked.filter(s -> recent.stream().noneMatch(r -> r.getId().equals(s.getId()))).ifPresent(recent::add);
+        }
+        model.addAttribute("editingId", original == null ? null : original.getId());
+        model.addAttribute("draft", values); model.addAttribute("noteTypes", VaultNoteType.values());
+        model.addAttribute("moods", MOODS); model.addAttribute("recentSessions", recent);
+        model.addAttribute("vaultReturnTo", values.get("returnTo"));
+        model.addAttribute("vaultDetailReturnTo", original == null ? values.get("returnTo") : detailUrl(original.getId(), values.get("returnTo")));
+    }
+
+    @GetMapping("/{id}")
+    public String view(@PathVariable Long id, @RequestParam(required = false) String returnTo, Model model) {
+        User user = currentUser(); VaultNote note = owned(id, user);
+        model.addAttribute("note", note);
+        model.addAttribute("vaultReturnTo", safeReturnTo(returnTo, "/vault"));
+        model.addAttribute("vaultDetailReturnTo", detailUrl(id, safeReturnTo(returnTo, "/vault")));
+        model.addAttribute("linkedSession", note.getLinkedWorkoutSessionId() == null ? null
+                : sessions.findById(note.getLinkedWorkoutSessionId()).filter(s -> isOwned(s, user)).orElse(null));
+        aiState(model, user); return "shared-views/vault/note-view";
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id) {
-        User user = currentUserOrThrow();
-
-        boolean deleted = vaultNoteService.delete(id, user.getId());
-        if (!deleted) {
-            return "redirect:/access-denied";
-        }
-        return "redirect:/vault";
+    public String delete(@PathVariable Long id, @RequestParam(required = false) String returnTo, RedirectAttributes flash) {
+        User user = currentUser(); owned(id, user);
+        if (!notes.delete(id, user.getId())) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        flash.addFlashAttribute("vaultDeleted", true); return "redirect:" + safeReturnTo(returnTo, "/vault");
     }
 
     @PostMapping("/{id}/pin")
-    public String togglePin(@PathVariable Long id,
-                            @RequestParam(required = false) String returnTo) {
-        User user = currentUserOrThrow();
-
-        Optional<VaultNote> result = vaultNoteService.togglePin(id, user.getId());
-        if (result.isEmpty()) {
-            return "redirect:/access-denied";
-        }
-        return "redirect:" + safeReturnTo(returnTo, "/vault");
+    public String pin(@PathVariable Long id, @RequestParam(required = false) String returnTo) {
+        User user = currentUser(); owned(id, user);
+        notes.togglePin(id, user.getId()); return "redirect:" + safeReturnTo(returnTo, "/vault/" + id);
     }
 
     @PostMapping("/ai/summarise-week")
-    public String summariseWeek(@RequestParam(name = "noteIds") List<Long> noteIds,
-                                @RequestParam(required = false) String returnTo,
-                                RedirectAttributes redirectAttributes) {
-        User user = currentUserOrThrow();
-
-        List<Long> requested = distinctIds(noteIds);
-        List<VaultNote> notes = vaultNoteService.getManyForUser(requested, user.getId());
-        if (notes.size() != requested.size()) {
-            return "redirect:/access-denied";
-        }
-
-        String result = vaultAiService.summariseWeek(notes);
-        redirectAttributes.addFlashAttribute("aiResultTitle", "Weekly Summary");
-        redirectAttributes.addFlashAttribute("aiResult", result);
-
-        return "redirect:" + safeReturnTo(returnTo, "/vault");
+    public String summarise(@RequestParam(required = false) List<Long> noteIds,
+                            @RequestParam(required = false) String returnTo,
+                            @RequestParam(defaultValue = "false") boolean aiConsent, RedirectAttributes flash) {
+        return generate(noteIds, returnTo, aiConsent, "summary", false, flash);
     }
 
     @PostMapping("/ai/rewrite-checkin")
-    public String rewriteCheckin(@RequestParam(name = "noteIds") List<Long> noteIds,
-                                 @RequestParam(required = false) String returnTo,
-                                 RedirectAttributes redirectAttributes) {
-        User user = currentUserOrThrow();
-
-        List<Long> requested = distinctIds(noteIds);
-        List<VaultNote> notes = vaultNoteService.getManyForUser(requested, user.getId());
-        if (notes.size() != requested.size()) {
-            return "redirect:/access-denied";
-        }
-
-        String result = vaultAiService.rewriteCheckin(notes);
-        redirectAttributes.addFlashAttribute("aiResultTitle", "Rewritten Check-in");
-        redirectAttributes.addFlashAttribute("aiResult", result);
-
-        return "redirect:" + safeReturnTo(returnTo, "/vault");
+    public String rewrite(@RequestParam(required = false) List<Long> noteIds,
+                          @RequestParam(required = false) String returnTo,
+                          @RequestParam(defaultValue = "false") boolean aiConsent, RedirectAttributes flash) {
+        return generate(noteIds, returnTo, aiConsent, "rewrite", false, flash);
     }
 
     @PostMapping("/ai/insight/{id}")
-    public String generateInsight(@PathVariable Long id,
-                                  @RequestParam(required = false) String returnTo,
-                                  RedirectAttributes redirectAttributes) {
-        User user = currentUserOrThrow();
+    public String insight(@PathVariable Long id, @RequestParam(required = false) String returnTo,
+                          @RequestParam(defaultValue = "false") boolean aiConsent, RedirectAttributes flash) {
+        return generate(List.of(id), safeReturnTo(returnTo, "/vault/" + id), aiConsent, "insight", true, flash);
+    }
 
-        Optional<VaultNote> noteOpt = vaultNoteService.getForUser(id, user.getId());
-        if (noteOpt.isEmpty()) {
-            return "redirect:/access-denied";
+    private String generate(List<Long> noteIds, String returnTo, boolean consent,
+                            String kind, boolean persist, RedirectAttributes flash) {
+        User user = currentUser();
+        List<Long> ids = noteIds == null ? List.of() : noteIds.stream().filter(Objects::nonNull).distinct().toList();
+        String back = safeReturnTo(returnTo, "/vault");
+        if (ids.isEmpty() || ids.size() > 20) return aiError(flash, "selection", back);
+        List<VaultNote> selected = notes.getManyForUser(ids, user.getId());
+        if (selected.size() != ids.size()) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (!consent) return aiError(flash, "consent", back);
+        if (!subscriptions.isPremium(user.getId(), clock)) return aiError(flash, "premium", back);
+        if (!ai.isAvailable()) return aiError(flash, "unavailable", back);
+        String sourceRevision = persist ? selected.getFirst().getRevision() : null;
+        try {
+            String result = switch (kind) {
+                case "summary" -> ai.summariseWeek(selected);
+                case "rewrite" -> ai.rewriteCheckin(selected);
+                default -> ai.generateInsight(selected.getFirst());
+            };
+            if (persist) notes.saveAiSummaryChecked(ids.getFirst(), user.getId(), result, sourceRevision)
+                    .orElseThrow(() -> new StaleReflectionException());
+            flash.addFlashAttribute("aiResultKind", kind); flash.addFlashAttribute("aiResult", result);
+            flash.addFlashAttribute("aiResultGeneratedAt", clock.instant());
+            flash.addFlashAttribute("aiResultTitles", selected.stream().map(VaultNote::getTitle).toList());
+            return "redirect:" + back;
+        } catch (StaleReflectionException ex) {
+            return aiError(flash, "stale", back);
+        } catch (IllegalArgumentException ex) {
+            return aiError(flash, "selection", back);
+        } catch (RuntimeException ex) {
+            return aiError(flash, "unavailable", back);
         }
+    }
 
-        String insight = vaultAiService.generateInsight(noteOpt.get());
-        vaultNoteService.saveAiSummary(id, user.getId(), insight);
-        redirectAttributes.addFlashAttribute("aiResultTitle", "AI Insight");
-        redirectAttributes.addFlashAttribute("aiResult", insight);
+    private String aiError(RedirectAttributes flash, String code, String back) {
+        flash.addFlashAttribute("vaultAiError", code); return "redirect:" + back;
+    }
 
-        return "redirect:" + safeReturnTo(returnTo, "/vault/" + id);
+    private void aiState(Model model, User user) {
+        boolean premium = subscriptions.isPremium(user.getId(), clock);
+        model.addAttribute("vaultPremium", premium);
+        model.addAttribute("vaultAiAvailable", ai.isAvailable());
+        model.addAttribute("vaultAiEnabled", premium && ai.isAvailable());
+    }
+
+    private VaultNote owned(Long id, User user) {
+        return notes.getForUser(id, user.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    private boolean isOwned(WorkoutSession session, User user) {
+        return session.getUser() != null && Objects.equals(session.getUser().getId(), user.getId());
+    }
+
+    private Map<Long, WorkoutSession> loadSessions(List<VaultNote> reflections, User user) {
+        List<Long> ids = reflections.stream().map(VaultNote::getLinkedWorkoutSessionId).filter(Objects::nonNull).distinct().toList();
+        Map<Long, WorkoutSession> result = new HashMap<>();
+        for (var session : sessions.findAllById(ids)) if (isOwned(session, user)) result.put(session.getId(), session);
+        return result;
     }
 
     private VaultNoteType parseType(String type) {
-        if (type == null || type.isBlank()) return null;
-        try {
-            return VaultNoteType.valueOf(type);
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
+        return type == null || type.isBlank() ? null : VaultNoteType.valueOf(type);
     }
 
-    private LocalDate parseDate(String date) {
-        if (date == null || date.isBlank()) return null;
-        try {
-            return LocalDate.parse(date);
-        } catch (Exception ex) {
-            return null;
-        }
+    private LocalDate parseDate(String value) {
+        if (value == null || value.isBlank()) return null;
+        try { return LocalDate.parse(value); } catch (RuntimeException ex) { throw new IllegalArgumentException("Invalid date"); }
     }
 
-    private Map<Long, WorkoutSession> loadSessionsById(List<VaultNote> notes) {
-        if (notes == null || notes.isEmpty()) return Collections.emptyMap();
-
-        List<Long> ids = notes.stream()
-                .map(VaultNote::getLinkedWorkoutSessionId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-
-        if (ids.isEmpty()) return Collections.emptyMap();
-
-        Map<Long, WorkoutSession> map = new HashMap<>();
-        for (WorkoutSession ws : workoutSessionRepository.findAllById(ids)) {
-            if (ws == null || ws.getId() == null) continue;
-            map.put(ws.getId(), ws);
-        }
-        return map;
+    private Long parseId(String value) {
+        return value == null || value.isBlank() ? null : Long.valueOf(value);
     }
 
-    private List<Long> distinctIds(List<Long> ids) {
-        if (ids == null) return List.of();
-        return ids.stream().filter(Objects::nonNull).distinct().toList();
+    private String safeReturnTo(String value, String fallback) {
+        return value != null && value.matches("/vault(?:/[0-9]+)?(?:\\?[^\\r\\n\\\\]*)?") ? value : fallback;
     }
 
-    private String safeReturnTo(String returnTo, String fallback) {
-        if (returnTo == null || returnTo.isBlank()) return fallback;
-        if (!returnTo.startsWith("/vault")) return fallback;
-        return returnTo;
+    private String libraryUrl(String type, String search, String from, String to, boolean pinned, int page) {
+        var uri = UriComponentsBuilder.fromPath("/vault");
+        if (type != null && !type.isBlank()) uri.queryParam("type", type);
+        if (search != null && !search.isBlank()) uri.queryParam("search", search);
+        if (from != null && !from.isBlank()) uri.queryParam("from", from);
+        if (to != null && !to.isBlank()) uri.queryParam("to", to);
+        if (pinned) uri.queryParam("pinned", true);
+        if (page > 1) uri.queryParam("page", page);
+        return uri.build().encode().toUriString();
+    }
+
+    private String detailUrl(Long id, String back) {
+        return "/vault".equals(back) ? "/vault/" + id : UriComponentsBuilder.fromPath("/vault/" + id)
+                .queryParam("returnTo", back).build().encode().toUriString();
     }
 }

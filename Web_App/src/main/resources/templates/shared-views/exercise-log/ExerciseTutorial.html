@@ -1,33 +1,10 @@
-<th:block th:replace="~{base :: layout(#{ui.01682}, null, ~{::content}, null)}">
-
-    <div th:fragment="content">
-        <div class="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
-
-
-            <section class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900" th:text="${exercise.name}">Exercise</h1>
-                        <p class="mt-1 text-sm text-slate-600" th:text="#{ui.01965}">Technique overview and guidance.</p>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <div th:if="${exercise.videoUrl != null and !#strings.isEmpty(exercise.videoUrl)}" class="aspect-video w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                        <iframe class="h-full w-full" th:src="${exercise.videoUrl}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                    </div>
-
-                    <div th:unless="${exercise.videoUrl != null and !#strings.isEmpty(exercise.videoUrl)}" class="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
-                        <p class="text-sm font-medium text-slate-900" th:text="#{ui.01966}">No video available for this exercise</p>
-                        <p class="mt-1 text-sm text-slate-600" th:text="#{ui.01967}">Check back later or ask your coach for alternatives.</p>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <h2 class="text-base font-semibold text-slate-900" th:text="#{ui.00113}">Description</h2>
-                    <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700" th:text="${exercise.description}">Exercise description</p>
-                </div>
-            </section>
-        </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(${exercise.name}, null, ~{::content}, null)}">
+<div th:fragment="content" class="client-workspace-v2 personal-records-v2 exercise-instruction-v2">
+    <header class="detail-header"><div class="detail-header-content"><div><p class="detail-label" th:text="#{ui.01947}"></p><h1 class="detail-title" dir="auto" th:text="${exercise.name}"></h1><p class="detail-subtitle" th:text="#{ui.01965}"></p></div><div class="connection-actions"><a th:if="${instructionReturnUrl != null}" class="detail-btn-primary" th:href="${instructionReturnUrl}" th:text="#{ui.instruction.backSession}"></a><a class="detail-btn-secondary" th:href="@{/calendar}" th:text="#{ui.01297}"></a></div></div></header>
+    <section th:if="${instructionReturnUrl != null}" class="detail-section instruction-context" aria-labelledby="instruction-context-title"><h2 id="instruction-context-title" class="detail-section-title" th:text="#{ui.instruction.sessionContext}"></h2><h3 dir="auto" th:text="${instructionSessionName}"></h3><time dir="ltr" th:datetime="${instructionSessionDate}" th:text="${instructionSessionDate}"></time><p th:text="#{ui.instruction.contextHelp}"></p></section>
+    <div class="personal-record-layout">
+        <section class="detail-section"><h2 class="detail-section-title" th:text="#{ui.01947}"></h2><p th:if="${exercise.description != null and !#strings.isEmpty(#strings.trim(exercise.description))}" class="plan-coaching-note" dir="auto" th:text="${exercise.description}"></p><th:block th:unless="${exercise.description != null and !#strings.isEmpty(#strings.trim(exercise.description))}"><p th:text="#{ui.instruction.missingGuidance}"></p><p class="instruction-help" th:text="#{ui.instruction.missingGuidanceHelp}"></p></th:block></section>
+        <aside class="detail-section"><h2 class="detail-section-title" th:text="#{ui.02698}"></h2><dl class="library-exercise-facts"><div><dt th:text="#{ui.00117}"></dt><dd dir="auto" th:text="${#strings.isEmpty(exercise.category) ? '—' : exercise.category}"></dd></div><div><dt th:text="#{ui.00623}"></dt><dd dir="auto" th:text="${#strings.isEmpty(exercise.type) ? '—' : exercise.type}"></dd></div></dl><p class="instruction-help" th:text="#{ui.instruction.recordingHint}"></p></aside>
     </div>
-</th:block>
+    <section class="detail-section instruction-media"><h2 class="detail-section-title" th:text="#{ui.02699}"></h2><th:block th:if="${safeVideoUrl != null}"><p class="instruction-help" th:text="#{ui.instruction.videoHelp}"></p><a class="detail-btn-secondary" th:href="${safeVideoUrl}" target="_blank" rel="noopener noreferrer" th:text="#{ui.instruction.openVideo}"></a></th:block><th:block th:unless="${safeVideoUrl != null}"><p th:text="#{ui.01966}"></p><p class="instruction-help" th:text="#{ui.01967}"></p></th:block></section>
+</div></th:block>

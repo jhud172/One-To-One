@@ -12,6 +12,7 @@ import uk.ac.cf._5.group14.One_To_One.Users.User;
 import uk.ac.cf._5.group14.One_To_One.Users.UserRepository;
 
 import java.util.List;
+import java.net.URI;
 
 @Service
 public class MessagingService {
@@ -22,6 +23,9 @@ public class MessagingService {
     private final OffPlatformPaymentAttemptRepository offPlatformPaymentAttemptRepository;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
 
     public MessagingService(MessageThreadRepository threadRepository,
                             ThreadMessageRepository threadMessageRepository,
@@ -60,6 +64,8 @@ public class MessagingService {
         MessageThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new IllegalArgumentException("Thread not found"));
 
+        requireParticipant(thread, userId);
+
         TrainerClientLink link = linkRepository.findById(thread.getLinkId())
                 .orElseThrow(() -> new IllegalArgumentException("Link not found"));
 
@@ -70,7 +76,6 @@ public class MessagingService {
             thread = threadRepository.save(thread);
         }
 
-        requireParticipant(thread, userId);
         return thread;
     }
 
@@ -87,13 +92,13 @@ public class MessagingService {
         return threadMessageRepository.findByThread_IdOrderByCreatedAtAsc(thread.getId());
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = MessagingException.class)
     public void sendMessage(Long threadId, Long senderUserId, MessageType type, String bodyText) {
         sendMessage(threadId, senderUserId, type, bodyText, null, null, null);
     }
 
-    @Transactional
-    public void sendMessage(Long threadId,
+    @Transactional(noRollbackFor = MessagingException.class)
+    public Message sendMessage(Long threadId,
                             Long senderUserId,
                             MessageType type,
                             String bodyText,
@@ -105,8 +110,14 @@ public class MessagingService {
 
         requireParticipant(thread, senderUserId);
 
+        // Relationship transitions use this same client row. Check current state after acquiring it.
+        userRepository.findByIdForUpdate(thread.getClientId())
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        if (entityManager != null) entityManager.refresh(thread, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+
         TrainerClientLink link = linkRepository.findById(thread.getLinkId())
                 .orElseThrow(() -> new IllegalArgumentException("Link not found"));
+        if (entityManager != null) entityManager.refresh(link);
 
         // Thread must be OPEN and link must be ACTIVE to send.
         if (desiredThreadStatus(link.getStatus()) == MessageThreadStatus.LOCKED) {
@@ -125,7 +136,13 @@ public class MessagingService {
             throw new IllegalArgumentException("Message body cannot be empty");
         }
         String trimmed = bodyText.trim();
-        String matched = PaymentKeywordDetector.firstMatch(trimmed);
+        if (trimmed.length() > 4000 || type == null) {
+            throw new IllegalArgumentException("Message must be at most 4,000 characters and have a type");
+        }
+        String safeAttachmentUrl = validateAttachmentUrl(attachmentUrl);
+        String safeAttachmentName = optionalText(attachmentName, 200);
+        String safeAttachmentType = optionalText(attachmentType, 100);
+        String matched = PaymentKeywordDetector.firstMatch(trimmed + (safeAttachmentUrl == null ? "" : "\n" + safeAttachmentUrl));
         if (matched != null) {
             offPlatformPaymentAttemptRepository.save(new OffPlatformPaymentAttempt(
                     thread.getId(),
@@ -141,9 +158,9 @@ public class MessagingService {
                 senderUserId,
                 type,
                 trimmed,
-                attachmentName,
-                attachmentUrl,
-                attachmentType
+                safeAttachmentName,
+                safeAttachmentUrl,
+                safeAttachmentType
         ));
 
         Long recipientId = senderUserId.equals(thread.getTrainerId()) ? thread.getClientId() : thread.getTrainerId();
@@ -151,8 +168,9 @@ public class MessagingService {
         User sender = userRepository.findById(senderUserId).orElse(null);
         if (recipient != null) {
             String senderName = sender != null ? sender.getFullName() : "Someone";
-            notificationService.create(recipient, NotificationType.SYSTEM, "New message", "New message from " + senderName + ".");
+            notificationService.create(recipient, NotificationType.SYSTEM, "New message", "New message from " + senderName + ".", "/inbox/" + thread.getId());
         }
+        return saved;
     }
 
     private void requireParticipant(MessageThread thread, Long userId) {
@@ -163,6 +181,28 @@ public class MessagingService {
         if (!isParticipant) {
             throw new AccessDeniedException("Not a participant in this thread");
         }
+    }
+
+    private String optionalText(String value, int maxLength) {
+        if (value == null || value.isBlank()) return null;
+        String trimmed = value.trim();
+        if (trimmed.length() > maxLength) throw new IllegalArgumentException("Attachment field is too long");
+        return trimmed;
+    }
+
+    private String validateAttachmentUrl(String value) {
+        String trimmed = optionalText(value, 500);
+        if (trimmed == null) return null;
+        try {
+            URI uri = URI.create(trimmed);
+            if (!("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                    || uri.getHost() == null || uri.getUserInfo() != null) {
+                throw new IllegalArgumentException("Attachment must be an HTTP or HTTPS link without credentials");
+            }
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid attachment link");
+        }
+        return trimmed;
     }
 
     private static MessageThreadStatus desiredThreadStatus(TrainerClientLinkStatus linkStatus) {

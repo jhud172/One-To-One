@@ -1,0 +1,143 @@
+- banner:
+  - link "One To One Logo One To One":
+    - /url: /
+    - img "One To One Logo"
+    - generic: One To One
+  - navigation "Primary navigation":
+    - link "Dashboard":
+      - /url: /dashboard
+      - generic: Dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: /chat
+      - generic: Charlie
+    - link "Trainers":
+      - /url: /client/trainers
+      - generic: Trainers
+    - link "Shop":
+      - /url: /merch
+      - generic: Shop
+    - link "Leaderboard":
+      - /url: /levels
+      - generic: Leaderboard
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - generic "Premium member":
+      - button "Premium features enabled":
+      - status: Premium Active
+    - button "Open profile menu":
+- main:
+  - paragraph: Workout management
+  - heading "One place for scheduled workouts, logs, and history" [level=1]
+  - paragraph: Open upcoming workouts, jump back into completed sessions, and edit personal exercise logs without switching between calendar flows.
+  - link "Open planner":
+    - /url: /calendar
+  - link "View log library":
+    - /url: /exercise-log/list
+  - paragraph: Active today
+  - heading "Workouts ready to launch now" [level=2]
+  - generic: 1 ready
+  - article:
+    - heading "Client Premium Plan" [level=3]
+    - generic: Ready
+    - generic: Calendar schedule
+    - paragraph: Thursday 1 October
+    - paragraph: 0 of 1 sets logged
+    - link "Open workout":
+      - /url: /workout-session/launch/occurrence/30
+  - paragraph: Upcoming
+  - heading "Scheduled workouts over the next 3 weeks" [level=2]
+  - link "Open calendar":
+    - /url: /calendar
+  - article:
+    - paragraph: Calendar schedule
+    - heading "Client Premium Plan" [level=3]
+    - paragraph: Thursday 8 October 2026
+    - paragraph: 1 exercises planned
+    - link "Launch workout":
+      - /url: /workout-session/launch/occurrence/31
+  - article:
+    - paragraph: Calendar schedule
+    - heading "Client Premium Plan" [level=3]
+    - paragraph: Thursday 15 October 2026
+    - paragraph: 1 exercises planned
+    - link "Launch workout":
+      - /url: /workout-session/launch/occurrence/32
+  - article:
+    - paragraph: Calendar schedule
+    - heading "Client Premium Plan" [level=3]
+    - paragraph: Thursday 22 October 2026
+    - paragraph: 1 exercises planned
+    - link "Launch workout":
+      - /url: /workout-session/launch/occurrence/33
+  - paragraph: Session history
+  - heading "Recently completed workout sessions" [level=2]
+  - article:
+    - heading "Client Premium Push" [level=3]
+    - paragraph: 24 Sept 2026
+    - paragraph: 0 sets complete
+    - link "Review":
+      - /url: /workout-session/21/complete
+  - article:
+    - heading "Client Premium Push" [level=3]
+    - paragraph: 17 Sept 2026
+    - paragraph: 0 sets complete
+    - link "Review":
+      - /url: /workout-session/20/complete
+  - article:
+    - heading "Client Premium Push" [level=3]
+    - paragraph: 10 Sept 2026
+    - paragraph: 0 sets complete
+    - link "Review":
+      - /url: /workout-session/19/complete
+  - article:
+    - heading "Client Premium Push" [level=3]
+    - paragraph: 3 Sept 2026
+    - paragraph: 0 sets complete
+    - link "Review":
+      - /url: /workout-session/18/complete
+  - paragraph: Exercise logs
+  - heading "Personal log entries you can edit" [level=2]
+  - link "Full log history":
+    - /url: /exercise-log/list
+  - generic: Personal workout logs will appear here after you add them.
+- button "Open Charlie"
+- text: Add photo Send message
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - button "Scroll platform actions left":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Scroll platform actions right":
+  - button "Customize platform panel":

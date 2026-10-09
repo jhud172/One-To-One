@@ -1,50 +1,7 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02735}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02735}">Create Programme</h1>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02736}">Create a programme template and coaching notes.</p>
-                </div>
-                <a th:href="@{/trainer/library/programmes}"
-                   class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.00571}">
-                    Back
-                </a>
-            </div>
-
-            <form class="mt-6 space-y-4" method="post" th:action="@{/trainer/library/programmes/create}" th:object="${form}">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
-                <div>
-                    <label class="block text-sm font-semibold" for="title" th:text="#{ui.00583}">Title</label>
-                    <input id="title" type="text" th:field="*{title}"
-                           class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30" />
-                    <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold" for="weeks" th:text="#{ui.02737}">Weeks</label>
-                    <input id="weeks" type="number" min="1" th:field="*{weeks}"
-                           class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white" />
-                    <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('weeks')}" th:errors="*{weeks}"></div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold" for="notesText" th:text="#{ui.02687}">Coaching notes (one per line)</label>
-                    <textarea id="notesText" rows="5" th:field="*{notesText}"
-                              class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"></textarea>
-                </div>
-
-                <div class="flex items-center justify-end gap-2">
-                    <button type="submit"
-                            class="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.00109}">
-                        Save
-                    </button>
-                </div>
-            </form>
-        </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02735}, null, ~{::content}, ~{::pageScripts})}">
+    <div th:fragment="content" class="client-workspace-v2 library-exercise-v2 programme-library-v2">
+        <header class="detail-header"><div class="detail-header-content"><div><h1 class="detail-title" th:text="#{ui.02735}"></h1><p class="detail-subtitle" th:text="#{ui.library.programmeCreateHint}"></p></div><a class="detail-btn-secondary" th:href="@{/trainer/library/programmes(q=${query},page=${libraryPage})}" th:text="#{ui.00241}"></a></div></header>
+        <th:block th:replace="~{trainer-views/trainer/programmes/edit :: programmeForm}"></th:block>
     </div>
-
+    <th:block th:fragment="pageScripts" th:replace="~{trainer-views/trainer/programmes/edit :: pageScripts}"></th:block>
 </th:block>

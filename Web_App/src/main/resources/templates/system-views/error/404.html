@@ -23,7 +23,7 @@
                 <div class="error-actions">
                     <a th:href="@{/explore}" class="error-button error-button--primary" th:text="#{ui.00432}">Explore trainers</a>
                     <a th:href="@{/}" class="error-button error-button--secondary" th:text="#{ui.01401}">Home</a>
-                    <button type="button" data-history-back data-history-fallback="/" class="error-button error-button--ghost" th:text="#{ui.02373}">Go back</button>
+                    <button type="button" hidden data-history-back data-history-fallback="/" class="error-button error-button--ghost" th:text="#{ui.02373}">Go back</button>
                 </div>
 
                 <div class="error-link-grid" aria-label="Helpful links" th:attr="aria-label=#{ui.02380}">

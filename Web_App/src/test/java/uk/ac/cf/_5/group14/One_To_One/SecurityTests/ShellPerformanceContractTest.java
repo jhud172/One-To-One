@@ -130,7 +130,7 @@ class ShellPerformanceContractTest {
         assertThat(chat).contains("bottom: calc(var(--shell-platform-panel-height");
         assertThat(quickActions).contains("bottom: calc(var(--shell-platform-panel-height");
         assertThat(dashboard)
-                .contains("bottom: calc(var(--shell-platform-panel-height) + 0.75rem)")
+                .contains("bottom: calc(var(--shell-platform-panel-height) + var(--shell-local-dock-height) + 0.35rem)")
                 .contains("padding-bottom: calc(var(--shell-platform-panel-height) + var(--shell-local-dock-height))");
     }
 

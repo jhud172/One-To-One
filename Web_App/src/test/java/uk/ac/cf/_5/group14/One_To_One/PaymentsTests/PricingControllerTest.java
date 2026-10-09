@@ -93,7 +93,7 @@ class PricingControllerTest {
 
         when(authHelper.getAuthenticatedUser()).thenReturn(user);
         when(paymentProviderService.verifyCheckoutSession("cs_test_123"))
-                .thenReturn(new PaymentSubscriptionVerification(true, "Stripe", "cus_1", "sub_1", periodEnd, "Subscription activated."));
+                .thenReturn(new PaymentSubscriptionVerification(true, "Stripe", "cus_1", "sub_1", periodEnd, "Subscription activated.", 5L, PlatformPlan.MONTHLY));
 
         String view = controller.checkoutSuccess(PlatformPlan.MONTHLY, "cs_test_123", new RedirectAttributesModelMap());
 
@@ -131,5 +131,31 @@ class PricingControllerTest {
         user.setPhoneVerified(true);
         user.setPhoneNumber("07123456789");
         return user;
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"99,MONTHLY", "5,YEARLY", "5,INFINITE"})
+    void checkoutSuccessRejectsAnotherMemberOrPlan(long owner, PlatformPlan verifiedPlan) {
+        PricingController controller = new PricingController(authHelper, platformSubscriptionService,
+                paymentProviderService, savedPaymentMethodService, simulatedPaymentCardResolver, "https://example.test");
+        when(authHelper.getAuthenticatedUser()).thenReturn(verifiedUser());
+        when(paymentProviderService.verifyCheckoutSession("cs_test_other"))
+                .thenReturn(new PaymentSubscriptionVerification(true, "Stripe", "cus_other", "sub_other",
+                        Instant.now().plusSeconds(3600), "Verified", owner, verifiedPlan));
+        var redirect = new RedirectAttributesModelMap();
+
+        assertThat(controller.checkoutSuccess(PlatformPlan.MONTHLY, "cs_test_other", redirect)).isEqualTo("redirect:/pricing");
+        assertThat(redirect.getFlashAttributes()).containsKey("pricingError");
+        org.mockito.Mockito.verifyNoInteractions(platformSubscriptionService);
+    }
+
+    @Test
+    void checkoutCannotPurchaseInfiniteAccess() {
+        PricingController controller = new PricingController(authHelper, platformSubscriptionService,
+                paymentProviderService, savedPaymentMethodService, simulatedPaymentCardResolver, "https://example.test");
+        var redirect = new RedirectAttributesModelMap();
+        assertThat(controller.startCheckout(PlatformPlan.INFINITE, null, null, null, null, null, null, null, false, redirect))
+                .isEqualTo("redirect:/pricing");
+        org.mockito.Mockito.verifyNoInteractions(paymentProviderService, platformSubscriptionService, simulatedPaymentCardResolver);
     }
 }

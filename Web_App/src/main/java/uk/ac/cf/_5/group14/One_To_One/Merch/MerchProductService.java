@@ -9,6 +9,12 @@ public interface MerchProductService {
 
     List<MerchProduct> getActiveProducts();
 
+    long countActiveProducts();
+
+    List<String> getActiveCategories();
+
+    org.springframework.data.domain.Page<MerchProduct> searchCatalogue(String search, String category, boolean inStock, int page);
+
     List<MerchProduct> getAllProducts();
 
     Optional<MerchProduct> findById(Long id);

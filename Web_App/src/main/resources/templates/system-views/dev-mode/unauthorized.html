@@ -2,7 +2,7 @@
           th:replace="~{base :: layout(#{ui.02367}, ~{::pageStyles}, ~{::content}, ~{::pageScripts})}">
 
     <th:block th:fragment="pageStyles">
-        <link rel="stylesheet" th:href="@{/css/components/dev/dev-mode-pages.css(v='20260315b')}">
+        <link rel="stylesheet" th:href="@{/css/components/dev/dev-mode-pages.css(v=${uiCssVersion})}">
     </th:block>
 
     <div th:fragment="content"

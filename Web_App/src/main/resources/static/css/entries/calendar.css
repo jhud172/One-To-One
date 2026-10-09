@@ -3,5 +3,8 @@
 @import "../components/calendar/day-view.css";
 @import "../components/calendar/detail-view.css";
 @import "../components/calendar/sticker-calendar.css";
+@import "../components/calendar/calendar-v2.css";
+@import "../components/calendar/schedule-workspace.css";
+@import "../components/calendar/completion-history.css";
 
 @tailwind components;

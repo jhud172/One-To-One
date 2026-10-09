@@ -25,7 +25,11 @@ public class HtmlDoctypeResponseFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        if (!"GET".equalsIgnoreCase(request.getMethod())) {
+        String accept = request.getHeader("Accept");
+        boolean formPost = "POST".equalsIgnoreCase(request.getMethod())
+                && (accept == null || accept.contains(MediaType.TEXT_HTML_VALUE))
+                && !"XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
+        if (!"GET".equalsIgnoreCase(request.getMethod()) && !formPost) {
             return true;
         }
 
@@ -33,6 +37,7 @@ public class HtmlDoctypeResponseFilter extends OncePerRequestFilter {
         return path.startsWith("/css/")
                 || path.startsWith("/js/")
                 || path.startsWith("/img/")
+                || path.startsWith("/models/one-to-one/")
                 || path.startsWith("/webjars/")
                 || path.startsWith("/api/")
                 || path.startsWith("/actuator/")
@@ -53,12 +58,11 @@ public class HtmlDoctypeResponseFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         ContentCachingResponseWrapper cachingResponse = new ContentCachingResponseWrapper(response);
-        try {
-            filterChain.doFilter(request, cachingResponse);
-            prependDoctypeIfNeeded(cachingResponse);
-        } finally {
-            cachingResponse.copyBodyToResponse();
-        }
+        // A failed render must leave the underlying response uncommitted so
+        // the container can dispatch the error page instead of partial HTML.
+        filterChain.doFilter(request, cachingResponse);
+        prependDoctypeIfNeeded(cachingResponse);
+        cachingResponse.copyBodyToResponse();
     }
 
     private void prependDoctypeIfNeeded(ContentCachingResponseWrapper response) throws IOException {
@@ -68,6 +72,7 @@ public class HtmlDoctypeResponseFilter extends OncePerRequestFilter {
         }
 
         Charset charset = resolveCharset(response.getCharacterEncoding());
+        body = normaliseDocumentStart(new String(body, charset)).getBytes(charset);
         byte[] doctype = "<!DOCTYPE html>\n".getBytes(charset);
         byte[] updated = new byte[doctype.length + body.length];
         System.arraycopy(doctype, 0, updated, 0, doctype.length);
@@ -91,7 +96,7 @@ public class HtmlDoctypeResponseFilter extends OncePerRequestFilter {
         }
 
         Charset charset = resolveCharset(encoding);
-        String markup = new String(body, charset).stripLeading();
+        String markup = normaliseDocumentStart(new String(body, charset));
         if (markup.isEmpty()) {
             return false;
         }
@@ -102,6 +107,14 @@ public class HtmlDoctypeResponseFilter extends OncePerRequestFilter {
         }
 
         return lowerMarkup.startsWith("<html");
+    }
+
+    private String normaliseDocumentStart(String markup) {
+        String start = markup.stripLeading();
+        while (start.startsWith("\uFEFF")) {
+            start = start.substring(1).stripLeading();
+        }
+        return start;
     }
 
     private Charset resolveCharset(String encoding) {

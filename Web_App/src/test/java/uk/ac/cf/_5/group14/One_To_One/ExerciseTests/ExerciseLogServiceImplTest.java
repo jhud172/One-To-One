@@ -34,8 +34,16 @@ public class ExerciseLogServiceImplTest {
     @Mock
     private CalendarTaskRepository calendarTaskRepository;
 
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private ExerciseLogServiceImpl exerciseLogService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void injectPersistenceContext() {
+        org.springframework.test.util.ReflectionTestUtils.setField(exerciseLogService, "entityManager", entityManager);
+    }
 
     @Test
     void saveLog_ShouldSaveLogWithoutAssociations() {
@@ -82,7 +90,8 @@ public class ExerciseLogServiceImplTest {
         ExerciseLog savedLog = new ExerciseLog();
         when(exerciseLogRepository.save(any())).thenReturn(savedLog);
         ScheduleOccurrence occurrence = new ScheduleOccurrence();
-        when(scheduleOccurrenceRepository.findById(1L)).thenReturn(Optional.of(occurrence));
+        occurrence.setId(1L); occurrence.setUser(user); occurrence.setDate(form.getDate());
+        when(scheduleOccurrenceRepository.findOwnedForLogUpdate(1L, 1L)).thenReturn(Optional.of(occurrence));
         exerciseLogService.saveLog(form, user);
         verify(scheduleOccurrenceRepository).save(occurrence);
         assertEquals(savedLog, occurrence.getExerciseLog());
@@ -101,9 +110,9 @@ public class ExerciseLogServiceImplTest {
         User user = new User();
         user.setId(1L);
         ExerciseLog saved = new ExerciseLog();
-        when(exerciseLogRepository.save(any())).thenReturn(saved);
-        when(scheduleOccurrenceRepository.findById(99L)).thenReturn(Optional.empty());
-        exerciseLogService.saveLog(form, user);
+        when(scheduleOccurrenceRepository.findOwnedForLogUpdate(99L, 1L)).thenReturn(Optional.empty());
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> exerciseLogService.saveLog(form, user));
+        verify(exerciseLogRepository, never()).save(any());
         verify(scheduleOccurrenceRepository, never()).save(any());
     }
 
@@ -122,8 +131,9 @@ public class ExerciseLogServiceImplTest {
         ExerciseLog savedLog = new ExerciseLog();
         when(exerciseLogRepository.save(any())).thenReturn(savedLog);
         CalendarTask task = new CalendarTask();
+        task.setId(1L); task.setUser(user); task.setDate(form.getDate());
         task.setCompleted(false);
-        when(calendarTaskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(calendarTaskRepository.findOwnedForLogUpdate(1L, 1L)).thenReturn(Optional.of(task));
         exerciseLogService.saveLog(form, user);
         verify(calendarTaskRepository).save(task);
         assertEquals(savedLog, task.getExerciseLog());
@@ -141,9 +151,10 @@ public class ExerciseLogServiceImplTest {
         form.setDurationMinutes(20);
         form.setCalendarTaskId(99L);
         User user = new User();
-        when(exerciseLogRepository.save(any())).thenReturn(new ExerciseLog());
-        when(calendarTaskRepository.findById(99L)).thenReturn(Optional.empty());
-        exerciseLogService.saveLog(form, user);
+        user.setId(1L);
+        when(calendarTaskRepository.findOwnedForLogUpdate(99L, 1L)).thenReturn(Optional.empty());
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> exerciseLogService.saveLog(form, user));
+        verify(exerciseLogRepository, never()).save(any());
         verify(calendarTaskRepository, never()).save(any());
     }
 

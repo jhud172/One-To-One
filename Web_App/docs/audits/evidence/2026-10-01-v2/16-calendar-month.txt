@@ -1,0 +1,238 @@
+- banner:
+  - link "One To One Logo One To One":
+    - /url: /
+    - img "One To One Logo"
+    - generic: One To One
+  - navigation "Primary navigation":
+    - link "Dashboard":
+      - /url: /dashboard
+      - generic: Dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: /chat
+      - generic: Charlie
+    - link "Trainers":
+      - /url: /client/trainers
+      - generic: Trainers
+    - link "Shop":
+      - /url: /merch
+      - generic: Shop
+    - link "Leaderboard":
+      - /url: /levels
+      - generic: Leaderboard
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - generic "Premium member":
+      - button "Premium features enabled":
+      - status: Premium Active
+    - button "Open profile menu":
+- main:
+  - heading "Calendar month view" [level=1]
+  - link "Month view":
+    - /url: /calendar?view=month
+  - link "Week view":
+    - /url: /calendar?view=week
+  - link "Day view":
+    - /url: /calendar/day/2026-10-01
+  - generic "Expand month view":
+    - button "Expand"
+  - generic "Expand mode information":
+    - button "How expand mode works":
+      - generic: i
+    - tooltip "Expand mode loads adjacent months as you scroll near either edge."
+  - text: Month View -
+  - generic: Detailed
+  - generic "Calendar layout information":
+    - button "Calendar layout settings help":
+      - generic: i
+    - 'tooltip "Controls how cards display: Detailed combines items, Grouped separates categories. Open calendar settings"':
+      - text: "Controls how cards display: Detailed combines items, Grouped separates categories."
+      - link "Open calendar settings":
+        - /url: /profile
+  - button "Schedules"
+  - button "Motivation"
+  - generic "Month jump controls":
+    - button "Jump to today"
+    - generic: Jump to date
+    - textbox "Jump to date"
+    - button "Jump to date"
+    - button "Jump to next workout"
+    - generic: Jump to task
+    - textbox "Jump to task":
+      - /placeholder: Task name
+    - button "Jump to task"
+    - paragraph
+  - link "← Prev":
+    - /url: /calendar?view=month&month=9&year=2026
+  - generic: October
+  - generic: "2026"
+  - link "Next →":
+    - /url: /calendar?view=month&month=11&year=2026
+  - region "Calendar month carousel":
+    - generic: Mon
+    - generic: Tue
+    - generic: Wed
+    - generic: Thu
+    - generic: Fri
+    - generic: Sat
+    - generic: Sun
+    - link "1st":
+      - /url: /calendar/day/2026-10-01
+    - generic: Today
+    - generic "Gym workout (pending)": 🏋
+    - group "Scheduled items for 2026-10-01":
+      - generic: Client premium training block
+      - generic: 07:30
+      - generic: Trap Bar Deadlift
+      - generic: "From: Client Premium Plan"
+    - link "2nd":
+      - /url: /calendar/day/2026-10-02
+    - generic: Tomorrow
+    - group "Scheduled items for 2026-10-02"
+    - link "3rd":
+      - /url: /calendar/day/2026-10-03
+    - group "Scheduled items for 2026-10-03"
+    - link "4th":
+      - /url: /calendar/day/2026-10-04
+    - group "Scheduled items for 2026-10-04"
+    - link "5th":
+      - /url: /calendar/day/2026-10-05
+    - group "Scheduled items for 2026-10-05"
+    - link "6th":
+      - /url: /calendar/day/2026-10-06
+    - group "Scheduled items for 2026-10-06"
+    - link "7th":
+      - /url: /calendar/day/2026-10-07
+    - group "Scheduled items for 2026-10-07"
+    - link "8th":
+      - /url: /calendar/day/2026-10-08
+    - generic "Gym workout (pending)": 🏋
+    - group "Scheduled items for 2026-10-08":
+      - generic: Client premium training block
+      - generic: 07:30
+      - generic: Trap Bar Deadlift
+      - generic: "From: Client Premium Plan"
+    - link "9th":
+      - /url: /calendar/day/2026-10-09
+    - group "Scheduled items for 2026-10-09"
+    - link "10th":
+      - /url: /calendar/day/2026-10-10
+    - group "Scheduled items for 2026-10-10"
+    - link "11th":
+      - /url: /calendar/day/2026-10-11
+    - group "Scheduled items for 2026-10-11"
+    - link "12th":
+      - /url: /calendar/day/2026-10-12
+    - group "Scheduled items for 2026-10-12"
+    - link "13th":
+      - /url: /calendar/day/2026-10-13
+    - group "Scheduled items for 2026-10-13"
+    - link "14th":
+      - /url: /calendar/day/2026-10-14
+    - group "Scheduled items for 2026-10-14"
+    - link "15th":
+      - /url: /calendar/day/2026-10-15
+    - generic "Gym workout (pending)": 🏋
+    - group "Scheduled items for 2026-10-15":
+      - generic: Client premium training block
+      - generic: 07:30
+      - generic: Trap Bar Deadlift
+      - generic: "From: Client Premium Plan"
+    - link "16th":
+      - /url: /calendar/day/2026-10-16
+    - group "Scheduled items for 2026-10-16"
+    - link "17th":
+      - /url: /calendar/day/2026-10-17
+    - group "Scheduled items for 2026-10-17"
+    - link "18th":
+      - /url: /calendar/day/2026-10-18
+    - group "Scheduled items for 2026-10-18"
+    - link "19th":
+      - /url: /calendar/day/2026-10-19
+    - group "Scheduled items for 2026-10-19"
+    - link "20th":
+      - /url: /calendar/day/2026-10-20
+    - group "Scheduled items for 2026-10-20"
+    - link "21st":
+      - /url: /calendar/day/2026-10-21
+    - group "Scheduled items for 2026-10-21"
+    - link "22nd":
+      - /url: /calendar/day/2026-10-22
+    - generic "Gym workout (pending)": 🏋
+    - group "Scheduled items for 2026-10-22":
+      - generic: Client premium training block
+      - generic: 07:30
+      - generic: Trap Bar Deadlift
+      - generic: "From: Client Premium Plan"
+    - link "23rd":
+      - /url: /calendar/day/2026-10-23
+    - group "Scheduled items for 2026-10-23"
+    - link "24th":
+      - /url: /calendar/day/2026-10-24
+    - group "Scheduled items for 2026-10-24"
+    - link "25th":
+      - /url: /calendar/day/2026-10-25
+    - group "Scheduled items for 2026-10-25"
+    - link "26th":
+      - /url: /calendar/day/2026-10-26
+    - group "Scheduled items for 2026-10-26"
+    - link "27th":
+      - /url: /calendar/day/2026-10-27
+    - group "Scheduled items for 2026-10-27"
+    - link "28th":
+      - /url: /calendar/day/2026-10-28
+    - group "Scheduled items for 2026-10-28"
+    - link "29th":
+      - /url: /calendar/day/2026-10-29
+    - generic "Gym workout (pending)": 🏋
+    - group "Scheduled items for 2026-10-29":
+      - generic: Client premium training block
+      - generic: 07:30
+      - generic: Trap Bar Deadlift
+      - generic: "From: Client Premium Plan"
+    - link "30th":
+      - /url: /calendar/day/2026-10-30
+    - group "Scheduled items for 2026-10-30"
+    - link "31st":
+      - /url: /calendar/day/2026-10-31
+    - group "Scheduled items for 2026-10-31"
+- button "Open Charlie"
+- text: Add photo Send message
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - button "Scroll platform actions left":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Scroll platform actions right":
+  - button "Customize platform panel":

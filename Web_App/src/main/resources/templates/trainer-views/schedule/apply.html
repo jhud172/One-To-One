@@ -1,50 +1,53 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02479}, null, ~{::content}, null)}">
-
-<div th:fragment="content">
-    <div class="schedule-apply-page mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-        <nav class="mb-6 flex items-center gap-2 text-sm">
-            <a href="/schedules" class="schedule-apply-breadcrumb-link" th:text="#{ui.02478}">&larr; Schedules</a>
-            <span class="schedule-apply-breadcrumb-separator">&rsaquo;</span>
-            <span class="schedule-apply-breadcrumb-current" th:text="#{ui.02479}">Apply Schedule</span>
-        </nav>
-
-        <div class="mb-6 flex flex-col gap-2">
-            <h1 class="schedule-apply-title text-2xl font-bold tracking-tight" th:text="#{ui.02480}">Apply schedule</h1>
-            <p class="schedule-apply-subtitle text-sm">
-                <th:block th:text="#{ui.02481}">Applying:</th:block> <span class="schedule-apply-glow-text font-semibold" th:text="${schedule.name}"></span>
-            </p>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02479}, null, ~{::content}, null)}">
+<section th:fragment="content" class="schedule-composer schedule-application" aria-labelledby="application-title">
+    <header class="schedule-composer__header">
+        <div>
+            <p class="schedule-composer__eyebrow" th:text="#{ui.training.sourceCalendar}">Calendar plan</p>
+            <h1 id="application-title" th:text="#{ui.02480}">Apply schedule</h1>
+            <p dir="auto" th:text="${schedule.name}">Plan</p>
+            <p th:text="#{ui.application.help}">Preview the actual dates before applying. Applying recalculates the plan and retains existing records.</p>
         </div>
-
-        <section class="schedule-apply-panel rounded-2xl p-6">
-            <form th:action="@{'/schedules/' + ${schedule.id} + '/apply'}" method="post" class="space-y-5">
-                <input type="hidden" th:if="${_csrf != null}"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-                <div>
-                    <label class="schedule-apply-label mb-1.5 block text-sm font-semibold" th:text="#{ui.00589}">Start date</label>
-                    <input type="date" name="startDate" required
-                           class="schedule-apply-input w-full rounded-xl px-4 py-2.5"/>
-                </div>
-
-                <div>
-                    <label class="schedule-apply-label mb-1.5 block text-sm font-semibold" th:text="#{ui.02482}">Number of weeks</label>
-                    <input type="number" name="weeks" value="4" min="1"
-                           class="schedule-apply-input w-full rounded-xl px-4 py-2.5"/>
-                </div>
-
-                <div class="pt-2">
-                    <button class="schedule-apply-btn inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold">
-                        <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        <th:block th:text="#{ui.02480}">Apply schedule</th:block>
-                    </button>
+        <a class="training-launch__action" th:href="@{/schedules}" th:text="#{ui.scheduleCentre.title}">Schedule workspace</a>
+    </header>
+    <p class="schedule-composer__notice schedule-composer__notice--error" role="alert" th:if="${applyError == true}" th:text="${#messages.msg(applyNotice != null ? applyNotice : 'ui.deploy.invalidWindow')}">Choose valid dates.</p>
+    <div class="schedule-composer__grid">
+        <section class="schedule-composer__panel" aria-labelledby="application-settings-title">
+            <h2 id="application-settings-title" th:text="#{ui.00725}">Settings</h2>
+            <form id="schedule-application-form" th:action="@{/schedules/{id}/apply(id=${schedule.id})}" method="post">
+                <label for="apply-start-date" th:text="#{ui.00589}">Start date</label>
+                <input id="apply-start-date" type="date" name="startDate" required th:value="${applyStartDate}"/>
+                <label for="apply-weeks" th:text="#{ui.02482}">Number of weeks</label>
+                <input id="apply-weeks" type="number" name="weeks" min="1" max="52" required th:value="${applyWeeks}"/>
+                <p class="schedule-composer__hint" th:text="#{ui.deploy.nativeHelp}">Matching movements are retained.</p>
+                <p class="schedule-composer__hint" th:text="#{ui.composer.cycleHelp}">Cycle rules</p>
+                <p class="schedule-composer__hint" th:text="#{ui.application.visibility}">New calendar windows are shown without requiring logging. Existing visibility and logging settings are retained; manage them in the schedule workspace.</p>
+                <div class="schedule-composer__actions">
+                    <button class="training-launch__action" type="submit" th:formaction="@{/schedules/{id}/apply/preview(id=${schedule.id})}" th:text="#{ui.application.preview}">Preview dates</button>
+                    <button class="training-launch__action training-launch__action--primary" type="submit" th:text="#{ui.02480}">Apply schedule</button>
                 </div>
             </form>
         </section>
+        <section class="schedule-composer__panel schedule-composer__placements" aria-labelledby="application-preview-title">
+            <h2 id="application-preview-title" th:text="#{ui.application.dates}">Planned dates</h2>
+            <p class="schedule-composer__hint" th:if="${applicationPreview == null}" th:text="#{ui.application.review}">Choose dates, then preview. This does not save any calendar items.</p>
+            <th:block th:if="${applicationPreview != null}">
+                <p class="schedule-composer__hint" th:text="#{ui.application.snapshot}">This preview uses the submitted fields. Preview again after changing them; applying always recalculates the current fields and plan.</p>
+                <p class="schedule-application__range"><time th:datetime="${applicationPreview.window.start}" th:text="${#temporals.format(applicationPreview.window.start,'d MMM uuuu')}"></time> – <time th:datetime="${applicationPreview.window.end}" th:text="${#temporals.format(applicationPreview.window.end,'d MMM uuuu')}"></time></p>
+                <div class="schedule-composer__notice" role="status">
+                    <p th:text="#{ui.application.added(${applicationPreview.added})}">New movements</p>
+                    <p th:text="#{ui.application.already(${applicationPreview.already})}">Already scheduled</p>
+                </div>
+                <p class="schedule-composer__notice" th:if="${applicationPreview.movements == 0}" th:text="#{ui.application.empty}">No movements land in this range.</p>
+                <ol class="schedule-application__dates">
+                    <li th:each="day : ${applicationPreview.dates}" th:attr="data-application-date=${day.date}">
+                        <time th:datetime="${day.date}" th:text="${#temporals.format(day.date,'EEE d MMM uuuu')}"></time>
+                        <p th:text="#{ui.scheduleCentre.entries(${day.movements})}">Movements</p>
+                        <p th:text="#{ui.application.added(${day.added})}">New</p>
+                        <p th:text="#{ui.application.already(${day.already})}">Existing</p>
+                    </li>
+                </ol>
+            </th:block>
+        </section>
     </div>
-</div>
-
+</section>
 </th:block>

@@ -1,0 +1,14 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.00268}, null, ~{::content}, null)}">
+    <div th:fragment="content" class="client-workspace-v2 assigned-plan-v2 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <nav class="client-workspace-nav" th:attr="aria-label=#{ui.00233}"><a th:href="@{/client/plan}" th:text="#{ui.plan.feedback}">Workout feedback</a><a th:href="@{/calendar}" th:text="#{ui.01297}">Calendar</a><a th:href="@{/client/trainers}" th:text="#{ui.00245}">My Trainer</a></nav>
+        <header class="detail-header"><div><h1 th:text="${assignment.schedule.name}"></h1><p th:text="${assignment.schedule.description}"></p><p class="plan-notice" th:text="#{ui.plan.scheduleHint}">Read-only schedule shared with you. Changes are made by your coach.</p></div></header>
+        <section th:if="${assignment.trainerNotes != null}" class="detail-card"><h2 th:text="#{ui.00239}">Coaching notes</h2><p class="plan-coaching-note" th:text="${assignment.trainerNotes}"></p></section>
+        <div class="assigned-schedule-days">
+            <section th:each="day : ${days}" class="detail-card">
+                <h2 th:text="${day.label != null} ? ${day.label} : #{ui.plan.cycleDay(${day.number})}"></h2>
+                <p th:if="${#lists.isEmpty(day.entries)}" th:text="#{ui.00238}">No items.</p>
+                <ul><li th:each="entry : ${day.entries}" th:text="${entry.customExercise != null ? entry.customExercise.name : (entry.exercise != null ? entry.exercise.name : '')}"></li></ul>
+            </section>
+        </div>
+    </div>
+</th:block>

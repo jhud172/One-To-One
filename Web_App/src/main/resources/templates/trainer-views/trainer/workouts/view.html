@@ -1,140 +1,118 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02748}, null, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="content" class="detail-container">
-        <!-- Header with key metadata at top -->
-        <div class="detail-header">
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(${workout.title}, null, ~{::content}, ~{::pageScripts})}">
+    <div th:fragment="content" class="client-workspace-v2 library-exercise-v2 workout-library-v2">
+        <header class="detail-header">
             <div class="detail-header-content">
-                <div class="detail-header-meta">
-                    <h1 class="detail-title" th:text="${workout.title}">Workout</h1>
-                    <p class="detail-subtitle" th:text="${workout.summary}">Summary</p>
+                <div>
+                    <h1 class="detail-title" dir="auto" th:text="${workout.title}"></h1>
+                    <p class="detail-subtitle plan-coaching-note" th:if="${!#strings.isEmpty(workout.summary)}" dir="auto" th:text="${workout.summary}"></p>
                 </div>
-                <!-- Primary actions - sticky on larger screens -->
                 <div class="detail-actions-sticky">
-                    <a th:href="@{/trainer/library/workouts}" class="detail-btn-secondary" th:text="#{ui.00571}">Back</a>
-                    <a th:href="@{/trainer/library/workouts/{id}/edit(id=${workout.id})}" class="detail-btn-primary" th:text="#{ui.00138}">Edit</a>
-                    <button type="button" class="detail-btn-secondary"
-                            data-share-dialog-open="shareDialog" th:text="#{ui.02697}">Share</button>
+                    <a class="detail-btn-secondary" th:href="@{/trainer/library/workouts(q=${query},page=${libraryPage})} + ${'#workout-' + workout.id}" th:text="#{ui.02800}"></a>
+                    <a class="detail-btn-secondary" th:href="@{/trainer/library/workouts/{id}/edit(id=${workout.id},q=${query},page=${libraryPage})}" th:text="#{ui.00138}"></a>
+                    <a href="#shareDialog" class="detail-btn-secondary" data-share-dialog-open="shareDialog" th:text="#{ui.02697}"></a>
                 </div>
             </div>
-        </div>
-
-        <!-- Structured content sections -->
-        <div class="detail-sections">
-            <div class="detail-grid-2">
-                <!-- Items Section -->
-                <section class="detail-section">
-                    <div class="detail-section-header">
-                        <h2 class="detail-section-title" th:text="#{ui.00237}">Items</h2>
-                    </div>
-
-                    <div th:if="${#lists.isEmpty(items)}" class="detail-section-content">
-                        <div class="detail-empty" th:text="#{ui.02810}">No items yet.</div>
-                    </div>
-
-                    <div th:if="${!#lists.isEmpty(items)}" class="detail-section-content">
-                        <div class="detail-list">
-                            <div th:each="item : ${items}" class="detail-list-item">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="detail-list-item-title"
-                                             th:text="${exercisesById[item.exerciseId] != null ? exercisesById[item.exerciseId].name : ('Exercise #' + item.exerciseId)}">Exercise</div>
-                                         <div class="detail-list-item-description"
-                                             th:text="${item.sets + ' sets × ' + item.reps + ' reps' + (item.rpe != null ? (', RPE ' + item.rpe) : '') + ', rest ' + item.restSeconds + 's'}">Details</div>
-                                         <div class="detail-list-item-meta" th:text="${'Order: ' + item.orderIndex}">Order</div>
-                                    </div>
-                                    <form method="post" th:action="@{/trainer/library/workouts/{wid}/items/{iid}/delete(wid=${workout.id},iid=${item.id})}">
-                                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                                        <button type="submit" class="detail-btn-destructive" th:text="#{ui.00801}">Remove</button>
-                                    </form>
-                                </div>
-                            </div>
+            <p class="library-instruction-sharing" th:text="#{ui.library.workoutCompositionHint}"></p>
+            <p th:if="${libraryWorkoutSaved}" class="checkin-feedback" role="status" th:text="#{ui.library.workoutSaved}"></p>
+            <p th:if="${libraryItemSaved}" class="checkin-feedback" role="status" th:text="#{ui.library.itemSaved}"></p>
+            <p th:if="${libraryOrderSaved}" class="checkin-feedback" role="status" th:text="#{ui.library.orderSaved}"></p>
+            <p th:if="${libraryOrderError}" class="profile-editor-errors" role="alert" th:text="#{ui.library.orderError}"></p>
+            <p th:if="${libraryWorkoutDeleteBlocked}" class="profile-editor-errors" role="alert" th:text="#{ui.library.workoutInUse}"></p>
+        </header>
+        <div class="detail-sections workout-composition-sections">
+            <section class="detail-section" aria-labelledby="workout-sequence-title">
+                <h2 id="workout-sequence-title" class="detail-section-title" th:text="#{ui.02329}"></h2>
+                <p th:if="${#lists.isEmpty(items)}" class="detail-empty" th:text="#{ui.02810}"></p>
+                <ol class="detail-list workout-item-list">
+                    <li th:each="item, position : ${items}" class="detail-list-item workout-sequence-item" th:id="${'workout-item-' + item.id}" tabindex="-1">
+                        <div>
+                            <p class="workout-sequence-position" th:id="${'workout-position-' + item.id}" th:text="#{ui.library.sequenceStep(${position.count},${position.size})}"></p>
+                            <h3 th:id="${'workout-exercise-' + item.id}" class="detail-card-title" dir="auto" th:text="${exercisesById[item.exerciseId] != null ? exercisesById[item.exerciseId].name : #messages.msg('ui.01682')}"></h3>
+                            <p class="plan-exercise-prescription">
+                                <span th:text="#{ui.plan.setsReps(${item.sets},${item.reps})}"></span>
+                                <span th:text="#{ui.plan.rest(${item.restSeconds})}"></span>
+                                <span th:if="${item.rpe != null}" th:text="#{ui.library.rpeValue(${item.rpe})}"></span>
+                            </p>
                         </div>
-                    </div>
-
-                    <!-- Add Item Form -->
-                    <div class="detail-section-content border-t border-slate-200 dark:border-white/10 pt-4">
-                        <h3 class="detail-section-title mb-3" th:text="#{ui.02811}">Add item</h3>
-                        <form class="grid grid-cols-1 gap-3" method="post" th:action="@{/trainer/library/workouts/{id}/items(id=${workout.id})}" th:object="${itemForm}">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
-                            <div>
-                                <label class="detail-metadata-label" for="exerciseId" th:text="#{ui.01682}">Exercise</label>
-                                <select id="exerciseId" th:field="*{exerciseId}"
-                                        class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
-                                    <option value="" selected th:text="#{ui.02812}">Select an exercise…</option>
-                                    <option th:each="ex : ${exercises}" th:value="${ex.id}" th:text="${ex.name}">Exercise</option>
-                                </select>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="detail-metadata-label" for="sets" th:text="#{ui.02330}">Sets</label>
-                                    <input id="sets" type="number" min="1" th:field="*{sets}"
-                                           class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white" />
-                                </div>
-                                <div>
-                                    <label class="detail-metadata-label" for="reps" th:text="#{ui.02339}">Reps</label>
-                                    <input id="reps" type="number" min="1" th:field="*{reps}"
-                                           class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white" />
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="detail-metadata-label" for="restSeconds" th:text="#{ui.02813}">Rest (seconds)</label>
-                                    <input id="restSeconds" type="number" min="0" th:field="*{restSeconds}"
-                                           class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white" />
-                                </div>
-                                <div>
-                                    <label class="detail-metadata-label" for="rpe" th:text="#{ui.02814}">RPE (optional)</label>
-                                    <input id="rpe" type="number" min="1" max="10" th:field="*{rpe}"
-                                           class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="detail-metadata-label" for="orderIndex" th:text="#{ui.02750}">Order index</label>
-                                <input id="orderIndex" type="number" min="0" th:field="*{orderIndex}"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white" />
-                            </div>
-
-                            <div class="flex items-center justify-end">
-                                <button type="submit" class="detail-btn-primary" th:text="#{ui.02591}">Add</button>
-                            </div>
-                        </form>
-                    </div>
-                </section>
-
-                <!-- Coaching Notes Section -->
-                <section class="detail-section">
-                    <h2 class="detail-section-title" th:text="#{ui.00239}">Coaching notes</h2>
-                    <div class="detail-section-content">
-                        <div th:if="${#lists.isEmpty(notes)}" class="detail-empty" th:text="#{ui.00240}">No notes.</div>
-                        <ul th:if="${!#lists.isEmpty(notes)}" class="detail-list">
-                            <li th:each="n : ${notes}" class="detail-list-item">
-                                <span class="detail-list-item-description" th:text="${n.noteText}">Note</span>
-                            </li>
+                        <div class="connection-actions workout-sequence-actions">
+                            <form method="post" th:action="@{/trainer/library/workouts/{wid}/items/{iid}/move(wid=${workout.id},iid=${item.id},q=${query},page=${libraryPage})}">
+                                <button type="submit" name="direction" value="UP" class="detail-btn-secondary" th:disabled="${position.first}" th:id="${'move-up-' + item.id}" th:attr="aria-labelledby=${'move-up-' + item.id + ' workout-exercise-' + item.id + ' workout-position-' + item.id}" th:text="#{ui.library.moveEarlier}"></button>
+                                <button type="submit" name="direction" value="DOWN" class="detail-btn-secondary" th:disabled="${position.last}" th:id="${'move-down-' + item.id}" th:attr="aria-labelledby=${'move-down-' + item.id + ' workout-exercise-' + item.id + ' workout-position-' + item.id}" th:text="#{ui.library.moveLater}"></button>
+                            </form>
+                            <form method="post" th:action="@{/trainer/library/workouts/{wid}/items/{iid}/delete(wid=${workout.id},iid=${item.id},q=${query},page=${libraryPage})}">
+                                <button type="submit" class="detail-btn-destructive" th:id="${'remove-item-' + item.id}" th:attr="aria-labelledby=${'remove-item-' + item.id + ' workout-exercise-' + item.id + ' workout-position-' + item.id}" th:text="#{ui.00801}"></button>
+                            </form>
+                        </div>
+                    </li>
+                </ol>
+                <form th:unless="${#lists.isEmpty(exercises)}" th:action="@{/trainer/library/workouts/{id}/items(id=${workout.id},q=${query},page=${libraryPage})}" method="post" th:object="${itemForm}" class="profile-editor-form workout-prescription-form" data-library-draft>
+                    <div th:if="${#fields.hasAnyErrors()}" class="profile-editor-errors" role="alert" id="prescription-errors">
+                        <h3 th:text="#{auth.form.fixErrors}"></h3>
+                        <p th:text="#{ui.library.prescriptionInvalid}"></p>
+                        <ul>
+                            <li th:if="${#fields.hasErrors('exerciseId')}"><a href="#exerciseId" th:text="#{ui.01682}"></a></li>
+                            <li th:if="${#fields.hasErrors('sets')}"><a href="#sets" th:text="#{ui.02330}"></a></li>
+                            <li th:if="${#fields.hasErrors('reps')}"><a href="#reps" th:text="#{ui.02339}"></a></li>
+                            <li th:if="${#fields.hasErrors('restSeconds')}"><a href="#restSeconds" th:text="#{ui.02813}"></a></li>
+                            <li th:if="${#fields.hasErrors('rpe')}"><a href="#rpe" th:text="#{ui.02814}"></a></li>
                         </ul>
                     </div>
-
-                    <!-- Delete Action -->
-                    <div class="detail-section-content border-t border-slate-200 dark:border-white/10 pt-4 flex items-center justify-end">
-                        <form method="post" th:action="@{/trainer/library/workouts/{id}/delete(id=${workout.id})}">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                            <button type="submit" class="detail-btn-destructive" th:text="#{ui.02815}">Delete Workout</button>
-                        </form>
-                    </div>
-                </section>
-            </div>
+                    <fieldset>
+                        <legend class="detail-section-title" th:text="#{ui.02811}"></legend>
+                        <p id="prescription-help" th:text="#{ui.library.prescriptionHelp}"></p>
+                        <div class="profile-editor-fields">
+                            <div class="profile-editor-bio">
+                                <label for="exerciseId" th:text="#{ui.01682}"></label>
+                                <select id="exerciseId" required th:field="*{exerciseId}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('exerciseId')},aria-describedby=${#fields.hasErrors('exerciseId') ? 'prescription-errors prescription-help' : 'prescription-help'}">
+                                    <option value="" th:text="#{ui.02812}"></option>
+                                    <option th:each="exercise : ${exercises}" th:value="${exercise.id}" dir="auto" th:text="${exercise.name}"></option>
+                                </select>
+                            </div>
+                            <div><label for="sets" th:text="#{ui.02330}"></label><input id="sets" type="text" inputmode="numeric" pattern="[0-9]{1,10}" maxlength="10" required th:field="*{sets}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('sets')},aria-describedby=${#fields.hasErrors('sets') ? 'prescription-errors prescription-help' : 'prescription-help'}"></div>
+                            <div><label for="reps" th:text="#{ui.02339}"></label><input id="reps" type="text" inputmode="numeric" pattern="[0-9]{1,10}" maxlength="10" required th:field="*{reps}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('reps')},aria-describedby=${#fields.hasErrors('reps') ? 'prescription-errors prescription-help' : 'prescription-help'}"></div>
+                            <div><label for="restSeconds" th:text="#{ui.02813}"></label><input id="restSeconds" type="text" inputmode="numeric" pattern="[0-9]{1,10}" maxlength="10" required th:field="*{restSeconds}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('restSeconds')},aria-describedby=${#fields.hasErrors('restSeconds') ? 'prescription-errors prescription-help' : 'prescription-help'}"></div>
+                            <div><label for="rpe" th:text="#{ui.02814}"></label><input id="rpe" type="text" inputmode="numeric" pattern="(?:[1-9]|10)" maxlength="10" th:field="*{rpe}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('rpe')},aria-describedby=${#fields.hasErrors('rpe') ? 'prescription-errors prescription-help' : 'prescription-help'}"></div>
+                        </div>
+                    </fieldset>
+                    <button class="detail-btn-primary" type="submit" th:text="#{ui.02591}"></button>
+                </form>
+                <div th:if="${#lists.isEmpty(exercises)}" class="connection-empty">
+                    <p th:text="#{ui.02692}"></p><a class="detail-btn-secondary" th:href="@{/trainer/library/exercises/create}" th:text="#{ui.02655}"></a>
+                </div>
+            </section>
+            <section class="detail-section" aria-labelledby="workout-notes-title">
+                <h2 id="workout-notes-title" class="detail-section-title" th:text="#{ui.00239}"></h2>
+                <p th:if="${#lists.isEmpty(notes)}" class="detail-empty" th:text="#{ui.00240}"></p>
+                <ul class="detail-list"><li th:each="note : ${notes}" class="detail-list-item plan-coaching-note" dir="auto" th:text="${note.noteText}"></li></ul>
+            </section>
         </div>
-        <th:block th:replace="~{trainer-views/trainer/fragments/library-share-dialog :: libraryShareDialog('shareDialog')}"></th:block>
+        <details class="detail-section workout-client-preview">
+            <summary th:text="#{ui.library.clientPreview}"></summary>
+            <p class="detail-subtitle" th:text="#{ui.library.clientPreviewHelp}"></p>
+            <h2 class="detail-card-title" dir="auto" th:text="${workout.title}"></h2>
+            <p class="plan-coaching-note" dir="auto" th:text="${workout.summary}"></p>
+            <p th:if="${#lists.isEmpty(items)}" class="detail-empty" th:text="#{ui.02810}"></p>
+            <ol class="detail-list workout-preview-list">
+                <li th:each="item : ${items}" class="detail-list-item">
+                    <h3 class="detail-card-title" dir="auto" th:text="${exercisesById[item.exerciseId] != null ? exercisesById[item.exerciseId].name : #messages.msg('ui.01682')}"></h3>
+                    <p class="plan-exercise-prescription"><span th:text="#{ui.plan.setsReps(${item.sets},${item.reps})}"></span><span th:text="#{ui.plan.rest(${item.restSeconds})}"></span><span th:if="${item.rpe != null}" th:text="#{ui.library.rpeValue(${item.rpe})}"></span></p>
+                </li>
+            </ol>
+            <h3 class="detail-card-title" th:text="#{ui.00239}"></h3>
+            <p th:if="${#lists.isEmpty(notes)}" class="detail-empty" th:text="#{ui.00240}"></p>
+            <ul class="detail-list"><li th:each="note : ${notes}" class="detail-list-item plan-coaching-note" dir="auto" th:text="${note.noteText}"></li></ul>
+        </details>
+        <th:block th:replace="~{trainer-views/trainer/fragments/library-share-dialog :: libraryShareDialog('shareDialog', ${workout.title})}"></th:block>
+        <section class="detail-section library-resource-actions" aria-labelledby="resource-actions-title">
+            <h2 id="resource-actions-title" class="detail-section-title" th:text="#{ui.library.resourceActions}"></h2>
+            <p id="workout-delete-help" class="detail-subtitle" th:text="#{ui.library.deleteWorkoutEffect}"></p>
+            <form method="post" th:attr="data-confirm=${#messages.msg('ui.02815') + ': ' + workout.title + '. ' + #messages.msg('ui.library.deleteWorkoutEffect')}" th:action="@{/trainer/library/workouts/{id}/delete(id=${workout.id},q=${query},page=${libraryPage})}">
+                <button type="submit" aria-describedby="workout-delete-help" class="detail-btn-destructive" th:text="#{ui.02815}"></button>
+            </form>
+        </section>
     </div>
-
-
-
-    <div th:fragment="pageScripts">
-        <script th:src="@{/js/trainer/trainer-library-share-dialog.js}" defer></script>
-    </div>
-
+    <th:block th:fragment="pageScripts">
+        <script th:src="@{/js/trainer/trainer-library-share-dialog.js(v=${assetVersion})}" defer></script>
+        <script th:src="@{/js/trainer/trainer-library-editor.js(v=${assetVersion})}" defer></script>
+    </th:block>
 </th:block>

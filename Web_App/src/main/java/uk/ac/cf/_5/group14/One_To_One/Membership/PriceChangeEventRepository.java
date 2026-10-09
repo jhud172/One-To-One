@@ -11,6 +11,9 @@ import java.util.List;
 @Repository
 public interface PriceChangeEventRepository extends JpaRepository<PriceChangeEvent, Long> {
     
+    java.util.Optional<PriceChangeEvent> findFirstByProductIdAndNewPriceCentsAndEffectiveAtAndReasonOrderByCreatedAtDesc(
+        Long productId, Integer newPriceCents, Instant effectiveAt, String reason);
+
     List<PriceChangeEvent> findByProductIdOrderByCreatedAtDesc(Long productId);
 
     Page<PriceChangeEvent> findByProductIdOrderByCreatedAtDesc(Long productId, Pageable pageable);

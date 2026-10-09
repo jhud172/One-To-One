@@ -25,7 +25,8 @@ public class ScheduleOccurrence {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(optional = false)
+    // Custom-only calendar movements have no catalogue exercise.
+    @ManyToOne
     @JoinColumn(name = "exercise_id")
     private Exercise exercise;
 
@@ -61,5 +62,8 @@ public class ScheduleOccurrence {
 
     @Column(name = "trainer_template_entry_id")
     private Long trainerTemplateEntryId;
+
+    @Transient
+    private boolean loggingRequested;
 
 }

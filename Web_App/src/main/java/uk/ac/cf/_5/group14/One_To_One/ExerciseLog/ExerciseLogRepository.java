@@ -33,7 +33,31 @@ public interface ExerciseLogRepository extends JpaRepository<ExerciseLog, Long> 
     List<ExerciseLog> findByUser(User user);
     Optional<ExerciseLog> findByIdAndUser(Long id, User user);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select log from ExerciseLog log where log.id = :id and log.user = :owner")
+    Optional<ExerciseLog> findOwnedForUpdate(@Param("id") Long id, @Param("owner") User user);
+
     List<ExerciseLog> findByUserOrderByDateDesc(User user);
+
+    @Query("""
+            select log from ExerciseLog log
+            left join log.occurrence occurrence on occurrence.user = :owner
+            left join occurrence.exercise exercise
+            left join occurrence.customExercise customExercise on customExercise.userId = :ownerId
+            left join log.calendarTask task on task.user = :owner
+            where log.user = :owner
+              and (:fromDate is null or log.date >= :fromDate)
+              and (:untilDate is null or log.date <= :untilDate)
+              and (lower(coalesce(log.comments, '')) like lower(:pattern) escape '!'
+                or cast(log.date as String) like :pattern escape '!'
+                or lower(coalesce(exercise.name, '')) like lower(:pattern) escape '!'
+                or lower(coalesce(customExercise.name, '')) like lower(:pattern) escape '!'
+                or lower(coalesce(task.title, '')) like lower(:pattern) escape '!')
+            """)
+    org.springframework.data.domain.Page<ExerciseLog> searchHistory(
+            @Param("owner") User owner, @Param("ownerId") Long ownerId, @Param("pattern") String pattern,
+            @Param("fromDate") LocalDate from, @Param("untilDate") LocalDate until,
+            org.springframework.data.domain.Pageable pageable);
 
     @Query("select el from ExerciseLog el where el.user = :user " +
             "order by el.date desc limit 3")

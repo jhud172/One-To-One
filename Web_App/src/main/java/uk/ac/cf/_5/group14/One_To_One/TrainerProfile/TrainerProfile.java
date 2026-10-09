@@ -11,6 +11,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
 
 @Entity
 @Table(name = "trainer_profiles")
@@ -39,6 +40,7 @@ public class TrainerProfile {
     @Column(name = "primary_gym", length = 200)
     private String primaryGym;
 
+    @Min(0)
     @Column(name = "price_per_session")
     private Integer pricePerSession;
 

@@ -12,20 +12,10 @@
     padding-bottom: calc(var(--shell-platform-panel-height) + var(--shell-local-dock-height) + var(--shell-floating-control-clearance));
   }
 
-  @media (max-width: 1030px) {
-    body:has(.cd-dashboard-mobile-dock) {
-      --shell-local-dock-height: 5.1rem;
-      padding-bottom: calc(var(--shell-platform-panel-height) + var(--shell-local-dock-height) + var(--shell-floating-control-clearance));
-    }
-  }
-
   @media (max-width: 640px) {
     body.has-platform-panel {
       --shell-platform-panel-height: calc(4.35rem + var(--shell-safe-area-bottom));
     }
 
-    body:has(.cd-dashboard-mobile-dock) {
-      --shell-local-dock-height: 4.55rem;
-    }
   }
 }

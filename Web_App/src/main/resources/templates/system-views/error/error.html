@@ -14,12 +14,12 @@
             <div class="error-card__body">
                 <p class="error-eyebrow" th:text="#{ui.02392}">Page unavailable</p>
                 <h1 id="error-title" class="error-title" th:text="#{ui.02384}">Something went wrong</h1>
-                <p class="error-copy" th:text="#{ui.02385}">The page could not be loaded. Your data has not been changed unless the previous action clearly completed.</p>
+                <p class="error-copy" th:text="#{ui.02385}">The page could not be loaded. Check your recent activity, orders or saved changes before repeating the action.</p>
 
                 <div class="error-actions">
                     <a th:href="@{/support}" class="error-button error-button--primary" th:text="#{ui.01470}">Contact support</a>
                     <a th:href="@{/}" class="error-button error-button--secondary" th:text="#{ui.01401}">Home</a>
-                    <button type="button" data-history-back data-history-fallback="/" class="error-button error-button--ghost" th:text="#{ui.02373}">Go back</button>
+                    <button type="button" hidden data-history-back data-history-fallback="/" class="error-button error-button--ghost" th:text="#{ui.02373}">Go back</button>
                 </div>
             </div>
         </div>

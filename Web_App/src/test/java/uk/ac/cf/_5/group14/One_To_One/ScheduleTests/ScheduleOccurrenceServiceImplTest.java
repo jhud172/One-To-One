@@ -1,13 +1,12 @@
 package uk.ac.cf._5.group14.One_To_One.ScheduleTests;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import uk.ac.cf._5.group14.One_To_One.CustomExerciseData.CustomExercise;
 import uk.ac.cf._5.group14.One_To_One.ExerciseData.Exercise;
 import uk.ac.cf._5.group14.One_To_One.ScheduleData.*;
@@ -23,18 +22,12 @@ import static org.mockito.Mockito.*;
 public class ScheduleOccurrenceServiceImplTest {
 
     @Mock private ScheduleEntryService scheduleEntryService;
-    @Mock private ScheduleEntryRepository scheduleEntryRepository;
     @Mock private ScheduleOccurrenceRepository scheduleOccurrenceRepository;
+    @Mock private ScheduleAppliedRepository scheduleAppliedRepository;
+    @Spy private ScheduleDeploymentPlanner planner = new ScheduleDeploymentPlanner();
 
     @InjectMocks
     private ScheduleOccurrenceServiceImpl scheduleOccurrenceService;
-
-    @BeforeEach
-    void injectFields() {
-        ReflectionTestUtils.setField(scheduleOccurrenceService, "scheduleEntryService", scheduleEntryService);
-        ReflectionTestUtils.setField(scheduleOccurrenceService, "scheduleEntryRepository", scheduleEntryRepository);
-        ReflectionTestUtils.setField(scheduleOccurrenceService, "scheduleOccurrenceRepository", scheduleOccurrenceRepository);
-    }
 
     @Test
     void generateOccurrences_ShouldReturnEarly_WhenArgumentsNull() {
@@ -209,5 +202,40 @@ public class ScheduleOccurrenceServiceImplTest {
         when(scheduleEntryService.getEntries(schedule.getId())).thenReturn(List.of(entry));
         scheduleOccurrenceService.generateOccurrencesForSchedule(schedule, user, start, end, 1);
         verify(scheduleOccurrenceRepository, never()).save(any());
+    }
+
+    @Test
+    void explicitTwoWeekIntervalKeepsCompletedMatchesAndAddsOnlyMissingDates() {
+        var plan = new Schedule(); plan.setId(9L); plan.setName("Fortnightly");
+        var user = new User(); user.setId(1L);
+        var row = new ScheduleEntry(); row.setSchedule(plan); row.setDayOfWeek(1);
+        var exercise = new Exercise(); exercise.setId(5L); row.setExercise(exercise);
+        var start = LocalDate.of(2027,1,4); var end = start.plusWeeks(6).minusDays(1);
+        var existing = new ScheduleOccurrence(); existing.setSchedule(plan); existing.setUser(user);
+        existing.setExercise(exercise); existing.setDate(start.plusWeeks(2)); existing.setCompleted(true);
+        when(scheduleEntryService.getEntries(9L)).thenReturn(List.of(row));
+        when(scheduleOccurrenceRepository.findByUserAndDateBetween(user,start,end)).thenReturn(List.of(existing));
+        scheduleOccurrenceService.generateOccurrencesForSchedule(plan,user,start,end,2);
+        var saved = ArgumentCaptor.forClass(ScheduleOccurrence.class);
+        verify(scheduleOccurrenceRepository,times(2)).save(saved.capture());
+        assertEquals(List.of(start,start.plusWeeks(4)),saved.getAllValues().stream().map(ScheduleOccurrence::getDate).toList());
+        assertTrue(existing.isCompleted());
+    }
+
+    @Test
+    void customTenDayCycleIncludesDayEightAndRejectsInvalidIntervals() {
+        var plan = new Schedule(); plan.setId(9L); plan.setScheduleType(ScheduleType.CUSTOM);
+        plan.setCustomDayCount(10); plan.setRotationMode(RotationMode.CONTINUOUS_ROTATION);
+        var user = new User(); var row = new ScheduleEntry(); row.setSchedule(plan); row.setDayOfWeek(8);
+        row.setCustomExercise(new CustomExercise());
+        var start = LocalDate.of(2027,1,4); var end = start.plusWeeks(4).minusDays(1);
+        scheduleOccurrenceService.generateOccurrencesForSchedule(plan,user,start,end,0);
+        verifyNoInteractions(scheduleEntryService,scheduleOccurrenceRepository);
+        when(scheduleEntryService.getEntries(9L)).thenReturn(List.of(row));
+        scheduleOccurrenceService.generateOccurrencesForSchedule(plan,user,start,end,1);
+        var saved = ArgumentCaptor.forClass(ScheduleOccurrence.class);
+        verify(scheduleOccurrenceRepository,times(3)).save(saved.capture());
+        assertEquals(List.of(LocalDate.of(2027,1,11),LocalDate.of(2027,1,21),LocalDate.of(2027,1,31)),
+                saved.getAllValues().stream().map(ScheduleOccurrence::getDate).toList());
     }
 }

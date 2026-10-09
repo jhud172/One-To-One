@@ -1,43 +1,45 @@
 <th:block xmlns:th="http://www.thymeleaf.org">
-    <div th:fragment="dailyStreakBar" class="mb-6 rounded-2xl border border-slate-200 bg-white/70 px-5 py-4 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50" data-testid="daily-streak-bar">
-        <div class="flex items-center justify-between gap-4">
+    <section th:fragment="dailyStreakBar" class="calendar-history" data-testid="daily-streak-bar" aria-labelledby="calendar-history-title"
+             th:attr="data-summary-copy=#{ui.history.summary},data-tasks-copy=#{ui.history.tasks},data-workouts-copy=#{ui.history.workouts},data-logs-copy=#{ui.history.logs},data-breakdown-copy=#{ui.history.breakdown},data-day-copy=#{ui.history.day},data-status-complete=#{ui.history.complete},data-status-active=#{ui.history.active},data-status-partial=#{ui.history.partial},data-status-unfinished=#{ui.history.unfinished},data-status-planned=#{ui.history.planned},data-status-empty=#{ui.history.empty}">
+        <div class="calendar-history__heading">
             <div>
-                <p class="text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.01705}">Day completion</p>
-                <p class="mt-0.5 text-sm text-slate-600 dark:text-slate-300" th:text="${dayCompletionSummary}">0/0 completed (0%)</p>
+                <h2 id="calendar-history-title" th:text="#{ui.history.title}">Logged completion</h2>
+                <p th:text="#{ui.history.help}">Completion includes required logs. Each schedule workout counts once.</p>
             </div>
-            <div class="flex items-center gap-1" aria-label="Daily completion streak" th:attr="title=|Remaining tasks: ${dayCompletionRemainingTasks}, Remaining workouts: ${dayCompletionRemainingWorkouts}|">
-                <th:block th:if="${dailyStreakDays != null && !dailyStreakDays.isEmpty()}">
-                    <span th:each="day : ${dailyStreakDays}" class="relative inline-flex">
-                        <a data-testid="daily-streak-day"
-                              th:href="@{'/calendar/day/' + ${day.date}}"
-                              class="group relative inline-flex h-2.5 w-5 rounded-full bg-slate-200 dark:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                              th:classappend="${day.status == T(uk.ac.cf._5.group14.One_To_One.CalendarData.DailyCompletionStatus).GREEN} ? ' bg-emerald-500 dark:bg-emerald-500' : (${day.status == T(uk.ac.cf._5.group14.One_To_One.CalendarData.DailyCompletionStatus).ORANGE} ? ' bg-orange-400 dark:bg-orange-400' : (${day.status == T(uk.ac.cf._5.group14.One_To_One.CalendarData.DailyCompletionStatus).RED} ? ' bg-red-500 dark:bg-red-500' : ''))"
-                              th:attr="aria-describedby=|daily-streak-tooltip-${day.date}|">
-
-                            <span role="tooltip"
-                                  th:attr="id=|daily-streak-tooltip-${day.date}|"
-                                  class="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden w-max -translate-x-1/2 rounded-xl border border-slate-200 bg-white/90 px-2 py-1 text-xs text-slate-700 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-950/80 dark:text-slate-200 group-hover:block group-focus:block">
-                                <span class="block font-semibold"
-                                      th:text="|${day.completedTasks + day.completedWorkouts}/${day.totalTasks + day.totalWorkouts} completed (${day.completionPercentage}%)|">
-                                    0/0 completed (0%)
-                                </span>
-                                <span class="block" th:text="|Tasks left: ${day.totalTasks - day.completedTasks}|"></span>
-                                <span class="block" th:text="|Workouts left: ${day.totalWorkouts - day.completedWorkouts}|"></span>
-                                <span class="block" th:text="|Logs needed: ${day.logsNeeded}|"></span>
-                            </span>
-                        </a>
-                    </span>
-                </th:block>
-                <th:block th:unless="${dailyStreakDays != null && !dailyStreakDays.isEmpty()}">
-                    <span class="h-2.5 w-5 rounded-full bg-slate-200 dark:bg-slate-800"></span>
-                    <span class="h-2.5 w-5 rounded-full bg-slate-200 dark:bg-slate-800"></span>
-                    <span class="h-2.5 w-5 rounded-full bg-slate-200 dark:bg-slate-800"></span>
-                    <span class="h-2.5 w-5 rounded-full bg-slate-200 dark:bg-slate-800"></span>
-                    <span class="h-2.5 w-5 rounded-full bg-slate-200 dark:bg-slate-800"></span>
-                    <span class="h-2.5 w-5 rounded-full bg-slate-200 dark:bg-slate-800"></span>
-                    <span class="h-2.5 w-5 rounded-full bg-slate-200 dark:bg-slate-800"></span>
-                </th:block>
-            </div>
+            <p class="calendar-history__range" th:if="${dailyStreakDays != null and !dailyStreakDays.isEmpty()}"
+               th:text="#{ui.history.range(${#temporals.format(dailyStreakDays[0].date, 'd MMM')},${#temporals.format(dailyStreakDays[dailyStreakDays.size() - 1].date, 'd MMM yyyy')})}"></p>
         </div>
-    </div>
+        <th:block th:if="${dailyStreakDays != null and !dailyStreakDays.isEmpty()}">
+            <nav class="calendar-history__days" th:attr="aria-label=#{ui.history.navigation}">
+                <a th:each="day : ${dailyStreakDays}" data-testid="daily-streak-day" class="calendar-history__day"
+                   th:href="@{'/calendar/day/' + ${day.date}}"
+                   th:attr="data-date=${day.date},data-status=${day.statusKey()},data-date-label=${#temporals.format(day.date, 'EEEE d MMMM yyyy')},data-total-tasks=${day.totalTasks},data-total-workouts=${day.totalWorkouts},data-completed-workouts=${day.completedWorkouts},data-logs-needed=${day.logsNeeded},aria-current=${day.date == date ? 'date' : null},aria-describedby=|daily-streak-tooltip-${day.date}|,aria-label=#{ui.history.day(${#temporals.format(day.date, 'EEEE d MMMM yyyy')},${#messages.msg('ui.history.' + day.statusKey())},${day.completedCount()},${day.totalCount()})}">
+                    <time th:datetime="${day.date}" th:text="${#temporals.format(day.date, 'd MMM')}"></time>
+                    <span class="calendar-history__signal" aria-hidden="true"></span>
+                    <span class="calendar-history__count" aria-hidden="true" th:text="|${day.completedCount()}/${day.totalCount()}|"></span>
+                    <span role="tooltip" class="calendar-history__tooltip" th:id="|daily-streak-tooltip-${day.date}|">
+                        <strong data-history-status th:text="${#messages.msg('ui.history.' + day.statusKey())}"></strong>
+                        <span data-history-summary th:text="#{ui.history.summary(${day.completedCount()},${day.totalCount()},${day.completionPercentage})}"></span>
+                        <span data-history-tasks th:text="#{ui.history.tasks(${day.remainingTasks()})}"></span>
+                        <span data-history-workouts th:text="#{ui.history.workouts(${day.remainingWorkouts()})}"></span>
+                        <span th:text="#{ui.history.logs(${day.logsNeeded})}"></span>
+                    </span>
+                </a>
+            </nav>
+            <details class="calendar-history__details">
+                <summary th:text="#{ui.history.details}">Completion details</summary>
+                <ol class="calendar-history__rows">
+                    <li th:each="day : ${dailyStreakDays}" th:attr="data-date=${day.date}">
+                        <a th:href="@{'/calendar/day/' + ${day.date}}" th:attr="aria-current=${day.date == date ? 'date' : null}">
+                            <time th:datetime="${day.date}" th:text="${#temporals.format(day.date, 'EEE d MMM')}"></time>
+                            <span data-history-status th:text="${#messages.msg('ui.history.' + day.statusKey())}"></span>
+                            <strong data-history-summary th:text="#{ui.history.summary(${day.completedCount()},${day.totalCount()},${day.completionPercentage})}"></strong>
+                        </a>
+                        <p data-history-breakdown th:text="#{ui.history.breakdown(${day.remainingTasks()},${day.remainingWorkouts()},${day.logsNeeded})}"></p>
+                    </li>
+                </ol>
+            </details>
+        </th:block>
+        <p class="calendar-history__unavailable" th:unless="${dailyStreakDays != null and !dailyStreakDays.isEmpty()}" th:text="#{ui.history.unavailable}">Completion history is unavailable.</p>
+    </section>
 </th:block>

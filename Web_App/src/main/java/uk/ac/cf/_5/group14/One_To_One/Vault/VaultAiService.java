@@ -16,7 +16,10 @@ public class VaultAiService {
         this.chatService = chatService;
     }
 
+    public boolean isAvailable() { return chatService.isAvailable(); }
+
     public String summariseWeek(List<VaultNote> notes) {
+        requireAvailable();
         List<ChatService.Message> messages = new ArrayList<>();
         messages.add(new ChatService.Message("system",
                 "You are a supportive fitness coach. Summarise the week based only on the provided notes. " +
@@ -24,10 +27,11 @@ public class VaultAiService {
         messages.add(new ChatService.Message("user", buildNotesPayload(notes)));
 
         ChatResponse response = chatService.chat(messages);
-        return response != null ? response.reply() : "AI is unavailable right now. Try again later.";
+        return successfulReply(response);
     }
 
     public String rewriteCheckin(List<VaultNote> notes) {
+        requireAvailable();
         List<ChatService.Message> messages = new ArrayList<>();
         messages.add(new ChatService.Message("system",
                 "Rewrite the following training notes into a concise client check-in message. " +
@@ -35,25 +39,39 @@ public class VaultAiService {
         messages.add(new ChatService.Message("user", buildNotesPayload(notes)));
 
         ChatResponse response = chatService.chat(messages);
-        return response != null ? response.reply() : "AI is unavailable right now. Try again later.";
+        return successfulReply(response);
     }
 
     public String generateInsight(VaultNote note) {
+        requireAvailable();
         List<ChatService.Message> messages = new ArrayList<>();
         messages.add(new ChatService.Message("system",
                 "You are an intelligent fitness assistant. Analyse the following training note and provide a concise insight. " +
-                "Identify key themes, suggest improvements, and highlight any potential concerns (e.g. injury risk, nutrition gaps). " +
+                "Identify themes and practical training questions to discuss with the trainer. Do not diagnose conditions or infer injury or nutrition risks. " +
                 "Keep your response under 80 words. Be direct and actionable."));
         messages.add(new ChatService.Message("user", buildNotesPayload(List.of(note))));
 
         ChatResponse response = chatService.chat(messages);
-        return response != null ? response.reply() : "AI is unavailable right now. Try again later.";
+        return successfulReply(response);
+    }
+
+    private void requireAvailable() {
+        if (!isAvailable()) throw new IllegalStateException("AI unavailable");
+    }
+
+    private String successfulReply(ChatResponse response) {
+        if (response == null || !response.successful() || response.reply() == null
+                || response.reply().isBlank() || response.reply().length() > 20000) {
+            throw new IllegalStateException("AI unavailable");
+        }
+        return response.reply();
     }
 
     private String buildNotesPayload(List<VaultNote> notes) {
         if (notes == null || notes.isEmpty()) {
-            return "No notes selected.";
+            throw new IllegalArgumentException("Select reflections first");
         }
+        if (notes.size() > 20) throw new IllegalArgumentException("Select up to 20 reflections");
         StringBuilder sb = new StringBuilder();
         sb.append("Selected notes:\n");
         for (VaultNote note : notes) {
@@ -73,6 +91,7 @@ public class VaultAiService {
             }
             sb.append("\n");
         }
+        if (sb.length() > 20000) throw new IllegalArgumentException("Selection is too long");
         return sb.toString();
     }
 }

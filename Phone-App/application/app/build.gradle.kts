@@ -13,9 +13,12 @@ android {
         applicationId = "uk.ac.cardiff.trainerhub"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
-        buildConfigField("String", "ONE_TO_ONE_BASE_URL", "\"https://two025-group14-c24071109-1.onrender.com\"")
+        versionCode = 2
+        versionName = "2.0-preview"
+        val apiBaseUrl = providers.gradleProperty("oneToOneBaseUrl")
+            .getOrElse("https://two025-group14-c24071109-1.onrender.com")
+            .replace("\\", "\\\\").replace("\"", "\\\"")
+        buildConfigField("String", "ONE_TO_ONE_BASE_URL", "\"$apiBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

@@ -24,7 +24,7 @@ public class ChatNavParser {
             Pattern.compile("\\[NAV:(/[^:]*):([^\\]]+)\\]");
 
     /**
-     * Allowed URL prefixes â€“ regular user-facing pages only.
+     * Allowed URL prefixes – regular user-facing pages only.
      * No admin, platform-admin, gym-admin, actuator, or internal API paths.
      */
     private static final Set<String> ALLOWED_PREFIXES = Set.of(
@@ -56,7 +56,7 @@ public class ChatNavParser {
     public record ParseResult(String cleanText, List<NavAction> navActions) {}
 
     /**
-     * Extracts {@code [NAV:â€¦]} tags from {@code text}, validates each URL against the
+     * Extracts {@code [NAV:…]} tags from {@code text}, validates each URL against the
      * whitelist, and returns the cleaned text together with the validated actions.
      */
     public static ParseResult parse(String text) {

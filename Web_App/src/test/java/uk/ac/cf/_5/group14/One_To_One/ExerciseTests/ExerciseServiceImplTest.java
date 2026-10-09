@@ -9,6 +9,8 @@ import uk.ac.cf._5.group14.One_To_One.ConditionsPreferences.UserPreference.UserP
 import uk.ac.cf._5.group14.One_To_One.ExerciseData.Exercise;
 import uk.ac.cf._5.group14.One_To_One.ExerciseData.ExerciseRepository;
 import uk.ac.cf._5.group14.One_To_One.ExerciseData.ExerciseServiceImpl;
+import uk.ac.cf._5.group14.One_To_One.ExerciseData.Tag;
+import uk.ac.cf._5.group14.One_To_One.Users.User;
 
 import java.util.*;
 
@@ -58,5 +60,27 @@ public class ExerciseServiceImplTest {
         Exercise exercise = new Exercise();
         exerciseService.saveExercise(exercise);
         verify(exerciseRepository).save(exercise);
+    }
+
+    @Test
+    void noPreferencesStillProvidesACatalogue() {
+        User user = new User(); user.setId(1L);
+        Exercise exercise = new Exercise(); exercise.setName("Available movement");
+        when(userPreferenceRepository.getPreferredTags(user)).thenReturn(Set.of());
+        when(userPreferenceRepository.getBannedTags(user)).thenReturn(Set.of());
+        when(exerciseRepository.findAll()).thenReturn(List.of(exercise));
+        assertEquals(List.of(exercise), exerciseService.suggestExercises(user));
+    }
+
+    @Test
+    void noPreferencesMustNotBypassSavedConditionExclusions() {
+        User user = new User(); user.setId(1L);
+        Tag banned = new Tag(); banned.setId(1L);
+        Exercise permitted = new Exercise(); permitted.setName("Permitted movement");
+        when(userPreferenceRepository.getPreferredTags(user)).thenReturn(Set.of());
+        when(userPreferenceRepository.getBannedTags(user)).thenReturn(Set.of(banned));
+        when(exerciseRepository.getExercisesExcludingTags(Set.of(banned))).thenReturn(List.of(permitted));
+        assertEquals(List.of(permitted), exerciseService.suggestExercises(user));
+        verify(exerciseRepository, never()).findAll();
     }
 }

@@ -54,6 +54,7 @@ public class ClientAssignedPlanController {
 
         ModelAndView mav = new ModelAndView("client-views/client/assigned-plan");
         mav.addObject("pageTitle", "Assigned Plan");
+        mav.addObject("assignedExercises", trainerLibraryService.getAssignedExercisesForClient(user.getId()));
         mav.addObject("assignedWorkouts", trainerLibraryService.getAssignedWorkoutsForClient(user.getId()));
         mav.addObject("assignedProgrammes", trainerLibraryService.getAssignedProgrammesForClient(user.getId()));
         return mav;

@@ -7,7 +7,7 @@
                 <div>
                     <h1 class="dashboard-page-title">
                         <span class="dashboard-page-title__prefix" th:text="#{ui.00926}">Welcome back,</span>
-                        <span class="dashboard-page-title__accent" th:text="${#authentication.name}">Admin</span>
+                        <span class="dashboard-page-title__accent" th:text="${gymOperations != null and gymOperations.hasGym} ? ${gymOperations.gymName} : ${#authentication.name}">Admin</span>
                     </h1>
                     <p class="dashboard-page-subtitle" th:text="#{ui.00927}">Review today’s gym operations, then move directly into trainers, memberships and support.</p>
                 </div>
@@ -17,6 +17,23 @@
                 </div>
             </header>
 
+            <section class="gym-operations-overview dashboard-surface mb-8" th:if="${gymOperations != null and gymOperations.hasGym}">
+                <div class="dashboard-section-header"><h2 class="dashboard-section-title" th:text="#{ui.00929}"></h2><a th:href="@{/gym/admin/trainers}" class="dashboard-inline-action" th:text="#{ui.00937}"></a></div>
+                <dl class="gym-operations-metrics">
+                    <div><dt th:text="#{ui.gymRoster.connected}"></dt><dd th:text="${gymOperations.trainers}"></dd></div>
+                    <div><dt th:text="#{ui.00564}"></dt><dd th:text="${gymOperations.verified}"></dd></div>
+                    <div><dt th:text="#{ui.01068}"></dt><dd th:text="${gymOperations.pending}"></dd></div>
+                    <div><dt th:text="#{ui.00169}"></dt><dd th:text="${gymOperations.needsInfo}"></dd></div>
+                    <div><dt><a th:href="@{/gym/admin/memberships}" th:text="#{ui.00987}"></a></dt><dd th:text="${gymOperations.activeProducts}"></dd></div>
+                    <div><dt th:text="#{ui.gymRoster.activeSubscribers}"></dt><dd th:text="${gymOperations.subscribers}"></dd></div>
+                </dl>
+                <p class="gym-operations-next" th:if="${gymOperations.needsInfo > 0}"><a th:href="@{/gym/admin/trainers(review='NEEDS_INFO')}" th:text="#{ui.01067}"></a></p>
+            </section>
+
+            <section th:if="${gymOperations == null or !gymOperations.hasGym}" class="dashboard-surface gym-operations-unavailable"><p th:text="#{ui.gymRoster.noGym}"></p><a th:href="@{/profile}" class="dashboard-inline-action" th:text="#{ui.00419}"></a></section>
+            <p th:if="${gymOperations != null and gymOperations.hasGym and gymOperations.trainers == 0}" class="gym-operations-next"><a th:href="@{/gym/admin/trainers/affiliations}" class="dashboard-action dashboard-action--primary" th:text="#{ui.gymLink.invite}"></a></p>
+            <details class="gym-operational-calendar">
+                <summary th:text="#{ui.gymRoster.personalPlanning}"></summary>
             <section class="mb-8 card-neon card--emerald dashboard-surface dashboard-surface--featured">
                 <div class="flex items-center gap-3 mb-6" data-site-tour="gym-dashboard">
                     <div class="p-3 rounded-xl bg-emerald-400/10 border border-emerald-400/30">
@@ -134,6 +151,8 @@
                     </a>
                 </div>
             </div>
+
+            </details>
 
             <div>
                 <h2 class="dashboard-section-title mb-4" th:text="#{ui.00944}">Quick actions</h2>

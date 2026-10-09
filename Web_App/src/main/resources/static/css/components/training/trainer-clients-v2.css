@@ -1,0 +1,39 @@
+/* Relationship management keeps every action visible on narrow screens. */
+body.version-two .trainer-clients-title { margin: 0 0 1.5rem; color: var(--v2-ink); font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1.15; }
+body.version-two .trainer-clients-v2 { color: var(--v2-ink); }
+body.version-two .trainer-clients-v2 section { min-width: 0; padding: 1.5rem; background: var(--v2-surface); border: 1px solid var(--v2-border); border-radius: var(--v2-radius-panel); box-shadow: var(--v2-shadow-panel); scroll-margin-top: 7rem; }
+body.version-two .trainer-clients-v2 :is(h2, h3) { color: var(--v2-ink); }
+body.version-two .trainer-clients-v2 p { color: var(--v2-muted); overflow-wrap: anywhere; }
+body.version-two .trainer-clients-v2 section > .text-center { padding: 1.25rem; border-color: var(--v2-border); background: var(--v2-raised); }
+body.version-two .trainer-clients-v2 .client-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; border-color: var(--v2-border); }
+body.version-two .client-row__identity { overflow-wrap: anywhere; }
+body.version-two .client-row__identity > .flex { flex-wrap: wrap; }
+body.version-two .client-row__identity .rounded-full { color: var(--v2-ink); background: var(--v2-raised); border: 1px solid var(--v2-border); }
+body.version-two .client-row__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+body.version-two .client-row__actions form { margin: 0; }
+body.version-two .trainer-clients-v2 :is(button, .client-row__actions a) { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.65rem 1rem; border: 1px solid var(--v2-control-border); border-radius: 0.75rem; background: var(--v2-surface); color: var(--v2-accent); font-size: 0.875rem; font-weight: 650; }
+body.version-two .trainer-clients-v2 :is(button, .client-row__actions a):hover { background: var(--v2-accent-soft); border-color: var(--v2-accent); }
+body.version-two .trainer-clients-v2 button:disabled { opacity: 0.55; cursor: not-allowed; }
+body.version-two .trainer-clients-v2 .client-row__requested { display: block; margin-top: 0.35rem; }
+body.version-two .client-relationship-help { margin-block: 1rem 1.5rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-control); background: var(--v2-surface); }
+body.version-two .client-relationship-help summary { min-height: 44px; padding: 0.85rem 1rem; color: var(--v2-ink); font-weight: 650; cursor: pointer; }
+body.version-two .client-relationship-help summary:focus-visible { outline: 3px solid var(--v2-focus); outline-offset: 3px; }
+body.version-two .client-relationship-help dl { display: grid; gap: 1rem; margin: 0; padding: 0.25rem 1rem 1rem; }
+body.version-two .client-relationship-help dt { color: var(--v2-ink); font-weight: 650; }
+body.version-two .client-relationship-help dd { margin: 0.35rem 0 0; color: var(--v2-muted); overflow-wrap: anywhere; }
+body.version-two .trainer-clients-v2 :is(button, a, input):focus-visible { outline: 3px solid var(--v2-focus); outline-offset: 3px; }
+body.version-two .trainer-clients-v2 .client-row__end button { color: var(--v2-danger); border-color: var(--v2-danger); }
+body.version-two .client-search { display: flex; gap: 0.5rem; }
+body.version-two .client-search input { min-width: 0; flex: 1; min-height: 44px; border: 1px solid var(--v2-control-border); background: var(--v2-surface); color: var(--v2-ink); }
+body.version-two .client-search input::placeholder { color: var(--v2-muted); }
+body.version-two .client-search-empty { margin-top: 1rem; }
+body.version-two .trainer-clients-feedback { padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--v2-border); border-inline-start: 3px solid var(--v2-success); background: var(--v2-surface); }
+body.version-two .trainer-clients-feedback--error { border-inline-start-color: var(--v2-danger); }
+body.version-two #currentClientsList { scroll-margin-top: 8rem; }
+@media (max-width: 640px) {
+    body.version-two .trainer-clients-v2 section { padding: 1rem; }
+    body.version-two .client-row__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    body.version-two .client-row__actions :is(a, button) { width: 100%; }
+}
+ .trainer-clients-navigation { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block: 1rem; }
+ .trainer-clients-navigation a { display: inline-flex; align-items: center; min-height: 44px; padding: 0.65rem 1rem; border: 1px solid var(--v2-control-border); border-radius: var(--v2-radius-control); background: var(--v2-surface); color: var(--v2-accent); font-weight: 650; }

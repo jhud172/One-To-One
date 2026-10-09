@@ -1,8 +1,6 @@
 package uk.ac.cf._5.group14.One_To_One.ScheduleData;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,10 +27,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleDeploymentPlanner.Window;
+import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleDeploymentPlanner.PlannedOccurrence;
 import uk.ac.cf._5.group14.One_To_One.CalendarData.CalendarTask;
 import uk.ac.cf._5.group14.One_To_One.CalendarData.CalendarTaskRepository;
 import uk.ac.cf._5.group14.One_To_One.CustomExerciseData.CustomExerciseRepository;
 import uk.ac.cf._5.group14.One_To_One.ExerciseData.ExerciseRepository;
+import uk.ac.cf._5.group14.One_To_One.StrengthLog.WorkoutSession;
+import uk.ac.cf._5.group14.One_To_One.StrengthLog.Repository.WorkoutSessionRepository;
 import uk.ac.cf._5.group14.One_To_One.Security.CurrentUser;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
 
@@ -46,6 +48,12 @@ public class ScheduleApiController {
 
     @Autowired
     private ScheduleService scheduleService;
+
+    @Autowired
+    private ScheduleRepository scheduleRepository;
+
+    @Autowired
+    private ScheduleDeploymentPlanner deploymentPlanner;
 
     @Autowired
     private ScheduleEntryService scheduleEntryService;
@@ -64,6 +72,12 @@ public class ScheduleApiController {
 
     @Autowired
     private CalendarTaskRepository calendarTaskRepository;
+
+    @Autowired
+    private WorkoutSessionRepository workoutSessionRepository;
+
+    @Autowired
+    private ScheduleCopyService scheduleCopyService;
 
     /**
      * Get schedule metadata (frequency, active days, etc.)
@@ -121,19 +135,20 @@ public class ScheduleApiController {
      */
     private Map<String, Object> calculateMetadata(Schedule schedule) {
         List<ScheduleEntry> entries = scheduleEntryService.getEntriesBySchedule(schedule);
+        int cycleDays=Math.min(14,Math.max(1,ScheduleStudioService.cycleDays(schedule)));
 
         java.util.TreeSet<Integer> activeDaySet = new java.util.TreeSet<>();
         for (ScheduleEntry entry : entries) {
             if (entry == null) continue;
             int day = entry.getDayOfWeek();
-            if (day >= 1 && day <= 7) {
+            if (day >= 1 && day <= cycleDays) {
                 activeDaySet.add(day);
             }
         }
         List<Integer> activeDayIndexes = new java.util.ArrayList<>(activeDaySet);
 
         List<String> activeDayLabels = activeDayIndexes.stream()
-            .map(day -> switch (day) {
+            .map(day -> schedule.getScheduleType()!=ScheduleType.WEEKLY ? "Day " + day : switch (day) {
                 case 1 -> "Mon";
                 case 2 -> "Tue";
                 case 3 -> "Wed";
@@ -152,7 +167,7 @@ public class ScheduleApiController {
         int maxConsecutiveDays = 0;
         if (!activeDayIndexes.isEmpty()) {
             List<Integer> doubled = new java.util.ArrayList<>(activeDayIndexes);
-            doubled.addAll(activeDayIndexes.stream().map(day -> day + 7).toList());
+            doubled.addAll(activeDayIndexes.stream().map(day -> day + cycleDays).toList());
             int streak = 1;
             for (int i = 1; i < doubled.size(); i++) {
                 if (doubled.get(i) - doubled.get(i - 1) == 1) {
@@ -162,10 +177,10 @@ public class ScheduleApiController {
                     streak = 1;
                 }
             }
-            maxConsecutiveDays = Math.min(7, Math.max(maxConsecutiveDays, 1));
+            maxConsecutiveDays = Math.min(cycleDays, Math.max(maxConsecutiveDays, 1));
         }
 
-        boolean noRestDays = activeDaysCount >= 7;
+        boolean noRestDays = activeDaysCount >= cycleDays;
 
         boolean imbalancedStructure = false;
         if (activeDayIndexes.size() >= 3) {
@@ -173,7 +188,7 @@ public class ScheduleApiController {
             for (int i = 0; i < activeDayIndexes.size(); i++) {
                 int current = activeDayIndexes.get(i);
                 int nextBase = (i + 1 < activeDayIndexes.size()) ? activeDayIndexes.get(i + 1) : activeDayIndexes.get(0);
-                int next = (i + 1 < activeDayIndexes.size()) ? nextBase : nextBase + 7;
+                int next = (i + 1 < activeDayIndexes.size()) ? nextBase : nextBase + cycleDays;
                 largestGap = Math.max(largestGap, next - current - 1);
             }
             imbalancedStructure = largestGap >= 3;
@@ -183,22 +198,22 @@ public class ScheduleApiController {
         if (noRestDays) {
             healthWarnings.add(Map.of(
                     "key", "no-rest-days",
-                    "label", "No rest days",
-                    "description", "This schedule trains all 7 days; consider adding at least one recovery day."
+                    "label", "Every cycle day has movements",
+                    "description", "This plan has movements on all " + cycleDays + " cycle days."
             ));
         }
         if (maxConsecutiveDays >= 5) {
             healthWarnings.add(Map.of(
                     "key", "long-streak",
-                    "label", "Long training streak",
-                    "description", "This plan has " + maxConsecutiveDays + " consecutive training days."
+                    "label", "Consecutive planned days",
+                    "description", "This plan has movements on " + maxConsecutiveDays + " consecutive cycle days."
             ));
         }
         if (imbalancedStructure) {
             healthWarnings.add(Map.of(
                     "key", "imbalanced",
-                    "label", "Imbalanced structure",
-                    "description", "Training load is unevenly distributed across the week."
+                    "label", "Gap between planned days",
+                    "description", "This plan has a gap of at least three cycle days without movements."
             ));
         }
         
@@ -208,7 +223,10 @@ public class ScheduleApiController {
         metadata.put("activeDayIndexes", activeDayIndexes);
         metadata.put("activeDayLabels", activeDayLabels);
         metadata.put("totalExercises", totalExercises);
-        metadata.put("restDays", Math.max(0, 7 - activeDaysCount));
+        metadata.put("restDays", Math.max(0, cycleDays - activeDaysCount));
+        metadata.put("cycleDayCount",cycleDays);
+        metadata.put("scheduleType",schedule.getScheduleType());
+        metadata.put("rotationMode",schedule.getRotationMode());
         metadata.put("noRestDays", noRestDays);
         metadata.put("maxConsecutiveDays", maxConsecutiveDays);
         metadata.put("imbalancedStructure", imbalancedStructure);
@@ -296,25 +314,7 @@ public class ScheduleApiController {
             return ResponseEntity.status(403).build();
         }
 
-        // Create duplicate
-        Schedule duplicate = new Schedule();
-        duplicate.setName(original.getName() + " (Copy)");
-        duplicate.setDescription(original.getDescription());
-        duplicate.setUser(user);
-        
-        scheduleService.save(duplicate);
-
-        // Copy entries
-        List<ScheduleEntry> originalEntries = scheduleEntryService.getEntriesBySchedule(original);
-        for (ScheduleEntry originalEntry : originalEntries) {
-            ScheduleEntry newEntry = new ScheduleEntry();
-            newEntry.setSchedule(duplicate);
-            newEntry.setExercise(originalEntry.getExercise());
-            newEntry.setCustomExercise(originalEntry.getCustomExercise());
-            newEntry.setDayOfWeek(originalEntry.getDayOfWeek());
-            newEntry.setOrderNumber(originalEntry.getOrderNumber());
-            scheduleEntryService.save(newEntry);
-        }
+        Schedule duplicate = scheduleCopyService.copy(original, user);
 
         Map<String, Object> response = new HashMap<>();
         response.put("id", duplicate.getId());
@@ -336,12 +336,12 @@ public class ScheduleApiController {
             return ResponseEntity.status(403).build();
         }
 
-        DeploymentWindow window = resolveWindow(request);
+        Window window = deploymentPlanner.resolveWindow(request);
         if (window == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid deployment window"));
         }
 
-        String strategy = normalizeStrategy((String) request.get("strategy"));
+        String strategy = normalizeStrategy(request.get("strategy") instanceof String value ? value : null);
         ImpactComputation impact = computeImpact(schedule, user, window, strategy);
         return ResponseEntity.ok(impact.toMap());
     }
@@ -353,27 +353,29 @@ public class ScheduleApiController {
             @CurrentUser(required = false) User user,
             @RequestBody Map<String, Object> request) {
 
-        Schedule schedule = validateOwnedSchedule(id, user);
+        Schedule schedule = user == null ? null : scheduleRepository.findOwnedForDeployment(id, user.getId()).orElse(null);
         if (schedule == null) {
             if (user == null) return ResponseEntity.status(401).build();
             return ResponseEntity.status(403).build();
         }
 
-        DeploymentWindow window = resolveWindow(request);
+        Window window = deploymentPlanner.resolveWindow(request);
         if (window == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid deployment window"));
         }
 
-        String strategy = normalizeStrategy((String) request.get("strategy"));
-        ImpactComputation impact = computeImpact(schedule, user, window, strategy);
+        String strategy = normalizeStrategy(request.get("strategy") instanceof String value ? value : null);
+        ImpactComputation impact = computeImpact(schedule, user, window, strategy, true);
 
         Set<LocalDate> conflictDays = new HashSet<>(impact.conflictDates);
+        undoOperations.entrySet().removeIf(entry -> entry.getValue().expiresAt().isBefore(java.time.Instant.now()));
         List<ScheduleOccurrenceSnapshot> removedSnapshots = new ArrayList<>();
-        if ("replace".equals(strategy) && !impact.existingConflicts.isEmpty()) {
-            for (ScheduleOccurrence existing : impact.existingConflicts) {
+        if ("replace".equals(strategy) && !impact.replaceableConflicts.isEmpty()) {
+            for (ScheduleOccurrence existing : impact.replaceableConflicts) {
+                if (protectedOccurrence(existing)) continue;
                 removedSnapshots.add(ScheduleOccurrenceSnapshot.from(existing));
             }
-            scheduleOccurrenceRepository.deleteAll(impact.existingConflicts);
+            scheduleOccurrenceRepository.deleteAll(impact.replaceableConflicts);
         }
 
         int created = 0;
@@ -405,6 +407,12 @@ public class ScheduleApiController {
             created += 1;
         }
 
+        if (created == 0 && removedSnapshots.isEmpty()) {
+            return ResponseEntity.ok(Map.of("success", true, "created", 0, "replaced", 0,
+                    "skipped", impact.skippedByStrategy, "alreadyScheduled", impact.alreadyScheduled,
+                    "windowStart", window.start().toString(), "windowEnd", window.end().toString(), "strategy", strategy));
+        }
+
         ScheduleApplied applied = new ScheduleApplied();
         applied.setSchedule(schedule);
         applied.setUser(user);
@@ -430,7 +438,8 @@ public class ScheduleApiController {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
         response.put("created", created);
-        response.put("replaced", "replace".equals(strategy) ? impact.existingConflicts.size() : 0);
+        response.put("replaced", removedSnapshots.size());
+        response.put("alreadyScheduled", impact.alreadyScheduled);
         response.put("skipped", "skip".equals(strategy) ? impact.skippedByStrategy : 0);
         response.put("conflictDates", impact.conflictDates.stream().map(LocalDate::toString).toList());
         response.put("windowStart", window.start().toString());
@@ -440,7 +449,7 @@ public class ScheduleApiController {
         response.put("undoExpiresInSeconds", UNDO_WINDOW_SECONDS);
 
         LOGGER.info(
-            "schedule_deploy_applied userId={} scheduleId={} scope={} strategy={} start={} end={} created={} replaced={} skipped={} conflicts={} undoToken={}",
+            "schedule_deploy_applied userId={} scheduleId={} scope={} strategy={} start={} end={} created={} replaced={} skipped={} conflicts={}",
             user.getId(),
             schedule.getId(),
             window.scope(),
@@ -448,10 +457,9 @@ public class ScheduleApiController {
             window.start(),
             window.end(),
             created,
-            "replace".equals(strategy) ? impact.existingConflicts.size() : 0,
+            removedSnapshots.size(),
             "skip".equals(strategy) ? impact.skippedByStrategy : 0,
-            impact.conflictDates.size(),
-            undoToken
+            impact.conflictDates.size()
         );
 
         return ResponseEntity.ok(response);
@@ -473,17 +481,31 @@ public class ScheduleApiController {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing undo token"));
         }
 
-        UndoOperation operation = undoOperations.remove(undoToken);
+        UndoOperation operation = undoOperations.get(undoToken);
         if (operation == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Undo token is invalid or expired"));
         }
 
         if (operation.expiresAt().isBefore(java.time.Instant.now())) {
+            undoOperations.remove(undoToken, operation);
             return ResponseEntity.badRequest().body(Map.of("error", "Undo window expired"));
         }
 
         if (!Objects.equals(operation.userId(), user.getId()) || !Objects.equals(operation.scheduleId(), id)) {
             return ResponseEntity.status(403).build();
+        }
+
+        if (scheduleRepository.findOwnedForDeployment(id, user.getId()).isEmpty()) {
+            return ResponseEntity.status(403).build();
+        }
+        List<ScheduleOccurrence> createdOccurrences = operation.createdOccurrenceIds().isEmpty() ? List.of()
+                : scheduleOccurrenceRepository.findOwnedForUndo(user.getId(), operation.createdOccurrenceIds());
+        if (createdOccurrences.stream().anyMatch(ScheduleApiController::protectedOccurrence)
+                || (!operation.createdOccurrenceIds().isEmpty() && workoutSessionRepository.existsByUserAndSourceOccurrenceIdIn(user, operation.createdOccurrenceIds()))) {
+            return ResponseEntity.status(409).body(Map.of("error", "A deployed workout has been completed or linked to a training record; undo would remove its history"));
+        }
+        if (!undoOperations.remove(undoToken, operation)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Undo token has already been used"));
         }
 
         if (operation.appliedId() != null) {
@@ -495,7 +517,7 @@ public class ScheduleApiController {
         }
 
         if (!operation.createdOccurrenceIds().isEmpty()) {
-            List<ScheduleOccurrence> createdOccurrences = scheduleOccurrenceRepository.findAllById(operation.createdOccurrenceIds()).stream()
+            createdOccurrences = createdOccurrences.stream()
                     .filter(occ -> occ.getUser() != null && Objects.equals(occ.getUser().getId(), user.getId()))
                     .toList();
             if (!createdOccurrences.isEmpty()) {
@@ -504,18 +526,16 @@ public class ScheduleApiController {
         }
 
         if (!operation.removedSnapshots().isEmpty()) {
-            Schedule schedule = scheduleService.findById(id);
             for (ScheduleOccurrenceSnapshot snapshot : operation.removedSnapshots()) {
-                ScheduleOccurrence restored = snapshot.toOccurrence(user, schedule, exerciseRepository, customExerciseRepository);
+                ScheduleOccurrence restored = snapshot.toOccurrence(user, scheduleService, exerciseRepository, customExerciseRepository);
                 scheduleOccurrenceRepository.save(restored);
             }
         }
 
         LOGGER.info(
-                "schedule_deploy_undo userId={} scheduleId={} undoToken={} restoredOccurrences={} removedCreatedOccurrences={}",
+                "schedule_deploy_undo userId={} scheduleId={} restoredOccurrences={} removedCreatedOccurrences={}",
                 user.getId(),
                 id,
-                undoToken,
                 operation.removedSnapshots().size(),
                 operation.createdOccurrenceIds().size()
         );
@@ -540,141 +560,20 @@ public class ScheduleApiController {
         return "merge";
     }
 
-    private DeploymentWindow resolveWindow(Map<String, Object> request) {
-        // Parse recurrence config if provided
-        RecurrenceConfig recurrence = parseRecurrenceConfig(request.get("recurrence"));
-        
-        LocalDate now = LocalDate.now();
-        LocalDate selectedDate = parseDate(request.get("selectedDate"));
-        LocalDate startDateInput = parseDate(request.get("startDate"));
-        LocalDate anchor = selectedDate != null ? selectedDate : (startDateInput != null ? startDateInput : now);
-
-        // If recurrence config exists, use it to determine the window
-        if (recurrence != null) {
-            LocalDate endDate = recurrence.endDate();
-            String repeat = recurrence.repeat();
-            
-            // Determine end date based on repeat type
-            if (endDate == null) {
-                // Forever mode - default to 1 year for practical limits
-                endDate = anchor.plusYears(1);
-            }
-            
-            // Calculate weeks for backward compatibility
-            int weeks = (int) Math.ceil((double) java.time.temporal.ChronoUnit.DAYS.between(anchor, endDate) / 7.0);
-            if (weeks < 1) weeks = 1;
-            if (weeks > 52) weeks = 52;
-            
-            return new DeploymentWindow(anchor, endDate, weeks, repeat, recurrence);
-        }
-        
-        // Fallback to old scope-based logic for backward compatibility
-        String scope = request.get("scope") instanceof String s ? s.trim().toLowerCase() : "week";
-
-        int weeks = parseInt(request.get("weeks"), 1);
-        if (weeks < 1) weeks = 1;
-        if (weeks > 52) weeks = 52;
-
-        if ("forward".equals(scope)) {
-            int forwardWeeks = parseInt(request.get("weeks"), 8);
-            if (forwardWeeks < 1) forwardWeeks = 8;
-            if (forwardWeeks > 52) forwardWeeks = 52;
-            LocalDate end = anchor.plusWeeks(forwardWeeks).minusDays(1);
-            return new DeploymentWindow(anchor, end, forwardWeeks, "forward", null);
-        }
-
-        if ("weeks".equals(scope)) {
-            LocalDate end = anchor.plusWeeks(weeks).minusDays(1);
-            return new DeploymentWindow(anchor, end, weeks, "weeks", null);
-        }
-
-        LocalDate weekStart = anchor.with(DayOfWeek.MONDAY);
-        LocalDate weekEnd = weekStart.plusDays(6);
-        return new DeploymentWindow(weekStart, weekEnd, 1, "week", null);
-    }
-    
-    @SuppressWarnings("unchecked")
-    private RecurrenceConfig parseRecurrenceConfig(Object raw) {
-        if (!(raw instanceof Map)) {
-            return null;
-        }
-        
-        Map<String, Object> map = (Map<String, Object>) raw;
-        String repeat = map.get("repeat") instanceof String s ? s : null;
-        if (repeat == null || repeat.isBlank()) {
-            return null;
-        }
-        
-        Integer interval = null;
-        if (map.get("interval") instanceof Number n) {
-            interval = n.intValue();
-        } else if (map.get("interval") instanceof String s) {
-            try {
-                interval = Integer.parseInt(s.trim());
-            } catch (NumberFormatException ignored) {}
-        }
-        
-        String unit = map.get("unit") instanceof String s ? s : null;
-        LocalDate endDate = parseDate(map.get("endDate"));
-        
-        return new RecurrenceConfig(repeat, interval, unit, endDate);
+    private ImpactComputation computeImpact(Schedule schedule, User user, Window window, String strategy) {
+        return computeImpact(schedule, user, window, strategy, false);
     }
 
-    private LocalDate parseDate(Object raw) {
-        if (!(raw instanceof String value) || value.isBlank()) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(value.trim());
-        } catch (DateTimeParseException ignored) {
-            return null;
-        }
-    }
-
-    private int parseInt(Object raw, int fallback) {
-        if (raw instanceof Number number) {
-            return number.intValue();
-        }
-        if (raw instanceof String text) {
-            try {
-                return Integer.parseInt(text.trim());
-            } catch (NumberFormatException ignored) {
-                return fallback;
-            }
-        }
-        return fallback;
-    }
-
-    private ImpactComputation computeImpact(Schedule schedule, User user, DeploymentWindow window, String strategy) {
+    private ImpactComputation computeImpact(Schedule schedule, User user, Window window, String strategy, boolean lockOccurrences) {
         List<ScheduleEntry> entries = scheduleEntryService.getEntriesBySchedule(schedule);
-        List<PlannedOccurrence> plannedOccurrences = new ArrayList<>();
-
-        // Determine how to generate occurrences based on the window scope (recurrence type)
-        String scope = window.scope();
-        
-        if ("forever".equals(scope) || "daily".equals(scope) || "weekly".equals(scope) || 
-            "monthly".equals(scope) || "yearly".equals(scope) || "custom".equals(scope)) {
-            // Use new recurrence-based generation
-            plannedOccurrences = generateRecurrenceOccurrences(window, entries);
-        } else {
-            // Use old day-of-week based generation for backward compatibility
-            LocalDate cursor = window.start();
-            while (!cursor.isAfter(window.end())) {
-                int dayOfWeek = cursor.getDayOfWeek().getValue();
-                for (ScheduleEntry entry : entries) {
-                    if (entry.getDayOfWeek() == dayOfWeek) {
-                        plannedOccurrences.add(new PlannedOccurrence(cursor, entry));
-                    }
-                }
-                cursor = cursor.plusDays(1);
-            }
-        }
+        List<PlannedOccurrence> plannedOccurrences = deploymentPlanner.plan(window, entries);
 
         Set<LocalDate> plannedDates = plannedOccurrences.stream().map(PlannedOccurrence::date).collect(Collectors.toSet());
 
         List<ScheduleOccurrence> existingRange = plannedDates.isEmpty()
                 ? List.of()
-                : scheduleOccurrenceRepository.findByUserAndDateBetween(user, window.start(), window.end()).stream()
+                : (lockOccurrences ? scheduleOccurrenceRepository.findOwnedRangeForDeployment(user, window.start(), window.end())
+                        : scheduleOccurrenceRepository.findByUserAndDateBetween(user, window.start(), window.end())).stream()
                     .filter(occ -> plannedDates.contains(occ.getDate()))
                     .toList();
 
@@ -683,6 +582,17 @@ public class ScheduleApiController {
             : calendarTaskRepository.findByUserAndDateBetween(user, window.start(), window.end()).stream()
                 .filter(task -> task != null && task.getDate() != null && plannedDates.contains(task.getDate()))
                 .toList();
+
+        List<WorkoutSession> sessions = plannedDates.isEmpty() ? List.of()
+                : workoutSessionRepository.findByUserAndDateBetweenOrderByDateAsc(user, window.start(), window.end()).stream()
+                    .filter(session -> plannedDates.contains(session.getDate())).toList();
+        Set<Long> linkedOccurrenceIds = sessions.stream().map(WorkoutSession::getSourceOccurrenceId)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<Long> existingIds = existingRange.stream().map(ScheduleOccurrence::getId).collect(Collectors.toSet());
+        List<WorkoutSession> sessionConflicts = sessions.stream()
+                .filter(session -> session.getSourceOccurrenceId() == null || !existingIds.contains(session.getSourceOccurrenceId())).toList();
+        long protectedEntries = existingRange.stream()
+                .filter(occ -> protectedOccurrence(occ) || linkedOccurrenceIds.contains(occ.getId())).count() + sessionConflicts.size();
 
         Map<LocalDate, Long> conflictsByDate = existingRange.stream()
                 .collect(Collectors.groupingBy(ScheduleOccurrence::getDate, Collectors.counting()));
@@ -694,7 +604,19 @@ public class ScheduleApiController {
             conflictsByDate.merge(entry.getKey(), entry.getValue(), (left, right) -> left + right);
         }
 
+        for (WorkoutSession session : sessionConflicts) {
+            conflictsByDate.merge(session.getDate(), 1L, Long::sum);
+        }
         List<LocalDate> conflictDates = conflictsByDate.keySet().stream().sorted().toList();
+
+        Set<Long> matchingIds = deploymentPlanner.matchingOccurrenceIds(plannedOccurrences, existingRange, schedule.getId());
+        List<ScheduleOccurrence> replaceable = existingRange.stream()
+                .filter(occ -> !protectedOccurrence(occ) && !linkedOccurrenceIds.contains(occ.getId()) && !matchingIds.contains(occ.getId())).toList();
+        List<ScheduleOccurrence> retained = existingRange.stream()
+                .filter(occ -> !"replace".equals(strategy) || !replaceable.contains(occ)).toList();
+        List<PlannedOccurrence> additions = deploymentPlanner.missingOccurrences(plannedOccurrences, retained, schedule.getId());
+        long alreadyScheduled = plannedOccurrences.size() - additions.size();
+        plannedOccurrences = additions;
 
         long skippedByStrategy = 0;
         if ("skip".equals(strategy) && !conflictDates.isEmpty()) {
@@ -704,177 +626,15 @@ public class ScheduleApiController {
                     .count();
         }
 
-        return new ImpactComputation(window, strategy, plannedOccurrences, existingRange, taskConflicts, conflictDates, conflictsByDate, skippedByStrategy);
+        return new ImpactComputation(window, strategy, plannedOccurrences, existingRange, taskConflicts, conflictDates, conflictsByDate, skippedByStrategy, alreadyScheduled, replaceable, sessionConflicts.size(), protectedEntries);
     }
     
-    /**
-     * Generate occurrences based on recurrence pattern
-     */
-    private List<PlannedOccurrence> generateRecurrenceOccurrences(DeploymentWindow window, List<ScheduleEntry> entries) {
-        List<PlannedOccurrence> occurrences = new ArrayList<>();
-        String repeat = window.scope();
-        LocalDate start = window.start();
-        LocalDate end = window.end();
-        
-        if ("daily".equals(repeat) || "forever".equals(repeat)) {
-            // Every day within the range - match schedule entries by day of week
-            LocalDate cursor = start;
-            while (!cursor.isAfter(end)) {
-                int dayOfWeek = cursor.getDayOfWeek().getValue();
-                for (ScheduleEntry entry : entries) {
-                    if (entry.getDayOfWeek() == dayOfWeek) {
-                        occurrences.add(new PlannedOccurrence(cursor, entry));
-                    }
-                }
-                cursor = cursor.plusDays(1);
-            }
-        } else if ("weekly".equals(repeat)) {
-            // Once per week - on the matching days of week
-            LocalDate cursor = start;
-            while (!cursor.isAfter(end)) {
-                int dayOfWeek = cursor.getDayOfWeek().getValue();
-                for (ScheduleEntry entry : entries) {
-                    if (entry.getDayOfWeek() == dayOfWeek) {
-                        occurrences.add(new PlannedOccurrence(cursor, entry));
-                    }
-                }
-                cursor = cursor.plusDays(1);
-            }
-        } else if ("monthly".equals(repeat)) {
-            // Once per month - place each schedule entry on the same week/day pattern relative to month start
-            LocalDate cursor = start;
-            
-            while (!cursor.isAfter(end)) {
-                LocalDate monthStart = cursor.withDayOfMonth(1);
-                LocalDate monthEnd = cursor.withDayOfMonth(cursor.lengthOfMonth());
-                
-                // For each entry, figure out which week of the month it falls in the original schedule
-                for (ScheduleEntry entry : entries) {
-                    int targetDayOfWeek = entry.getDayOfWeek();
-                    
-                    // Find all occurrences of this day of week in this month
-                    LocalDate dayCursor = monthStart;
-                    
-                    while (!dayCursor.isAfter(monthEnd)) {
-                        if (dayCursor.getDayOfWeek().getValue() == targetDayOfWeek) {
-                            // Add occurrence for each matching day (allows multiple per month if schedule has multiple entries)
-                            if (!dayCursor.isBefore(start) && !dayCursor.isAfter(end)) {
-                                occurrences.add(new PlannedOccurrence(dayCursor, entry));
-                            }
-                        }
-                        dayCursor = dayCursor.plusDays(1);
-                    }
-                }
-                
-                // Move to next month
-                cursor = cursor.plusMonths(1).withDayOfMonth(1);
-            }
-        } else if ("yearly".equals(repeat)) {
-            // Once per year - place schedule entries on the same dates each year
-            // Generate occurrences for the start date's week pattern, repeated yearly
-            int startYear = start.getYear();
-            int endYear = end.getYear();
-            
-            for (int year = startYear; year <= endYear; year++) {
-                // For each year, place the schedule entries on the same week as the start date
-                LocalDate yearStart = start.withYear(year);
-                if (yearStart.isAfter(end)) break;
-                
-                // Find the week containing this date
-                LocalDate weekStart = yearStart.with(DayOfWeek.MONDAY);
-                
-                // Place each entry on its designated day of week within this week
-                for (ScheduleEntry entry : entries) {
-                    int targetDayOfWeek = entry.getDayOfWeek();
-                    LocalDate occurrenceDate = weekStart.plusDays(targetDayOfWeek - 1);
-                    
-                    if (!occurrenceDate.isBefore(start) && !occurrenceDate.isAfter(end)) {
-                        occurrences.add(new PlannedOccurrence(occurrenceDate, entry));
-                    }
-                }
-            }
-        } else if ("custom".equals(repeat)) {
-            // Custom interval - use interval and unit from recurrence config
-            RecurrenceConfig config = window.recurrence();
-            if (config != null && config.interval() != null && config.unit() != null) {
-                int interval = config.interval();
-                String unit = config.unit();
-                
-                LocalDate cursor = start;
-                while (!cursor.isAfter(end)) {
-                    // Add occurrences for all matching days at this position
-                    int dayOfWeek = cursor.getDayOfWeek().getValue();
-                    for (ScheduleEntry entry : entries) {
-                        if (entry.getDayOfWeek() == dayOfWeek) {
-                            occurrences.add(new PlannedOccurrence(cursor, entry));
-                        }
-                    }
-                    
-                    // Advance by the interval
-                    if ("days".equals(unit) || "day".equals(unit)) {
-                        cursor = cursor.plusDays(interval);
-                    } else if ("weeks".equals(unit) || "week".equals(unit)) {
-                        cursor = cursor.plusWeeks(interval);
-                    } else if ("months".equals(unit) || "month".equals(unit)) {
-                        cursor = cursor.plusMonths(interval);
-                    } else if ("years".equals(unit) || "year".equals(unit)) {
-                        cursor = cursor.plusYears(interval);
-                    } else {
-                        // Default to weeks
-                        cursor = cursor.plusWeeks(interval);
-                    }
-                }
-            } else {
-                // Fallback to daily if no config
-                LocalDate cursor = start;
-                while (!cursor.isAfter(end)) {
-                    int dayOfWeek = cursor.getDayOfWeek().getValue();
-                    for (ScheduleEntry entry : entries) {
-                        if (entry.getDayOfWeek() == dayOfWeek) {
-                            occurrences.add(new PlannedOccurrence(cursor, entry));
-                        }
-                    }
-                    cursor = cursor.plusDays(1);
-                }
-            }
-        }
-        
-        return occurrences;
+    private static boolean protectedOccurrence(ScheduleOccurrence occurrence) {
+        return occurrence.isCompleted() || occurrence.isMissed() || occurrence.getExerciseLog() != null;
     }
-
-    private record DeploymentWindow(LocalDate start, LocalDate end, int weeks, String scope, RecurrenceConfig recurrence) {
-        // Constructor with recurrence
-        public DeploymentWindow(LocalDate start, LocalDate end, int weeks, String scope, RecurrenceConfig recurrence) {
-            this.start = start;
-            this.end = end;
-            this.weeks = weeks;
-            this.scope = scope;
-            this.recurrence = recurrence;
-        }
-        
-        // Constructor without recurrence for backward compatibility
-        public DeploymentWindow(LocalDate start, LocalDate end, int weeks, String scope) {
-            this(start, end, weeks, scope, null);
-        }
-    }
-    
-    private record RecurrenceConfig(String repeat, Integer interval, String unit, LocalDate endDate) {
-        public RecurrenceConfig {
-            // Normalize repeat type
-            repeat = repeat != null ? repeat.toLowerCase().trim() : "forever";
-            // Default interval to 1 if not specified for custom
-            if ("custom".equals(repeat) && interval == null) {
-                interval = 1;
-            }
-            // Normalize unit
-            unit = unit != null ? unit.toLowerCase().trim() : "weeks";
-        }
-    }
-
-    private record PlannedOccurrence(LocalDate date, ScheduleEntry entry) {}
 
     private static final class ImpactComputation {
-        private final DeploymentWindow window;
+        private final Window window;
         private final String strategy;
         private final List<PlannedOccurrence> plannedOccurrences;
         private final List<ScheduleOccurrence> existingConflicts;
@@ -882,16 +642,24 @@ public class ScheduleApiController {
         private final List<LocalDate> conflictDates;
         private final Map<LocalDate, Long> conflictsByDate;
         private final long skippedByStrategy;
+        private final long alreadyScheduled;
+        private final List<ScheduleOccurrence> replaceableConflicts;
+        private final int sessionConflicts;
+        private final long protectedEntries;
 
         private ImpactComputation(
-                DeploymentWindow window,
+                Window window,
                 String strategy,
                 List<PlannedOccurrence> plannedOccurrences,
                 List<ScheduleOccurrence> existingConflicts,
                 List<CalendarTask> taskConflicts,
                 List<LocalDate> conflictDates,
                 Map<LocalDate, Long> conflictsByDate,
-                long skippedByStrategy
+                long skippedByStrategy,
+                long alreadyScheduled,
+                List<ScheduleOccurrence> replaceableConflicts,
+                int sessionConflicts,
+                long protectedEntries
         ) {
             this.window = window;
             this.strategy = strategy;
@@ -901,15 +669,22 @@ public class ScheduleApiController {
             this.conflictDates = conflictDates;
             this.conflictsByDate = conflictsByDate;
             this.skippedByStrategy = skippedByStrategy;
+            this.alreadyScheduled = alreadyScheduled;
+            this.replaceableConflicts = replaceableConflicts;
+            this.sessionConflicts = sessionConflicts;
+            this.protectedEntries = protectedEntries;
         }
 
         private Map<String, Object> toMap() {
             long added = plannedOccurrences.size();
-            long replaced = "replace".equals(strategy) ? existingConflicts.size() : 0;
+            long replaced = "replace".equals(strategy) ? replaceableConflicts.size() : 0;
             long skipped = "skip".equals(strategy) ? skippedByStrategy : 0;
 
             Map<String, Object> summary = new LinkedHashMap<>();
-            summary.put("plannedEntries", plannedOccurrences.size());
+            summary.put("plannedEntries", plannedOccurrences.size() + alreadyScheduled);
+            summary.put("alreadyScheduled", alreadyScheduled);
+            summary.put("protectedEntries", protectedEntries);
+            summary.put("sessionConflicts", sessionConflicts);
             summary.put("added", Math.max(0, added - skipped));
             summary.put("replaced", replaced);
             summary.put("skipped", skipped);
@@ -923,6 +698,12 @@ public class ScheduleApiController {
             response.put("weeks", window.weeks());
             response.put("strategy", strategy);
             response.put("summary", summary);
+            Set<LocalDate> skippedDates = "skip".equals(strategy) ? new HashSet<>(conflictDates) : Set.of();
+            response.put("plannedOccurrences", plannedOccurrences.stream()
+                    .filter(planned -> !skippedDates.contains(planned.date()))
+                    .map(planned -> Map.of("date", planned.date().toString(), "entryId", planned.entry().getId(),
+                            "name", planned.entry().getCustomExercise() != null ? planned.entry().getCustomExercise().getName()
+                                    : planned.entry().getExercise().getName())).toList());
             response.put("conflictDates", conflictDates.stream().map(LocalDate::toString).toList());
             response.put(
                     "conflictsByDate",
@@ -947,6 +728,7 @@ public class ScheduleApiController {
 
     private record ScheduleOccurrenceSnapshot(
             LocalDate date,
+            Long scheduleId,
             Long exerciseId,
             Long customExerciseId,
             String scheduleName,
@@ -959,6 +741,7 @@ public class ScheduleApiController {
         private static ScheduleOccurrenceSnapshot from(ScheduleOccurrence occurrence) {
             return new ScheduleOccurrenceSnapshot(
                     occurrence.getDate(),
+                    occurrence.getSchedule() != null ? occurrence.getSchedule().getId() : null,
                     occurrence.getExercise() != null ? occurrence.getExercise().getId() : null,
                     occurrence.getCustomExercise() != null ? occurrence.getCustomExercise().getId() : null,
                     occurrence.getScheduleName(),
@@ -972,12 +755,13 @@ public class ScheduleApiController {
 
         private ScheduleOccurrence toOccurrence(
             User user,
-            Schedule schedule,
+            ScheduleService scheduleService,
             ExerciseRepository exerciseRepository,
             CustomExerciseRepository customExerciseRepository
         ) {
             ScheduleOccurrence occurrence = new ScheduleOccurrence();
             occurrence.setUser(user);
+            Schedule schedule = scheduleId != null ? scheduleService.findById(scheduleId) : null;
             occurrence.setSchedule(schedule);
             occurrence.setScheduleName(scheduleName != null ? scheduleName : (schedule != null ? schedule.getName() : "Schedule"));
             occurrence.setDate(date);

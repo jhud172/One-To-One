@@ -70,6 +70,8 @@
                   class="language-selector__options"
                   data-language-options
                   th:attr="aria-label=#{language.selector.options.label}">
+                <input th:each="parameter : ${languageQueryParameters}" type="hidden"
+                       th:name="${parameter.name}" th:value="${parameter.value}">
                 <button th:each="language : ${supportedLanguages}"
                         type="submit"
                         name="lang"

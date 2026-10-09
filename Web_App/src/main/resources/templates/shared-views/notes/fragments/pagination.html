@@ -1,0 +1,7 @@
+<nav xmlns:th="http://www.thymeleaf.org" th:fragment="pagination" id="notesPagination" class="notes-pagination" th:attr="aria-label=#{ui.notes.pages}">
+    <p th:text="#{ui.notes.page(${notesPage.number + 1}, ${notesPage.totalPages > 0 ? notesPage.totalPages : 1}, ${notesPage.totalElements})}"></p>
+    <a th:if="${notesPage.hasPrevious()}" class="notes-action" th:attr="data-notes-page=${notesPage.number}"
+       th:href="@{${notesPagingPath}(folderId=${notesPagingFolder},q=${q},page=${notesPage.number})}" th:text="#{ui.library.previousPage}"></a>
+    <a th:if="${notesPage.hasNext()}" class="notes-action" th:attr="data-notes-page=${notesPage.number + 2}"
+       th:href="@{${notesPagingPath}(folderId=${notesPagingFolder},q=${q},page=${notesPage.number + 2})}" th:text="#{ui.library.nextPage}"></a>
+</nav>

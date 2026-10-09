@@ -1,0 +1,23 @@
+<fieldset xmlns:th="http://www.thymeleaf.org" th:fragment="row(row,index)" class="studio-row" data-builder-row th:with="prefix=${'exercises[' + index + ']'},idPrefix=${'studio-row-' + index + '-'}">
+    <legend data-row-title th:text="#{ui.studio.order(${index + 1})}">Exercise 1</legend>
+    <input type="hidden" data-field="id" th:name="${prefix + '.id'}" th:value="${row != null ? row.id : null}">
+    <div class="studio-row__actions">
+        <button type="submit" name="editAction" th:value="${'up:' + index}" formnovalidate data-move-up th:disabled="${index == 0}" th:text="#{ui.studio.moveUp}">Move up</button>
+        <button type="submit" name="editAction" th:value="${'down:' + index}" formnovalidate data-move-down th:disabled="${index == #lists.size(form.exercises) - 1}" th:text="#{ui.studio.moveDown}">Move down</button>
+        <button type="submit" name="editAction" th:value="${'remove:' + index}" formnovalidate data-remove-row th:attr="aria-label=#{ui.studio.removeFor(${index + 1})}" th:text="#{ui.00801}">Remove</button>
+    </div>
+    <div class="studio-row__fields">
+        <div class="studio-row__choice"><label data-for="exerciseRef" th:for="${idPrefix + 'exerciseRef'}" th:text="#{ui.01682}">Exercise</label>
+            <select data-field="exerciseRef" th:id="${idPrefix + 'exerciseRef'}" th:name="${prefix + '.exerciseRef'}">
+                <option value="" th:selected="${row == null or #strings.isEmpty(row.exerciseRef)}" th:text="#{ui.02861}">Manual entry</option>
+                <optgroup th:label="#{ui.02688}"><option th:each="ex : ${exercises}" th:value="${'e:' + ex.id}" th:selected="${row != null and row.exerciseRef == 'e:' + ex.id}" th:text="${ex.name}"></option></optgroup>
+                <optgroup th:label="#{ui.studio.customOwned}"><option th:each="ex : ${customExercises}" th:value="${'c:' + ex.id}" th:selected="${row != null and row.exerciseRef == 'c:' + ex.id}" th:text="${ex.name}"></option></optgroup>
+            </select>
+        </div>
+        <div class="studio-row__name"><label data-for="exerciseName" th:for="${idPrefix + 'exerciseName'}" th:text="#{ui.00131}">Name</label><input data-field="exerciseName" th:id="${idPrefix + 'exerciseName'}" th:name="${prefix + '.exerciseName'}" th:value="${row != null ? row.exerciseName : ''}" th:autofocus="${rowFocusIndex != null and rowFocusIndex == index}" maxlength="200" type="text"></div>
+        <div><label data-for="sets" th:for="${idPrefix + 'sets'}" th:text="#{ui.02330}">Sets</label><input data-field="sets" th:id="${idPrefix + 'sets'}" th:name="${prefix + '.sets'}" th:value="${row != null and row.sets != null ? row.sets : defaultSets}" type="number" min="1" max="50"></div>
+        <div><label data-for="reps" th:for="${idPrefix + 'reps'}" th:text="#{ui.02339}">Reps</label><input data-field="reps" th:id="${idPrefix + 'reps'}" th:name="${prefix + '.reps'}" th:value="${row != null and row.reps != null ? row.reps : defaultRepMin}" type="number" min="1" max="1000"></div>
+        <div><label data-for="restSeconds" th:for="${idPrefix + 'restSeconds'}" th:text="#{ui.02863}">Rest (sec)</label><input data-field="restSeconds" th:id="${idPrefix + 'restSeconds'}" th:name="${prefix + '.restSeconds'}" th:value="${row != null and row.restSeconds != null ? row.restSeconds : 60}" type="number" min="0" max="3600"></div>
+        <div class="studio-row__notes"><label data-for="notes" th:for="${idPrefix + 'notes'}" th:text="#{ui.00175}">Notes</label><input data-field="notes" th:id="${idPrefix + 'notes'}" th:name="${prefix + '.notes'}" th:value="${row != null ? row.notes : ''}" maxlength="500" type="text"></div>
+    </div>
+</fieldset>

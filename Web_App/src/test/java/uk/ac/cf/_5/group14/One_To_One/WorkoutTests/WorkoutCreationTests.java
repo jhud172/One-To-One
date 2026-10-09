@@ -86,7 +86,7 @@ public class WorkoutCreationTests {
         assertEquals(mockExercises, savedWorkout.getExercises());
     }
 
-    // Edge case (Checking logic does not crash if exercises cannot be found)
+    // Missing references must never silently save a smaller workout.
     @Test
     void saveWorkout_shouldHandleNonexistentExercises() {
 
@@ -109,16 +109,10 @@ public class WorkoutCreationTests {
                 .thenReturn(List.of(validEx));
         when(authHelper.getAuthenticatedUser()).thenReturn(mockUser);
 
-        workoutService.saveWorkout(dto);
-
-        // Assertions
-        ArgumentCaptor<Workout> workoutCaptor = ArgumentCaptor.forClass(Workout.class);
-        verify(workoutRepository).save(workoutCaptor.capture());
-
-        Workout savedWorkout = workoutCaptor.getValue();
-
-        assertEquals(1, savedWorkout.getExercises().size(), "Should save the 1 valid exercise found");
-        assertEquals(validExId, savedWorkout.getExercises().get(0).getId(), "The saved exercise should be the valid one");
+        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> workoutService.saveWorkout(dto));
+        assertEquals("ui.studio.reference", exception.getMessage());
+        verify(workoutRepository, never()).save(any());
 
 
     }

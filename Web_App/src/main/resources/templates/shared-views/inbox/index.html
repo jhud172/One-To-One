@@ -7,14 +7,14 @@
     <input type="hidden" id="inbox_csrf" th:value="${_csrf != null ? _csrf.token : ''}" />
     <input type="hidden" id="inbox_csrf_header" th:value="${_csrf != null ? _csrf.headerName : ''}" />
 
-    <div class="role-surface role-surface__page" th:attr="data-role-surface=${roleSurface.roleKey}">
+    <div id="inboxPage" class="role-surface role-surface__page inbox-v2" th:attr="data-role-surface=${roleSurface.roleKey}, data-load-error=#{ui.inbox.loadError}, data-send-error=#{ui.inbox.sendError}, data-locked=#{ui.inbox.locked}, data-payment-error=#{ui.02093}, data-sent=#{ui.inbox.sent}, data-read=#{ui.inbox.read}, data-view-attachment=#{ui.inbox.viewAttachment}, data-mark-read=#{ui.inbox.markRead}, data-conversation=#{ui.02083}, data-notification=#{ui.02002}, data-open=#{ui.00451}, data-unread-label=#{ui.inbox.unreadLabel}">
         <section class="role-surface__header" data-site-tour="inbox">
             <div class="px-6 py-6 sm:px-8">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="min-w-0">
                         <p class="role-surface__eyebrow" th:text="${roleSurface.roleLabel + ' workspace'}">Workspace</p>
                         <h1 class="role-surface__title" th:text="${roleSurface.inboxHeading}">Inbox</h1>
-                        <p class="role-surface__copy" th:text="${roleSurface.inboxCopy}">Your conversations.</p>
+                        <p class="role-surface__copy" th:text="#{ui.inbox.humanHint}">Your conversations.</p>
                     </div>
                     <a th:href="${roleSurface.dashboardPath}" class="role-surface__action role-surface__action--secondary" th:text="#{ui.00311}">
                         Back to dashboard
@@ -23,26 +23,7 @@
             </div>
         </section>
 
-        <section class="role-surface__surface" aria-labelledby="inbox-notifications-heading">
-            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 px-6 py-4 dark:border-slate-800">
-                <div>
-                    <h2 id="inbox-notifications-heading" class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02002}">Notifications</h2>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="${roleSurface.notificationCopy}">Account updates.</p>
-                </div>
-                <button type="button"
-                        id="notificationInboxReadAll"
-                        class="role-surface__action role-surface__action--secondary role-surface__action--compact" th:text="#{ui.02003}">
-                    Mark all read
-                </button>
-            </div>
-
-            <div id="notificationInboxEmpty" class="hidden px-6 py-6 text-sm text-slate-500 dark:text-slate-400" th:text="#{ui.02004}">
-                No notifications yet.
-            </div>
-
-            <div id="notificationInboxList" class="divide-y divide-slate-200/70 dark:divide-slate-800"></div>
-        </section>
-
+        <div class="inbox-feedback"><p id="inboxStatus" role="status" aria-live="polite"></p><button id="inboxReload" type="button" th:text="#{ui.inbox.reload}">Reload inbox</button></div>
         <div id="inboxEmptyState" th:classappend="${conversations != null && !conversations.isEmpty()} ? ' hidden' : ''"
              class="role-surface__surface role-surface__empty">
             <div class="flex items-start gap-4">
@@ -58,39 +39,60 @@
         </div>
 
            <div id="inboxThreadList" th:classappend="${conversations == null || conversations.isEmpty()} ? ' hidden' : ''"
-               class="role-surface__surface overflow-hidden">
+               class="role-surface__surface inbox-conversation-list">
             <ul class="divide-y divide-slate-200/70 dark:divide-slate-800">
                 <li th:each="c : ${conversations}">
                     <a th:href="@{/inbox/{id}(id=${c.conversationId})}"
-                       class="group flex items-start justify-between gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/30">
+                       class="inbox-thread-link">
                         <div class="flex min-w-0 items-start gap-3">
                             <div class="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-sm font-semibold text-slate-900 ring-1 ring-slate-200/70 dark:bg-slate-900/60 dark:text-slate-100 dark:ring-slate-800" aria-hidden="true">
-                                <span th:text="${c.title != null ? #strings.toUpperCase(#strings.substring(c.title,0,1)) : '•'}"></span>
+                                <span th:text="${!#strings.isEmpty(c.title) ? #strings.toUpperCase(#strings.substring(c.title,0,1)) : '•'}"></span>
                             </div>
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
                                     <p class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${c.title}"></p>
                                     <span th:if="${c.unreadCount != null && c.unreadCount > 0}"
-                                          class="inline-flex items-center rounded-full bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
-                                          th:text="${c.unreadCount}"></span>
+                                          class="inbox-unread-badge inline-flex items-center"
+                                          th:text="${c.unreadCount}" th:attr="aria-label=${c.unreadCount + ' ' + #messages.msg('ui.inbox.unreadLabel')}"></span>
                                 </div>
                                 <p class="mt-1 truncate text-sm text-slate-600 dark:text-slate-300" th:text="${c.lastMessageSnippet}"></p>
                             </div>
                         </div>
 
                         <div class="flex shrink-0 flex-col items-end gap-2">
-                            <span class="text-xs text-slate-500" th:text="${c.lastMessageAt}"></span>
+                            <span class="text-xs text-slate-500" dir="ltr" th:text="${inboxConversationDates[c.conversationId]}"></span>
                             <span class="text-xs font-semibold text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300" aria-hidden="true" th:text="#{ui.00451}">Open</span>
                         </div>
                     </a>
                 </li>
             </ul>
         </div>
+        <details class="role-surface__surface inbox-notifications"><summary><span id="inbox-notifications-heading" th:text="#{ui.02002}"></span><span id="notificationInboxUnread" class="inbox-unread-badge" hidden></span></summary>
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 px-6 py-4 dark:border-slate-800">
+                <div>
+                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="${roleSurface.notificationCopy}">Account updates.</p>
+                </div>
+                <button type="button"
+                        id="notificationInboxReadAll"
+                        class="role-surface__action role-surface__action--secondary role-surface__action--compact" th:text="#{ui.02003}">
+                    Mark all read
+                </button>
+            </div>
+
+            <div id="notificationInboxEmpty" class="hidden px-6 py-6 text-sm text-slate-500 dark:text-slate-400" th:text="#{ui.02004}">
+                No notifications yet.
+            </div>
+
+            <div id="notificationInboxList" class="divide-y divide-slate-200/70 dark:divide-slate-800"></div>
+            <noscript><p class="px-6 py-4" th:text="#{ui.inbox.notificationsNoScript}">Enable JavaScript to load notifications.</p></noscript>
+        </details>
+
     </div>
 </div>
 
-</th:block>
+
 
 <th:block th:fragment="scripts">
     <script th:src="@{/js/messaging/inbox.js(v=${uiCssVersion})}" defer></script>
+</th:block>
 </th:block>

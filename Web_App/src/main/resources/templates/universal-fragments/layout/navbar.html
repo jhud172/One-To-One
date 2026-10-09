@@ -642,6 +642,23 @@
         </div>
     </div>
 
+    <noscript>
+        <details class="nav-fallback">
+            <summary th:text="#{nav.menu.title}">Browse One To One</summary>
+            <nav th:attr="aria-label=#{nav.primary}" class="nav-fallback__links">
+                <th:block th:replace="~{universal-fragments/layout/navbar :: navLinks}"></th:block>
+            </nav>
+            <div sec:authorize="isAuthenticated()" class="nav-fallback__account">
+                <a th:href="@{/preferences/edit}" th:text="#{ui.00298}">Preferences</a>
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" th:text="#{nav.menu.logout}">Log out</button>
+                </form>
+            </div>
+            <a sec:authorize="!isAuthenticated()" th:href="@{/login}" class="nav-fallback__login"
+               th:text="#{auth.login.submit}">Log in</a>
+        </details>
+    </noscript>
+
     <!-- Collapsed navigation menu -->
     <nav th:attr="aria-label=#{nav.primary}" id="siteNavMenu" class="nav-dropdown" aria-hidden="true">
         <div class="mx-auto w-full px-4 sm:px-6 lg:px-8">
@@ -739,5 +756,5 @@
     </nav>
 
     <!-- Toggle behaviour -->
-    <script th:src="@{/js/core/navbar-page.js(v='20260730a')}"></script>
+    <script th:src="@{/js/core/navbar-page.js(v=${assetVersion})}"></script>
 </header>

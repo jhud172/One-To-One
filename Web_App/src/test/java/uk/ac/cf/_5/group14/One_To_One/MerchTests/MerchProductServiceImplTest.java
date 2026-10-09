@@ -50,6 +50,22 @@ class MerchProductServiceImplTest {
     }
 
     @Test
+    void saveWithImageRejectsOversizedDimensionsBeforeDecodingPixels() throws Exception {
+        byte[] compressed = pngBytes();
+        java.nio.ByteBuffer.wrap(compressed).putInt(16, 100_000).putInt(20, 100_000);
+        java.util.zip.CRC32 checksum = new java.util.zip.CRC32();
+        checksum.update(compressed, 12, 17);
+        java.nio.ByteBuffer.wrap(compressed).putInt(29, (int) checksum.getValue());
+        MerchProduct product = new MerchProduct();
+        product.setName("Fixture product");
+        MockMultipartFile upload = new MockMultipartFile("image", "compressed.png", "image/png", compressed);
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+            () -> service(mock(MerchProductRepository.class), mock(MerchOrderService.class)).saveWithImage(product, upload));
+        assertThat(failure.getMessage()).contains("dimensions");
+        assertThat(tempDir).isEmptyDirectory();
+    }
+
+    @Test
     void saveWithImage_rejectsFakeImagePayload() {
         MerchProductRepository repo = mock(MerchProductRepository.class);
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));

@@ -3,7 +3,7 @@
     <div th:fragment="content">
         <div id="coachChatPage"
              th:attr="data-chat-time=${chatTimeTheme != null ? chatTimeTheme : 'midday'}"
-             class="relative overflow-hidden">
+             class="coach-workspace-v2 relative overflow-hidden">
 
             <!-- Ambient glow orbs -->
             <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-500/10 via-sky-400/10 to-indigo-500/10"></div>
@@ -11,19 +11,22 @@
             <div class="pointer-events-none absolute -bottom-16 left-12 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl"></div>
 
                 <div id="coachChat"
-                     th:attr="data-premium=${isPremium}, data-limit=${dailyLimit}, data-used=${dailyUsed}, data-remaining=${dailyRemaining}"
+                     th:attr="data-premium=${isPremium}, data-limit=${dailyLimit}, data-used=${dailyUsed}, data-remaining=${dailyRemaining}, data-days=#{ui.00539}, data-tasks=#{ui.01908}, data-workouts=#{ui.01909}, data-missed=#{ui.charlie.missed}, data-left-today=#{ui.01875}, data-loading=#{ui.02551}, data-no-messages=#{ui.02005}, data-new-chat=#{ui.01868}, data-greeting=#{ui.01883}, data-error=#{ui.charlie.error}"
                      class="mt-6 grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)_260px]">
 
                     <!-- Left sidebar: Conversations -->
                     <aside class="chat-sidebar-left rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-800/60 dark:bg-slate-950/70">
                         <div class="flex items-center justify-between">
                             <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.01866}">Conversations</div>
-                            <span class="text-[11px] uppercase tracking-widest text-slate-400" th:text="#{ui.00402}">Coach</span>
+                            <span class="text-[11px] uppercase tracking-widest text-slate-400" th:text="#{ui.02943}">Charlie</span>
                         </div>
                         <div class="mt-3">
+                            <label for="coachSearch" class="sr-only" th:text="#{ui.01867}">Search chats</label>
                             <input id="coachSearch" type="text" placeholder="Search chats"
                                    class="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500"  th:placeholder="#{ui.01867}"/>
                         </div>
+                        <a class="assistant-history-action" th:href="@{/chatv2/history}" th:text="#{ui.charlie.history}"></a>
+                        <button id="coachRetry" type="button" class="coach-retry" th:text="#{ui.charlie.reload}">Reload conversations</button>
                         <button id="coachNewChat" type="button"
                                 class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-100 dark:text-slate-900" th:text="#{ui.01868}">
                             ✨ New chat
@@ -80,7 +83,7 @@
                                 <div class="absolute right-16 top-20 h-28 w-28 rounded-full bg-sky-400/10 blur-2xl"></div>
                             </div>
                             <div class="relative flex min-h-[60vh] flex-col">
-                                <div id="coachMessages" class="flex-1 space-y-4 overflow-auto px-6 py-6 text-sm">
+                                <div id="coachMessages" role="log" aria-live="polite" aria-relevant="additions text" th:attr="aria-label=#{ui.01866}" class="flex-1 space-y-4 overflow-auto px-6 py-6 text-sm">
                                     <!-- Personalised zero-blank greeting (server-rendered) -->
                                     <div th:if="${chatSummary != null}" id="chatGreetingCard" class="chat-greeting-card">
                                         <div class="chat-greeting-card__title" th:text="${chatSummary.greeting()}">Good morning</div>
@@ -115,7 +118,7 @@
 
                                 <div class="border-t border-slate-200/70 px-6 py-4 dark:border-slate-800/60">
                                     <!-- Action chips -->
-                                    <div id="actionChips" class="flex flex-wrap gap-2 mb-3">
+                                    <div id="actionChips" class="coach-primary-actions flex flex-wrap gap-2 mb-3">
                                         <button type="button" class="chat-action-chip" data-chip-text="Plan my day for tomorrow" th:text="#{ui.01884}">
                                             📅 Plan tomorrow
                                         </button>
@@ -128,6 +131,10 @@
                                         <button type="button" class="chat-action-chip" data-chip-text="Summarise my last 7 days: tasks completed, workouts completed, and missed sessions" th:text="#{ui.01887}">
                                             📊 7-day summary
                                         </button>
+                                    </div>
+                                    <details class="coach-more-actions">
+                                        <summary th:text="#{ui.01922}">Quick Actions</summary>
+                                        <div class="flex flex-wrap gap-2 mb-3">
                                         <button type="button" class="chat-action-chip" data-chip-text="Summarise my last 30 days of training and provide trend insights" th:text="#{ui.01888}">
                                             📈 30-day insights
                                         </button>
@@ -149,7 +156,8 @@
                                         <button type="button" class="chat-action-chip" data-chip-text="Help me reduce my workload for today without losing progress" th:text="#{ui.01894}">
                                             🎯 Reduce workload today
                                         </button>
-                                    </div>
+                                        </div>
+                                    </details>
 
                                     <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 mb-3">
                                         <span class="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-900">/plan</span>
@@ -160,6 +168,7 @@
                                         <span class="text-slate-400" th:text="#{ui.01895}">Shift + Enter for new line</span>
                                     </div>
                                     <div class="flex flex-col gap-3 sm:flex-row">
+                                        <label for="coachInput" class="sr-only" th:text="#{ui.02962}">Message Charlie</label>
                                         <textarea id="coachInput" rows="3" placeholder="Ask about workouts, supplements, exercises, or your progress…"
                                                   class="flex-1 resize-none rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-100" th:placeholder="#{ui.01896}"></textarea>
                                         <button id="coachSend" type="button"
@@ -167,6 +176,7 @@
                                             Send ✨
                                         </button>
                                     </div>
+                                    <p id="coachStatus" class="coach-status" role="status" aria-live="polite"></p>
                                 </div>
                             </div>
                         </div>
@@ -174,7 +184,7 @@
 
                     <!-- Right sidebar: Live Metrics -->
                     <aside th:if="${isPremium}"
-                           class="chat-sidebar-right hidden rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm backdrop-blur lg:block dark:border-slate-800/60 dark:bg-slate-950/70">
+                           class="chat-sidebar-right rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-800/60 dark:bg-slate-950/70">
 
                         <div class="flex items-center justify-between">
                             <div class="text-sm font-semibold text-emerald-600 dark:text-emerald-400" th:text="#{ui.01898}">Live Metrics</div>
@@ -325,17 +335,17 @@
             </div>
 
             <!-- Daily limit modal -->
-            <div id="limitModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 px-4">
+            <dialog id="limitModal" class="coach-limit-dialog" aria-labelledby="coachLimitTitle" aria-describedby="coachLimitDescription">
                 <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl dark:border-slate-800 dark:bg-slate-950">
                     <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">✦</div>
-                    <h2 class="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.01925}">Daily limit reached</h2>
-                    <p class="mt-2 text-sm text-slate-500" th:text="#{ui.01926}">Unlock unlimited Coach Bot messages with Platform Premium.</p>
+                    <h2 id="coachLimitTitle" class="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.01925}">Daily limit reached</h2>
+                    <p id="coachLimitDescription" class="mt-2 text-sm text-slate-500" th:text="#{ui.01926}">Unlock unlimited Coach Bot messages with Platform Premium.</p>
                     <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
                         <a href="/pricing" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900" th:text="#{ui.01927}">See pricing</a>
-                        <button id="limitModalClose" class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200" th:text="#{ui.01928}">Not now</button>
+                        <button id="limitModalClose" type="button" autofocus class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200" th:text="#{ui.01928}">Not now</button>
                     </div>
                 </div>
-            </div>
+            </dialog>
 
             <input type="hidden" id="chat_csrf" th:value="${_csrf != null ? _csrf.token : ''}" />
             <input type="hidden" id="chat_csrf_header" th:value="${_csrf != null ? _csrf.headerName : ''}" />
@@ -343,6 +353,6 @@
     </div>
 
     <th:block th:fragment="scripts">
-        <script src="/js/chat/coach-chat.js" defer></script>
+        <script th:src="@{/js/chat/coach-chat.js(v=${uiCssVersion})}" defer></script>
     </th:block>
 </th:block>

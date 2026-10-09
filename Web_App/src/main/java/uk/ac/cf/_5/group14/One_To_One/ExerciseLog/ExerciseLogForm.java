@@ -11,6 +11,9 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class ExerciseLogForm {
+    @Size(max = 64)
+    private String expectedRevision;
+
     @NotNull(message = "Date is required.")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
@@ -36,6 +39,8 @@ public class ExerciseLogForm {
     private Long occurrenceId;
     private String exerciseType;
     private Long calendarTaskId;
+    @Min(0)
+    @Max(1440)
     private Integer durationMinutes;
 
 

@@ -1,94 +1,27 @@
-<th:block th:replace="~{base :: layout(#{ui.01985}, null, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="content">
-        <div class="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-
-
-            <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold tracking-tight text-slate-900" th:text="#{ui.01985}">Your Exercise Logs</h1>
-                    <p class="mt-1 text-sm text-slate-600" th:text="#{ui.01986}">Search, sort, and click a log to preview details.</p>
-                </div>
-                <a href="/exercise-log/export/pdf" class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" th:text="#{ui.01987}">
-                    Download PDF
-                </a>
-            </div>
-
-            <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <label for="log-search" class="sr-only" th:text="#{ui.01988}">Search logs</label>
-                    <input id="log-search" type="text" placeholder="Search logs..." class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 sm:w-72" th:placeholder="#{ui.01989}">
-
-                    <label for="sort-select" class="sr-only" th:text="#{ui.01990}">Sort logs</label>
-                    <select id="sort-select" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 sm:w-48">
-                        <option value="newest" th:text="#{ui.01991}">Newest First</option>
-                        <option value="oldest" th:text="#{ui.01992}">Oldest First</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="mt-6">
-                <div id="log-grid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div th:each="log : ${logs}"
-                         class="log-card cursor-pointer rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
-                         th:attr="data-date=${log.date},data-before=${log.moodBefore},data-after=${log.moodAfter},data-confidence=${log.confidence},data-id=${log.id}">
-                        <h2 class="text-lg font-semibold text-slate-900" th:text="${#temporals.format(log.date,'dd MMM yyyy')}"></h2>
-                        <dl class="mt-3 space-y-1 text-sm text-slate-700">
-                            <div class="flex items-center justify-between gap-3">
-                                <dt class="font-medium" th:text="#{ui.01979}">Mood Before</dt>
-                                <dd class="text-slate-900" th:text="${log.moodBefore}"></dd>
-                            </div>
-                            <div class="flex items-center justify-between gap-3">
-                                <dt class="font-medium" th:text="#{ui.01980}">Mood After</dt>
-                                <dd class="text-slate-900" th:text="${log.moodAfter}"></dd>
-                            </div>
-                            <div class="flex items-center justify-between gap-3">
-                                <dt class="font-medium" th:text="#{ui.01981}">Confidence</dt>
-                                <dd class="text-slate-900" th:text="${log.confidence}"></dd>
-                            </div>
-                        </dl>
-                    </div>
-                </div>
-
-                <div id="empty-state" th:if="${#lists.isEmpty(logs)}" class="mt-10 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
-                    <p class="text-sm font-medium text-slate-900" th:text="#{ui.01993}">No exercise logs yet.</p>
-                    <p class="mt-1 text-sm text-slate-600" th:text="#{ui.01994}">Once you create logs, they’ll show up here.</p>
-                </div>
-
-                <div id="pagination-controls" class="mt-6 flex justify-center gap-2"></div>
-            </div>
-
-            <div id="preview-panel" class="hidden fixed right-0 top-0 z-50 h-full w-full max-w-md transform translate-x-full border-l border-slate-200 bg-white p-6 shadow-2xl transition-transform duration-300">
-                <div class="flex items-start justify-between gap-4">
-                    <h2 class="text-lg font-semibold text-slate-900" th:text="#{ui.00059}">Preview</h2>
-                    <button id="close-preview" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-xl leading-none text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10">×</button>
-                </div>
-
-                <h3 id="preview-date" class="mt-4 text-2xl font-bold tracking-tight text-slate-900"></h3>
-
-                <dl class="mt-6 space-y-3 text-sm">
-                    <div class="flex items-center justify-between gap-3">
-                        <dt class="font-medium text-slate-700" th:text="#{ui.01979}">Mood Before</dt>
-                        <dd id="preview-before" class="text-slate-900"></dd>
-                    </div>
-                    <div class="flex items-center justify-between gap-3">
-                        <dt class="font-medium text-slate-700" th:text="#{ui.01980}">Mood After</dt>
-                        <dd id="preview-after" class="text-slate-900"></dd>
-                    </div>
-                    <div class="flex items-center justify-between gap-3">
-                        <dt class="font-medium text-slate-700" th:text="#{ui.01981}">Confidence</dt>
-                        <dd id="preview-confidence" class="text-slate-900"></dd>
-                    </div>
-                </dl>
-
-                <a id="preview-view-btn" class="mt-8 inline-flex w-full items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10" th:text="#{ui.01995}">
-                    Open Full Log
-                </a>
-            </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.01985}, null, ~{::content}, null)}">
+<div th:fragment="content" class="client-workspace-v2 personal-records-v2">
+    <header class="detail-header"><div class="detail-header-content"><div><h1 class="detail-title" th:text="#{ui.01985}"></h1><p class="detail-subtitle" th:text="#{ui.log.historyHint}"></p></div><div class="connection-actions"><a class="detail-btn-primary" th:href="@{/exercise-log}" th:text="#{ui.01984}"></a><a class="detail-btn-secondary" th:href="@{/exercise-log/export/pdf}" th:text="#{ui.log.exportAll}"></a></div></div></header>
+    <form class="detail-section personal-history-filters" method="get" th:action="@{/exercise-log/list}" th:object="${historyFilter}">
+        <div th:if="${#fields.hasAnyErrors()}" id="history-errors" class="profile-editor-errors" role="alert"><h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.log.dateRangeInvalid}"></p><ul><li th:if="${#fields.hasErrors('from')}"><a href="#from" th:text="#{ui.log.dateFrom}"></a></li><li th:if="${#fields.hasErrors('until')}"><a href="#until" th:text="#{ui.log.dateUntil}"></a></li></ul></div>
+        <div class="personal-history-filter-grid">
+            <div><label for="logSearch" th:text="#{ui.01988}"></label><input id="logSearch" dir="auto" type="search" name="q" maxlength="120" th:value="${query}"></div>
+            <div><label for="from" th:text="#{ui.log.dateFrom}"></label><input type="date" th:field="*{from}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('from')},aria-describedby=${#fields.hasErrors('from') ? 'history-errors' + (historyFromMalformed ? ' history-from-draft' : '') : null}"><p th:if="${historyFromMalformed}" id="history-from-draft" class="personal-history-rejected" dir="ltr" th:text="${draftFrom}"></p></div>
+            <div><label for="until" th:text="#{ui.log.dateUntil}"></label><input type="date" th:field="*{until}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('until')},aria-describedby=${#fields.hasErrors('until') ? 'history-errors' + (historyUntilMalformed ? ' history-until-draft' : '') : null}"><p th:if="${historyUntilMalformed}" id="history-until-draft" class="personal-history-rejected" dir="ltr" th:text="${draftUntil}"></p></div>
+            <div><label for="logSort" th:text="#{ui.01990}"></label><select id="logSort" name="sort"><option value="newest" th:selected="${sort == 'newest'}" th:text="#{ui.01991}"></option><option value="oldest" th:selected="${sort == 'oldest'}" th:text="#{ui.01992}"></option></select></div>
         </div>
+        <div class="connection-actions"><button type="submit" class="detail-btn-primary" th:text="#{ui.00260}"></button><a th:if="${hasLogFilters}" class="detail-btn-secondary" th:href="@{/exercise-log/list(sort=${sort})}" th:text="#{ui.00555}"></a></div>
+    </form>
+    <p th:unless="${#fields.hasErrors('historyFilter.*')}" class="personal-history-count" role="status" th:text="#{ui.library.resultsRange(${logRangeStart},${logRangeEnd},${logTotal})}"></p>
+    <section th:if="${#lists.isEmpty(logs) and !#fields.hasErrors('historyFilter.*')}" class="detail-section"><h2 class="detail-section-title" th:text="${hasLogFilters} ? #{ui.log.historyNoMatch} : #{ui.01993}"></h2><p th:unless="${hasLogFilters}" th:text="#{ui.01994}"></p><a th:if="${hasLogFilters}" class="detail-btn-secondary" th:href="@{/exercise-log/list(sort=${sort})}" th:text="#{ui.00555}"></a></section>
+    <div class="library-exercise-grid personal-history-grid">
+        <article th:each="log : ${logs}" class="detail-section personal-history-card" th:with="ownedOccurrence=${log.occurrence != null and log.occurrence.user != null and log.occurrence.user.id == logOwnerId},ownedTask=${log.calendarTask != null and log.calendarTask.user != null and log.calendarTask.user.id == logOwnerId}">
+            <header><p class="personal-history-origin" th:text="${ownedOccurrence or ownedTask} ? #{ui.log.calendarReflection} : #{ui.log.personalReflection}"></p><h2 class="detail-section-title"><a th:href="@{/exercise-log/view/{id}(id=${log.id})}"><time dir="ltr" th:datetime="${log.date}" th:text="${log.date}"></time></a></h2></header>
+            <h3 th:if="${ownedOccurrence}" dir="auto" th:text="${log.occurrence.exercise != null ? log.occurrence.exercise.name : (log.occurrence.customExercise != null and log.occurrence.customExercise.userId == logOwnerId ? log.occurrence.customExercise.name : #messages.msg('ui.log.calendarReflection'))}"></h3>
+            <h3 th:if="${ownedTask}" dir="auto" th:text="${log.calendarTask.title}"></h3>
+            <dl class="library-exercise-facts"><div><dt th:text="#{ui.01979}"></dt><dd><bdi dir="ltr"><span th:text="${log.moodBefore ?: '—'}"></span><span th:if="${log.moodBefore != null}"> / 4</span></bdi></dd></div><div><dt th:text="#{ui.01980}"></dt><dd><bdi dir="ltr"><span th:text="${log.moodAfter ?: '—'}"></span><span th:if="${log.moodAfter != null}"> / 4</span></bdi></dd></div><div><dt th:text="#{ui.01981}"></dt><dd><bdi dir="ltr"><span th:text="${log.confidence ?: '—'}"></span><span th:if="${log.confidence != null}"> / 4</span></bdi></dd></div><div th:if="${log.durationMinutes != null}"><dt th:text="#{ui.01974}"></dt><dd th:text="${log.durationMinutes}"></dd></div></dl>
+            <details class="personal-record-preview"><summary th:text="#{ui.00059}"></summary><p class="plan-coaching-note" dir="auto" th:text="${#strings.isEmpty(log.comments)} ? #{ui.01983} : ${log.comments}"></p></details>
+            <div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/exercise-log/view/{id}(id=${log.id})}" th:attr="aria-label=${#messages.msg('ui.01995') + ' · ' + log.date}" th:text="#{ui.01995}"></a><a class="detail-btn-secondary" th:href="@{/exercise-log/edit/{id}(id=${log.id})}" th:attr="aria-label=${#messages.msg('ui.00138') + ' · ' + log.date}" th:text="#{ui.00138}"></a></div>
+        </article>
     </div>
-
-    <div th:fragment="pageScripts">
-        <script src="/js/health/logs.js"></script>
-    </div>
-</th:block>
+    <nav th:if="${logPageCount > 1}" class="connection-actions" th:attr="aria-label=#{ui.00105}"><a th:if="${logPage > 1}" class="detail-btn-secondary" th:aria-label="${#messages.msg('ui.00105') + ' ' + (logPage - 1)}" th:href="@{/exercise-log/list(q=${query},sort=${sort},from=${historyFilter.from},until=${historyFilter.until},page=${logPage - 1})}"><span aria-hidden="true">←</span> <span th:text="${logPage - 1}"></span></a><p aria-current="page"><span th:text="#{ui.00105}"></span> <span th:text="${logPage}"></span> <span th:text="#{ui.00983}"></span> <span th:text="${logPageCount}"></span></p><a th:if="${logPage < logPageCount}" class="detail-btn-secondary" th:href="@{/exercise-log/list(q=${query},sort=${sort},from=${historyFilter.from},until=${historyFilter.until},page=${logPage + 1})}" th:text="#{ui.03032}"></a></nav>
+</div></th:block>

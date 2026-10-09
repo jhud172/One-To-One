@@ -56,14 +56,8 @@ public class CustomAuthenticationSuccessHandler extends SavedRequestAwareAuthent
         String username = authentication.getName();
         User user = userLookupService.findByLoginIdentifier(username);
 
-        // First-login: redirect to the tutorial before the normal flow
-        if (user != null && !user.isHasSeenTutorial()) {
-            clearAuthenticationAttributes(request);
-            requestCache.removeRequest(request, response);
-            getRedirectStrategy().sendRedirect(request, response, "/tutorial");
-            return;
-        }
-
+        // The optional tour is available from the account menu. A first login
+        // must still honour the user's intended destination and saved request.
         String next = request.getParameter("next");
         if (isSafeRedirect(next)) {
             clearAuthenticationAttributes(request);
@@ -136,6 +130,7 @@ public class CustomAuthenticationSuccessHandler extends SavedRequestAwareAuthent
         return path.startsWith("/js/")
                 || path.startsWith("/css/")
                 || path.startsWith("/img/")
+                || path.startsWith("/models/one-to-one/")
                 || path.startsWith("/static/")
                 || path.startsWith("/webjars/")
                 || path.equals("/favicon.ico");

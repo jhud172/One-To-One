@@ -81,9 +81,9 @@
     function buildPreviewHtml(item) {
         const type = item.dataset.type;
         const completed = item.dataset.completed;
-        const title = item.dataset.title || 'Untitled';
-        const time = item.dataset.time || '&#8212;';
-        const notes = item.dataset.notes || 'No description';
+        const title = window.OneToOneDom.escapeHtml(item.dataset.title || 'Untitled');
+        const time = window.OneToOneDom.escapeHtml(item.dataset.time || '\u2014');
+        const notes = window.OneToOneDom.escapeHtml(item.dataset.notes || 'No description');
         const isCompleted = completed === 'true';
         const isWorkout = type === 'occurrence';
 
@@ -872,7 +872,7 @@
         pane.innerHTML = `
             <div class="text-center px-4">
                 <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Failed to load ${year}-${String(month).padStart(2, '0')}</p>
-                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">${message || 'Please try again.'}</p>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">${window.OneToOneDom.escapeHtml(message || 'Please try again.')}</p>
                 <button type="button" class="mt-4" data-retry>Retry</button>
             </div>
         `;
@@ -1557,7 +1557,7 @@
                         const type = detectWorkoutType(name);
                         const icon = icons[type] || icons.default;
                         const cls = TYPE_CLASSES[type] || TYPE_CLASSES.default;
-                        const safeTitle = name.replace(/'/g, '&#039;').replace(/"/g, '&quot;');
+                        const safeTitle = window.OneToOneDom.escapeHtml(name);
                         html += '<button type="button" class="sticker-badge ' + cls + '" ' +
                             'tabindex="0" ' +
                             'aria-label="Completed workout: ' + safeTitle + '" ' +
@@ -1583,7 +1583,7 @@
             }
             activeTooltipBadge = badge;
             badge.setAttribute('aria-describedby', 'sticker-tooltip');
-            const name = badge.dataset.stickerName || 'Workout';
+            const name = window.OneToOneDom.escapeHtml(badge.dataset.stickerName || 'Workout');
             const date = badge.dataset.stickerDate || '';
             const formattedDate = date ? new Date(date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
             tooltip.innerHTML =
@@ -1738,4 +1738,3 @@
         }
     }());
 })();
-

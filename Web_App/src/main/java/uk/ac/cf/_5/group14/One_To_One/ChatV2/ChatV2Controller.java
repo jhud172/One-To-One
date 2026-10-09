@@ -4,6 +4,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.http.HttpStatus;
+import uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformSubscriptionService;
+import java.time.Clock;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import uk.ac.cf._5.group14.One_To_One.CalendarData.CalendarTask;
@@ -21,6 +25,11 @@ import uk.ac.cf._5.group14.One_To_One.Users.UserService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -38,6 +47,8 @@ public class ChatV2Controller {
     private final NoteRepository noteRepository;
     private final AccessGuard accessGuard;
     private final UserService userService;
+    private final PlatformSubscriptionService subscriptions;
+    private final Clock clock;
 
     public ChatV2Controller(AuthHelper authHelper,
                             ChatV2ThreadService threadService,
@@ -47,7 +58,7 @@ public class ChatV2Controller {
                             ChatContextService chatContextService,
                             NoteRepository noteRepository,
                             AccessGuard accessGuard,
-                            UserService userService) {
+                            UserService userService, PlatformSubscriptionService subscriptions, Clock clock) {
         this.authHelper = authHelper;
         this.threadService = threadService;
         this.actionExecutor = actionExecutor;
@@ -57,6 +68,8 @@ public class ChatV2Controller {
         this.noteRepository = noteRepository;
         this.accessGuard = accessGuard;
         this.userService = userService;
+        this.subscriptions = subscriptions;
+        this.clock = clock;
     }
 
     @GetMapping
@@ -65,10 +78,83 @@ public class ChatV2Controller {
         return "redirect:/chat";
     }
 
+    @GetMapping("/history")
+    public String history(@RequestParam(defaultValue = "") String q,
+                          @RequestParam(defaultValue = "1") int page, Model model, Locale locale) {
+        User user = requireUser();
+        addHistoryList(model, user, null, q, page, locale);
+        return "shared-views/chat/hub";
+    }
+
+    @GetMapping("/history/folder/{folderId}")
+    public String historyFolder(@PathVariable Long folderId, @RequestParam(defaultValue = "") String q,
+                                @RequestParam(defaultValue = "1") int page, Model model, Locale locale) {
+        User user = requireUser();
+        ChatFolder folder = threadService.findFolder(user, folderId).orElseThrow(() -> new ResponseStatusException(NOT_FOUND));
+        addHistoryList(model, user, folder, q, page, locale);
+        model.addAttribute("folder", folder);
+        return "shared-views/chat/folder";
+    }
+
+    @GetMapping("/history/thread/{threadId}")
+    public String historyThread(@PathVariable Long threadId,
+                                @RequestParam(required = false) Integer page,
+                                @RequestParam(defaultValue = "1") int returnPage,
+                                @RequestParam(required = false) Long collection,
+                                @RequestParam(defaultValue = "") String q, Model model, Locale locale) {
+        User user = requireUser();
+        ChatThread thread = threadService.findThread(user, threadId).orElseThrow(() -> new ResponseStatusException(NOT_FOUND));
+        if ((page != null && page < 1) || returnPage < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        if (collection != null) threadService.findFolder(user, collection).orElseThrow(() -> new ResponseStatusException(NOT_FOUND));
+        model.addAttribute("folders", threadService.listFolders(user));
+        model.addAttribute("searchQuery", historySearch(q));
+        model.addAttribute("historyReturnPage", returnPage);
+        model.addAttribute("historyCollectionId", collection);
+        model.addAttribute("thread", thread);
+        var messages = threadService.historyMessagesPage(thread, page);
+        model.addAttribute("messages", messages.getContent());
+        model.addAttribute("historyPagination", messages);
+        model.addAttribute("historyPageKey", "ui.charlie.archive.messagePage");
+        model.addAttribute("historyPagingPath", "/chatv2/history/thread/" + threadId);
+        model.addAttribute("historyListPath", collection == null ? "/chatv2/history" : "/chatv2/history/folder/" + collection);
+        var dates = historyDateFormat(locale);
+        model.addAttribute("historyMessageDates", messages.stream().collect(Collectors.toMap(ChatMessage::getId, message -> dates.format(message.getCreatedAt()))));
+        return "shared-views/chat/thread";
+    }
+
+    private void addHistoryList(Model model, User user, ChatFolder folder, String query, int page, Locale locale) {
+        if (page < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        String search = historySearch(query);
+        model.addAttribute("searchQuery", search);
+        model.addAttribute("historyCollectionId", folder == null ? null : folder.getId());
+        model.addAttribute("folders", threadService.listFolders(user));
+        var history = threadService.historyPage(user, folder, search, page);
+        model.addAttribute("threads", history.getContent());
+        model.addAttribute("historyPagination", history);
+        model.addAttribute("historyPageKey", "ui.charlie.archive.page");
+        model.addAttribute("historyPagingPath", folder == null ? "/chatv2/history" : "/chatv2/history/folder/" + folder.getId());
+        var dates = historyDateFormat(locale);
+        model.addAttribute("historyThreadDates", history.stream().collect(Collectors.toMap(ChatThread::getId, thread -> dates.format(thread.getUpdatedAt()))));
+    }
+
+    private static String historySearch(String query) {
+        String search = query == null ? "" : query.trim();
+        return search.length() > 120 ? search.substring(0, 120) : search;
+    }
+
+    private static DateTimeFormatter historyDateFormat(Locale locale) {
+        return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale).withZone(ZoneId.systemDefault());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> invalidInput() {
+        return ResponseEntity.badRequest().body(Map.of("error", "INVALID_INPUT"));
+    }
+
     @PostMapping("/new")
     public String createThread(@RequestParam(name = "folderId", required = false) Long folderId) {
         User user = requireUser();
-        ChatFolder folder = folderId != null ? threadService.findFolder(user, folderId).orElse(null) : null;
+        ChatFolder folder = folderId != null ? threadService.findFolder(user, folderId).orElseThrow(() -> new ResponseStatusException(NOT_FOUND)) : null;
         threadService.createThread(user, folder);
         return "redirect:/chat";
     }
@@ -147,7 +233,7 @@ public class ChatV2Controller {
         User user = requireUser();
         ChatThread thread = threadService.findThread(user, threadId)
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND));
-        ChatFolder folder = folderId != null ? threadService.findFolder(user, folderId).orElse(null) : null;
+        ChatFolder folder = folderId != null ? threadService.findFolder(user, folderId).orElseThrow(() -> new ResponseStatusException(NOT_FOUND)) : null;
         threadService.moveThread(thread, folder);
         return ResponseEntity.ok(Map.of("status", "ok"));
     }
@@ -160,7 +246,7 @@ public class ChatV2Controller {
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND));
 
         String message = payload != null ? payload.getOrDefault("message", "") : "";
-        if (message == null || message.isBlank()) {
+        if (message == null || message.isBlank() || message.trim().length() > 4000) {
             return ResponseEntity.badRequest().body(new ChatV2Response("Message required", List.of(), List.of()));
         }
 
@@ -173,15 +259,23 @@ public class ChatV2Controller {
             } catch (org.springframework.security.access.AccessDeniedException e) {
                 return ResponseEntity.status(403).body(new ChatV2Response("Messaging is disabled because the relationship is not active.", List.of(), List.of()));
             }
+            if (uk.ac.cf._5.group14.One_To_One.Messaging.PaymentKeywordDetector.firstMatch(message) != null) {
+                return ResponseEntity.unprocessableEntity().body(new ChatV2Response("OFF_PLATFORM_PAYMENT", List.of(), List.of()));
+            }
             threadService.appendMessage(thread, ChatMessageRole.USER, message);
             threadService.updateTitleIfNew(thread, message);
             return ResponseEntity.ok(new ChatV2Response("", List.of(), List.of()));
         }
 
+        requirePremium(user);
+        ChatV2CommandParser.ParsedCommand parsed = ChatV2CommandParser.parse(message);
+        if (parsed == null && !chatService.isAvailable()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(new ChatV2Response("AI_UNAVAILABLE", List.of(), List.of()));
+        }
         threadService.appendMessage(thread, ChatMessageRole.USER, message);
         threadService.updateTitleIfNew(thread, message);
 
-        ChatV2CommandParser.ParsedCommand parsed = ChatV2CommandParser.parse(message);
         if (parsed != null) {
             return ResponseEntity.ok(handleCommand(user, parsed));
         }
@@ -208,13 +302,12 @@ public class ChatV2Controller {
         List<ChatV2ActionResult> executed = new ArrayList<>();
         if (structured.actions() != null) {
             structured.actions().forEach(action -> {
-                ChatV2ActionResult result = actionExecutor.execute(user, action.type(), action.payload());
-                executed.add(result);
+                executed.add(new ChatV2ActionResult(action.type(), action.payload(), "PENDING", "Review before applying"));
             });
         }
 
         String assistantText = structured.assistantText() != null ? structured.assistantText() : "";
-        threadService.appendMessage(thread, ChatMessageRole.ASSISTANT, assistantText);
+        if (!assistantText.isBlank()) threadService.appendMessage(thread, ChatMessageRole.ASSISTANT, assistantText);
         return ResponseEntity.ok(new ChatV2Response(assistantText, structured.blocks(), executed));
     }
 
@@ -222,8 +315,13 @@ public class ChatV2Controller {
     @ResponseBody
     public ResponseEntity<ChatV2ActionResult> action(@PathVariable Long threadId, @RequestBody ChatV2ActionRequest request) {
         User user = requireUser();
-        threadService.findThread(user, threadId)
+        ChatThread thread = threadService.findThread(user, threadId)
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND));
+        if (thread.getType() != ChatType.AI_PERSONAL) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        requirePremium(user);
+        if (request == null || request.type() == null || request.payload() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
         ChatV2ActionResult result = actionExecutor.execute(user, request.type(), request.payload());
         return ResponseEntity.ok(result);
     }
@@ -272,6 +370,12 @@ public class ChatV2Controller {
             }
         }
         return new ChatV2Response(parsed.assistantText(), blocks, actions);
+    }
+
+    private void requirePremium(User user) {
+        if (!subscriptions.isPremium(user.getId(), clock)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Premium required");
+        }
     }
 
     private User requireUser() {

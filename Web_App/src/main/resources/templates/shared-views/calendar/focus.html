@@ -1,85 +1,47 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en" th:lang="${#locale.language}" class="">
-<head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title th:text="#{ui.01702}">Focus Mode - Crystal Productions</title>
-    <link rel="stylesheet" th:href="@{/css/global.css}"/>
-    <link rel="stylesheet" th:href="@{/css/components/day-view.css}"/>
-</head>
-<body class="focus-mode-page min-h-screen">
-
-<!-- Exit Focus Mode Button -->
-<a th:href="@{'/calendar/day/' + ${date}}"
-   class="exit-focus inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200">
-    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-    </svg>
-    <th:block th:text="#{ui.01703}">Exit Focus Mode</th:block>
-</a>
-
-<div class="focus-container">
-    <!-- Header -->
-    <div class="focus-header">
-        <h1 class="text-4xl font-bold text-slate-900 dark:text-slate-100">
-            <span th:text="${#temporals.format(date, 'd MMMM yyyy')}"></span>
-        </h1>
-        <p class="mt-2 text-lg text-slate-600 dark:text-slate-300">
-            <span th:if="${dailyFocus != null && !dailyFocus.isEmpty()}" th:text="${dailyFocus}">Daily Focus</span>
-            <span th:if="${dailyFocus == null || dailyFocus.isEmpty()}" th:text="#{ui.01704}">Stay focused on your goals</span>
-        </p>
+<th:block xmlns:th="http://www.thymeleaf.org"
+          th:replace="~{base :: layout(#{ui.focus.title}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content" class="focus-workspace" th:attr="data-focus-date=${date}">
+    <header class="focus-topbar">
+        <a class="focus-brand" th:href="@{'/calendar/day/' + ${date}}"><img src="/img/brand/tab_logo.png" alt="" width="32" height="32"><span th:text="#{ui.01376}">One To One</span></a>
+        <a class="focus-exit" th:href="@{/calendar/day/{date}(date=${date},fromFocus=1)} + '#tab-panel-timeline'" th:text="#{ui.01703}">Exit Focus Mode</a>
+    </header>
+    <div class="focus-date-heading">
+        <div><p class="focus-eyebrow" th:text="#{ui.focus.title}">Focus mode</p><h1 th:text="${#temporals.format(date, 'EEEE')}">Friday</h1><p class="focus-date" th:text="${#temporals.format(date, 'd MMMM yyyy')}">2 October 2026</p></div>
+        <nav class="focus-date-navigation" th:attr="aria-label=#{ui.focus.dateNav}">
+            <a th:href="@{'/calendar/focus/' + ${prevDate}}" th:attr="aria-label=#{ui.01596}"><span aria-hidden="true">&#8592;</span></a>
+            <a th:href="@{'/calendar/focus/' + ${nextDate}}" th:attr="aria-label=#{ui.01598}"><span aria-hidden="true">&#8594;</span></a>
+        </nav>
     </div>
-
-    <!-- Timeline Container -->
-    <div class="focus-timeline">
-        <div class="mb-4 flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
-            <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.01619}">Timeline</h2>
-            <div class="text-sm text-slate-600 dark:text-slate-400">
-                <span th:text="${timedFocus != null ? timedFocus.label() : 'Today'}">Morning</span>
-            </div>
-        </div>
-        
-        <!-- Timeline will be populated by JavaScript -->
-        <div id="day-timeline"
-             class="day-timeline select-none"
-             aria-label="Daily timeline"
-             th:attr="data-is-today=${isToday}, data-date=${date}">
-            <noscript th:text="#{ui.01625}">
-                <p class="py-4 text-sm text-slate-500 dark:text-slate-400">Enable JavaScript to see the timeline view.</p>
-            </noscript>
-        </div>
-    </div>
-
-    <!-- Tasks Quick View (Hidden data for JavaScript) -->
-    <div class="hidden">
-        <!-- Tasks data for timeline population -->
-        <div th:each="task : ${tasks}"
-             data-task-item
-             th:attr="data-task-id=${task.id},
-                      data-task-title=${task.title},
-                      data-task-start-time=${task.startTime != null ? task.startTime.toString() : ''},
-                      data-task-duration=${task.duration != null ? task.duration.toMinutes() : ''},
-                      data-task-completed=${task.completed}">
-        </div>
-
-        <!-- Workouts data for timeline population -->
-        <div th:each="ws : ${workoutSessions}"
-             data-workout-item
-             th:attr="data-workout-id=${ws.id},
-                      data-workout-name=${ws.nameSnapshot}">
-        </div>
-
-        <!-- Schedule occurrences data -->
-        <div th:each="occ : ${occurrences}"
-             data-occurrence-item
-             th:attr="data-occurrence-id=${occ.id},
-                      data-occurrence-title=${occ.exercise != null ? occ.exercise.name : (occ.customExercise != null ? occ.customExercise.name : 'Unknown')}">
-        </div>
+    <div class="focus-layout">
+        <aside class="focus-summary" th:with="next=${focusAgenda.next()}">
+            <p class="focus-progress-label" th:text="#{ui.focus.progress(${focusAgenda.completed.size()},${focusAgenda.total})}">0 of 0 complete</p>
+            <progress max="100" th:value="${focusAgenda.percentage}" th:text="${focusAgenda.percentage + '%'}" th:attr="aria-label=#{ui.focus.progress(${focusAgenda.completed.size()},${focusAgenda.total})}">0%</progress>
+            <section th:if="${next != null}" class="focus-next" aria-labelledby="focus-next-heading">
+                <h2 id="focus-next-heading" th:text="#{ui.focus.next}">Next in your plan</h2>
+                <p class="focus-next-title" th:text="${!#strings.isEmpty(next.title) ? next.title : #messages.msg(next.typeKey())}">Task</p>
+                <p class="focus-muted"><time th:if="${next.time != null}" th:datetime="${next.time}" th:text="${#temporals.format(next.time, 'HH:mm')}">09:30</time><span th:if="${next.time == null}" th:text="#{ui.focus.unplanned}">No fixed time</span></p>
+                <a class="focus-primary-action" th:href="${next.href}" th:text="${next.kind == 'task' ? #messages.msg('ui.focus.openTask') : #messages.msg('ui.focus.openWorkout')}">Open task</a>
+            </section>
+            <section th:if="${!#strings.isEmpty(dailyFocus)}" class="focus-daily-intent"><h2 th:text="#{ui.01604}">Daily focus</h2><p th:text="${dailyFocus}"></p></section>
+            <p class="focus-hint" th:if="${focusAgenda.total > 0}" th:text="#{ui.focus.hint}">Complete tasks here. Open workouts to train or review your session.</p>
+        </aside>
+        <section class="focus-agenda" aria-labelledby="focus-agenda-heading">
+            <div class="focus-section-heading"><h2 id="focus-agenda-heading" th:text="#{ui.focus.agenda}">Day agenda</h2><span class="focus-count" th:if="${!focusAgenda.pending.isEmpty()}" th:text="#{ui.focus.pending(${focusAgenda.pending.size()})}">1 remaining</span></div>
+            <div class="focus-empty" th:if="${focusAgenda.pending.isEmpty()}"><p th:text="${focusAgenda.total == 0 ? #messages.msg('ui.day.empty') : #messages.msg('ui.day.complete')}">Nothing is planned for this day.</p><a th:href="@{'/calendar/day/' + ${date}} + '#add-task-modal'" th:text="#{ui.focus.add}">Plan this day</a></div>
+            <ul class="focus-items" th:if="${!focusAgenda.pending.isEmpty()}"><th:block th:each="item : ${focusAgenda.pending}"><li th:replace="~{::agendaRow(${item},${date})}"></li></th:block></ul>
+            <details class="focus-completed" th:if="${!focusAgenda.completed.isEmpty()}"><summary><span th:text="#{ui.focus.completed}">Completed</span><span class="focus-count" th:text="${' (' + focusAgenda.completed.size() + ')'}"> (1)</span></summary><ul class="focus-items"><th:block th:each="item : ${focusAgenda.completed}"><li th:replace="~{::agendaRow(${item},${date})}"></li></th:block></ul></details>
+            <p class="focus-outro" th:text="#{ui.focus.outro}">Return to your day to edit timing or add an item.</p>
+        </section>
     </div>
 </div>
-
-<!-- Include the day enhancements JavaScript for timeline functionality -->
-<script th:src="@{/js/calendar/day-enhancements.js}" defer></script>
-
-</body>
-</html>
+<li th:fragment="agendaRow(item,date)" class="focus-item" th:id="${'focus-item-' + item.key()}" th:classappend="${item.completed ? 'is-completed' : ''}">
+    <div class="focus-item-time"><time th:if="${item.time != null}" th:datetime="${item.time}" th:text="${#temporals.format(item.time, 'HH:mm')}">09:30</time><span th:if="${item.time == null}" th:text="#{ui.focus.unplanned}">No fixed time</span></div>
+    <div class="focus-item-content"><span class="focus-item-type" th:text="${#messages.msg(item.typeKey())}">Task</span><a class="focus-item-title" th:href="${item.href}" th:text="${!#strings.isEmpty(item.title) ? item.title : #messages.msg(item.typeKey())}">Task</a><details class="focus-item-notes" th:if="${!#strings.isEmpty(item.notes)}"><summary th:text="#{ui.focus.notes}">Task notes</summary><p th:text="${item.notes}"></p></details></div>
+    <form th:if="${item.kind == 'task'}" method="post" th:action="@{/calendar/day/{date}/toggle-complete(date=${date})}" class="focus-task-form">
+        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><input type="hidden" name="taskId" th:value="${item.id}"><input type="hidden" name="returnTo" value="focus">
+        <button class="focus-complete-button" type="submit" th:attr="aria-label=${item.completed ? #messages.msg('ui.focus.reopenAction',item.title) : #messages.msg('ui.focus.completeAction',item.title)},aria-pressed=${item.completed}"><span aria-hidden="true" th:text="${item.completed ? '✓' : '○'}">○</span></button>
+    </form>
+    <a th:if="${item.kind != 'task'}" class="focus-workout-action" th:href="${item.href}" th:attr="aria-label=#{ui.focus.openWorkout}"><span aria-hidden="true">&#8599;</span></a>
+</li>
+<th:block th:fragment="pageScripts"><script th:src="@{/js/calendar/focus.js(v=${uiCssVersion})}" defer></script></th:block>
+</th:block>

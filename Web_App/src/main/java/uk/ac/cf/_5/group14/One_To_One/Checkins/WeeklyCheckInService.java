@@ -23,6 +23,7 @@ public interface WeeklyCheckInService {
     List<WeeklyCheckIn> listForTrainer(User trainer);
 
     List<WeeklyCheckIn> listForClient(User client);
+    List<WeeklyCheckIn> listRecentForClient(User client);
 
     WeeklyCheckIn getForTrainer(User trainer, Long checkInId);
 
@@ -33,4 +34,6 @@ public interface WeeklyCheckInService {
     TrainerCheckInQuestion addQuestion(User trainer, Long templateId, String prompt, boolean required);
 
     void deleteQuestion(User trainer, Long templateId, Long questionId);
+
+    boolean moveQuestion(User trainer, Long templateId, Long questionId, String direction);
 }

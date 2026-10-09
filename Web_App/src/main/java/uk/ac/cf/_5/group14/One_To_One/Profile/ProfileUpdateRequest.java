@@ -1,6 +1,7 @@
 package uk.ac.cf._5.group14.One_To_One.Profile;
 
-public class ProfileUpdateRequest {
+public class ProfileUpdateRequest implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private String firstName;
     private String lastName;
     private String username;
@@ -17,6 +18,7 @@ public class ProfileUpdateRequest {
     private String location;
     private String primaryGym;
     private Integer pricePerSession;
+    private boolean pricePerSessionProvided;
     private String instagramUrl;
     private String tiktokUrl;
     private String youtubeUrl;
@@ -121,7 +123,11 @@ public class ProfileUpdateRequest {
     public void setPrimaryGym(String primaryGym) { this.primaryGym = primaryGym; }
 
     public Integer getPricePerSession() { return pricePerSession; }
-    public void setPricePerSession(Integer pricePerSession) { this.pricePerSession = pricePerSession; }
+    public void setPricePerSession(Integer pricePerSession) {
+        this.pricePerSession = pricePerSession;
+        this.pricePerSessionProvided = true;
+    }
+    public boolean isPricePerSessionProvided() { return pricePerSessionProvided; }
 
     public String getInstagramUrl() { return instagramUrl; }
     public void setInstagramUrl(String instagramUrl) { this.instagramUrl = instagramUrl; }

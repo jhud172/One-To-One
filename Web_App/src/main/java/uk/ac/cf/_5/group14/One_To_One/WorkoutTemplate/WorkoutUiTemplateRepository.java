@@ -17,4 +17,7 @@ public interface WorkoutUiTemplateRepository extends JpaRepository<WorkoutTempla
     Optional<WorkoutTemplate> findFirstByUserAndIsDefaultTrue(User user);
 
     Optional<WorkoutTemplate> findByIdAndUser(Long id, User user);
+
+    @org.springframework.data.jpa.repository.Query(value = "SELECT EXISTS(SELECT 1 FROM workout_template_sessions WHERE template_id = :id)", nativeQuery = true)
+    boolean isReferencedBySession(@org.springframework.data.repository.query.Param("id") Long id);
 }

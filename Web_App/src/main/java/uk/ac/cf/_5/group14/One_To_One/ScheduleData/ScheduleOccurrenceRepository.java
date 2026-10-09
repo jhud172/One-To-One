@@ -22,6 +22,24 @@ public interface ScheduleOccurrenceRepository extends JpaRepository<ScheduleOccu
 
     Optional<ScheduleOccurrence> findByIdAndUserId(Long id, Long userId);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select occurrence from ScheduleOccurrence occurrence where occurrence.id = :id and occurrence.user.id = :userId")
+    Optional<ScheduleOccurrence> findOwnedForLogUpdate(@org.springframework.data.repository.query.Param("id") Long id,
+                                                      @org.springframework.data.repository.query.Param("userId") Long userId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select occurrence from ScheduleOccurrence occurrence where occurrence.user = :user and occurrence.date between :from and :to order by occurrence.id")
+    List<ScheduleOccurrence> findOwnedRangeForDeployment(@org.springframework.data.repository.query.Param("user") User user,
+                                                        @org.springframework.data.repository.query.Param("from") LocalDate from,
+                                                        @org.springframework.data.repository.query.Param("to") LocalDate to);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select occurrence from ScheduleOccurrence occurrence where occurrence.user.id = :userId and occurrence.id in :ids order by occurrence.id")
+    List<ScheduleOccurrence> findOwnedForUndo(@org.springframework.data.repository.query.Param("userId") Long userId,
+                                            @org.springframework.data.repository.query.Param("ids") List<Long> ids);
+
+    Optional<ScheduleOccurrence> findFirstByExerciseLogIdAndUserId(Long exerciseLogId, Long userId);
+
     @Query("""
         SELECT o FROM ScheduleOccurrence o
         LEFT JOIN FETCH o.exercise

@@ -15,4 +15,11 @@ public interface WorkoutRepository extends JpaRepositoryImplementation<Workout,L
     // used when a single workout is needed along with its exercises (better performance than fetching exercises eagerly all the time)
     @EntityGraph(attributePaths = {"exercises"})
     Optional<Workout> findByIdAndUserId(Long id, Long userId);
+
+    @org.springframework.data.jpa.repository.Query(value = """
+            select exists (select 1 from workout_schedule where workout_id = :id)
+                or exists (select 1 from workout_sessions where workout_id = :id)
+                or exists (select 1 from workout_template_sessions where workout_id = :id)
+            """, nativeQuery = true)
+    boolean isReferencedByTrainingData(@org.springframework.data.repository.query.Param("id") Long id);
 }

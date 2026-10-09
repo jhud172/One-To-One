@@ -33,6 +33,9 @@ class StockAtomicUpdateTest {
     @Mock
     private MerchProductService productService;
 
+    @Mock private jakarta.persistence.EntityManager entities;
+    @Mock private uk.ac.cf._5.group14.One_To_One.MerchOrders.MerchPaymentGateway gateway;
+
     @InjectMocks
     private MerchOrderServiceImpl orderService;
 
@@ -109,7 +112,7 @@ class StockAtomicUpdateTest {
         order.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
         order.getItems().add(buildItem(activeProduct(5), order, 2));
 
-        when(orderRepo.findById(55L)).thenReturn(java.util.Optional.of(order));
+        when(orderRepo.findLockedById(55L)).thenReturn(java.util.Optional.of(order));
         when(orderRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         MerchOrder cancelled = orderService.cancelPendingPayment(55L, "Checkout cancelled.");
@@ -125,13 +128,25 @@ class StockAtomicUpdateTest {
         order.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
         order.setPaymentReference("cs_test_123");
 
-        when(orderRepo.findById(71L)).thenReturn(java.util.Optional.of(order));
+        when(orderRepo.findLockedById(71L)).thenReturn(java.util.Optional.of(order));
         when(orderRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         MerchOrder completed = orderService.completePaidOrder(71L, "cs_test_123");
 
         assertEquals(PaymentStatus.PAID, completed.getPaymentStatus());
         assertNotNull(completed.getPaymentConfirmedAt());
+    }
+
+    @Test
+    void openOrUnverifiedHostedPaymentCannotReleaseReservedStock() {
+        var order = new MerchOrder(); order.setId(55L); order.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
+        order.setPaymentProvider("Stripe"); order.setPaymentReference("cs_test_open");
+        order.getItems().add(buildItem(activeProduct(5), order, 2));
+        when(orderRepo.findLockedById(55L)).thenReturn(java.util.Optional.of(order));
+        assertThrows(IllegalStateException.class, () -> orderService.cancelPendingPayment(55L, "Cancel"));
+        verify(productService, never()).incrementStock(anyLong(), anyInt());
+        verify(orderRepo, never()).save(any());
+        assertEquals(PaymentStatus.PENDING_PAYMENT, order.getPaymentStatus());
     }
 
     private uk.ac.cf._5.group14.One_To_One.MerchOrders.MerchOrderItem buildItem(MerchProduct product, MerchOrder order, int quantity) {

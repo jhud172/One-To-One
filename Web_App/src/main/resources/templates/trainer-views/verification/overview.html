@@ -1,0 +1,52 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.proReview.title}, null, ~{::content}, null)}">
+<div th:fragment="content" class="professional-review-v2" aria-labelledby="professional-review-title">
+    <header>
+        <a th:href="@{/trainer/dashboard}" th:text="#{ui.gymLink.back}">Back to your workspace</a>
+        <h1 id="professional-review-title" th:text="#{ui.proReview.title}">Professional verification</h1>
+        <p th:text="#{ui.proReview.intro}">Submit your professional details for review. Only an approved review verifies your trainer account.</p>
+    </header>
+    <p th:if="${reviewSaved}" class="professional-review-v2__notice" role="status" th:text="#{ui.proReview.saved}">Your request was saved for review.</p>
+    <p th:if="${reviewFilesSaved}" class="professional-review-v2__notice" role="status" th:text="#{ui.proReview.filesSaved}">Your documents were attached to the review.</p>
+    <p th:if="${reviewFileRemoved}" class="professional-review-v2__notice" role="status" th:text="#{ui.proReview.fileRemoved}">The document was removed.</p>
+    <p th:if="${reviewFilesError}" class="professional-review-v2__error" role="alert" th:text="#{ui.proReview.filesError}">Check the file format, size and current request status. No files from this upload were saved.</p>
+    <p th:if="${reviewError}" class="professional-review-v2__error" role="alert" th:text="#{ui.proReview.error}">Check your details, confirmation and current request status. Your draft is retained.</p>
+    <p th:if="${trainerVerified}" class="professional-review-v2__notice" th:text="#{ui.proReview.verified}">Your trainer account is verified.</p>
+    <section th:if="${canRequestReview or canRespondReview}" aria-labelledby="professional-details-title">
+        <h2 id="professional-details-title" th:text="#{ui.proReview.details}">Qualifications, awarding body and insurance details</h2>
+        <p th:if="${canRespondReview and latestReview.adminNotes != null}" th:text="${latestReview.adminNotes}"></p>
+        <form th:action="${canRespondReview} ? @{/trainer/verification/{id}/respond(id=${latestReview.id})} : @{/trainer/verification/request}" method="post">
+            <label for="professional-review-notes" th:text="#{ui.00154}">Trainer notes</label>
+            <textarea id="professional-review-notes" name="notes" rows="7" required maxlength="1000"
+                      th:text="${reviewDraft != null} ? ${reviewDraft} : (${canRespondReview} ? ${latestReview.notes} : '')"></textarea>
+            <label class="professional-review-v2__confirmation"><input type="checkbox" name="confirmed" value="true" required><span th:text="#{ui.proReview.confirmed}">I confirm that these professional details are accurate.</span></label>
+            <button type="submit" th:text="${canRespondReview} ? #{ui.proReview.reply} : #{ui.proReview.submit}">Send for review</button>
+        </form>
+    </section>
+    <section th:if="${canUploadEvidence}" aria-labelledby="professional-files-title">
+        <h2 id="professional-files-title" th:text="#{ui.proReview.files}">Qualification documents</h2>
+        <p id="professional-files-help" th:text="#{ui.proReview.fileLimits}">PDF, PNG or JPEG. Up to 5 files per request, 2 MiB each. Images up to 4096 pixels per side and 12 megapixels.</p>
+        <p th:text="#{ui.proReview.filePrivacy}">Only you and platform reviewers can download these files.</p>
+        <form th:action="@{/trainer/verification/{id}/documents(id=${latestReview.id})}" method="post" enctype="multipart/form-data">
+            <label for="professional-review-files" th:text="#{ui.proReview.files}">Qualification documents</label>
+            <input id="professional-review-files" type="file" name="files" accept="application/pdf,image/png,image/jpeg" multiple required aria-describedby="professional-files-help">
+            <button type="submit" th:text="#{ui.proReview.upload}">Attach documents</button>
+        </form>
+    </section>
+    <section aria-labelledby="professional-history-title">
+        <h2 id="professional-history-title" th:text="#{ui.proReview.history}">Previous requests</h2>
+        <p th:if="${#lists.isEmpty(reviewHistory)}" th:text="#{ui.proReview.empty}">You have not submitted a professional review request yet.</p>
+        <ol class="professional-review-v2__history" th:unless="${#lists.isEmpty(reviewHistory)}">
+            <li th:each="review : ${reviewHistory}">
+                <dl>
+                    <div><dt th:text="#{ui.00006}">Status</dt><dd th:text="${review.status.name() == 'PENDING'} ? #{ui.00168} : (${review.status.name() == 'NEEDS_INFO'} ? #{ui.00169} : (${review.status.name() == 'APPROVED'} ? #{ui.00170} : #{ui.00171}))">Pending</dd></div>
+                    <div><dt th:text="#{ui.00151}">Submitted</dt><dd><time th:datetime="${review.submittedAt}" th:text="${#temporals.format(review.submittedAt.atZone(T(java.time.ZoneId).of('Europe/London')), 'd MMM yyyy HH:mm')}"></time></dd></div>
+                    <div><dt th:text="#{ui.00154}">Trainer notes</dt><dd th:text="${review.notes} ?: '—'"></dd></div>
+                    <div th:if="${review.adminNotes != null}"><dt th:text="#{ui.00155}">Admin notes</dt><dd th:text="${review.adminNotes}"></dd></div>
+                </dl>
+                <div th:replace="~{universal-fragments/verification/evidence :: documents(${reviewDocuments[review.id]}, ${review.id}, ${canUploadEvidence and latestReview.id == review.id})}"></div>
+                <div th:replace="~{universal-fragments/verification/evidence :: timeline(${reviewEvents[review.id]})}"></div>
+            </li>
+        </ol>
+    </section>
+</div>
+</th:block>

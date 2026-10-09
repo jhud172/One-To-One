@@ -48,6 +48,7 @@ public class BloodPressureApiController {
         if (user == null) return ResponseEntity.status(401).build();
         LocalDate resolvedFrom = from != null ? from : LocalDate.now().minusDays(30);
         LocalDate resolvedTo = to != null ? to : LocalDate.now();
+        if (resolvedFrom.isAfter(resolvedTo)) return ResponseEntity.badRequest().body(Map.of("error", "Invalid date range"));
         return ResponseEntity.ok(service.getRange(user, resolvedFrom, resolvedTo));
     }
 }

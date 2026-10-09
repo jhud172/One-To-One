@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/components/calendar/heatmap.css">
 </div>
 
-<div th:fragment="content">
+<div th:fragment="content"><p th:if="${scheduleApplicationAdded != null}" class="calendar-save-feedback" role="status" th:text="${scheduleApplicationAdded == 0 ? #messages.msg('ui.application.unchanged') : #messages.msg('ui.application.saved',scheduleApplicationAdded)}"></p><p th:if="${exerciseLogSaved}" class="calendar-save-feedback" role="status" th:text="#{preferences.saved}"></p>
     <div class="calendar-week-view mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         <h1 class="sr-only" th:text="#{ui.01854}">Calendar week view</h1>
         <div class="flex flex-col gap-4">
@@ -32,6 +32,7 @@
                         </span>
                     </div>
                     <button type="button" id="scheduleDrawerButton" class="calendar-action-btn calendar-action-btn--primary" th:text="#{ui.00266}">Schedules</button>
+                    <noscript><a href="/schedules" class="calendar-action-btn" th:text="#{ui.01784}">View all schedules</a></noscript>
                     <div class="relative" data-heatmap-legend-wrapper>
                         <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/70 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200" data-heatmap-legend-toggle aria-expanded="false" aria-label="Toggle workout heatmap legend" th:attr="aria-label=#{ui.01856}">
                             <span class="sr-only" th:text="#{ui.01857}">Heatmap legend</span>
@@ -80,7 +81,8 @@
                 </div>
             </div>
 
-            <div class="calendar-jump-controls" aria-label="Week jump controls" th:attr="aria-label=#{ui.01863}">
+            <details class="calendar-jump-controls calendar-jump-disclosure">
+                <summary class="calendar-jump-disclosure__summary" th:text="#{ui.01863}">Week jump controls</summary>
                 <div class="calendar-jump-toolbar">
                     <button type="button" id="week-jump-today" class="calendar-action-btn calendar-jump-btn" th:text="#{ui.01805}">Jump to today</button>
                     <div class="calendar-jump-field calendar-jump-field--date">
@@ -96,7 +98,7 @@
                     </div>
                 </div>
                 <p id="week-jump-status" class="calendar-jump-status" aria-live="polite"></p>
-            </div>
+            </details>
 
             <div class="calendar-nav-controls">
                 <a id="week-prev" th:href="@{/calendar(view='week', week=${prevWeek}, weekYear=${prevWeekYear})}"
@@ -114,7 +116,7 @@
             <!-- Week stats bar (populated by week.js after heatmap fetch) -->
             <div id="week-stats-bar" class="calendar-week-stats-bar hidden" aria-live="polite"></div>
 
-            <div id="week-slider" th:attr="data-week=${week},data-week-year=${weekYear}" class="mt-3 overflow-hidden" tabindex="0" role="region" aria-label="Calendar week navigation">
+            <div id="week-slider" th:attr="data-week=${week},data-week-year=${weekYear},aria-label=#{ui.01864}" class="mt-3 overflow-hidden" tabindex="0" role="region" aria-label="Calendar week navigation">
                 <div id="week-slider-track" class="calendar-week-slider-track flex">
                     <div class="calendar-week-pane flex-shrink-0" data-week-pane-slot="prev"></div>
                     <div class="calendar-week-pane flex-shrink-0" data-week-pane-slot="current">
@@ -136,6 +138,7 @@
                                                   sched=${dayModel.occurrences},
                                                   sTotal=${dayModel.occurrenceCount}"
                                      class="calendar-day-card calendar-week-card heat-none"
+                                     th:classappend="${tTotal == 0 && sTotal == 0} ? ' calendar-day-card--empty' : ''"
                                      data-load="0"
                                      th:attr="data-day-link=@{'/calendar/day/' + ${dayModel.isoDate}},
                                               data-date=${dayModel.isoDate},
@@ -251,13 +254,13 @@
     </div>
 
     <!-- Schedule Drawer Fragment -->
-    <div th:replace="~{shared-views/calendar/fragments/schedule-drawer-week :: scheduleDrawer}"></div>
+    <div th:replace="~{shared-views/calendar/fragments/schedule-drawer :: scheduleDrawer('week')}"></div>
 
 </div>
 
 <div th:fragment="pageScripts">
-    <script th:src="@{/js/calendar/week.js(v=${assetVersion})}"></script>
-    <script th:src="@{/js/calendar/calendar-ux.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/calendar/week.js(v=${assetVersion})}" defer></script>
+    <script th:src="@{/js/calendar/calendar-ux.js(v=${assetVersion})}" defer></script>
 </div>
 
 </th:block>

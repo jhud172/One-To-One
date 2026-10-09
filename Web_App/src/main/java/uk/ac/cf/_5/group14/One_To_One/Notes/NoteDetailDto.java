@@ -9,21 +9,28 @@ public class NoteDetailDto {
     private Long folderId;
     private String colour;
     private LocalDateTime updatedAt;
+    private String revision;
+    private String plainContent;
 
     public static NoteDetailDto from(Note note) {
         NoteDetailDto dto = new NoteDetailDto();
         dto.id = note.getId();
         dto.title = note.getTitle();
         dto.content = note.getContent();
+        dto.plainContent = org.jsoup.Jsoup.parse(note.getContent()).wholeText();
         dto.folderId = note.getFolder() != null ? note.getFolder().getId() : null;
         dto.colour = note.getColour();
         dto.updatedAt = note.getUpdatedAt();
+        dto.revision = note.getRevision() == null ? NoteRevision.of(note) : note.getRevision();
         return dto;
     }
 
     public Long getId() {
         return id;
     }
+
+    public String getRevision() { return revision; }
+    public String getPlainContent() { return plainContent; }
 
     public String getTitle() {
         return title;

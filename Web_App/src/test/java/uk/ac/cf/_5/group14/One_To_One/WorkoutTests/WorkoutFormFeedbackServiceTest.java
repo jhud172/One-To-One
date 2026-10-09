@@ -39,7 +39,6 @@ class WorkoutFormFeedbackServiceTest {
                 mock(WorkoutSetLogRepository.class),
                 mock(WorkoutSetVideoRepository.class),
                 mock(AiFormFeedbackRepository.class),
-                mock(DatabaseTableAvailability.class),
                 tempDir.toString());
 
         User user = new User();
@@ -51,7 +50,7 @@ class WorkoutFormFeedbackServiceTest {
     }
 
     @Test
-    void storeVideo_acceptsMp4SignatureAndPersistsPendingVideo() throws Exception {
+    void storeVideo_acceptsMp4SignatureAndPersistsStoredVideo() throws Exception {
         WorkoutBuilderService builderService = mock(WorkoutBuilderService.class);
         WorkoutSetLogRepository setLogRepository = mock(WorkoutSetLogRepository.class);
         WorkoutSetVideoRepository videoRepository = mock(WorkoutSetVideoRepository.class);
@@ -61,7 +60,6 @@ class WorkoutFormFeedbackServiceTest {
                 setLogRepository,
                 videoRepository,
                 mock(AiFormFeedbackRepository.class),
-                mock(DatabaseTableAvailability.class),
                 tempDir.toString());
 
         User user = new User();
@@ -78,7 +76,7 @@ class WorkoutFormFeedbackServiceTest {
 
         WorkoutSetVideo saved = service.storeVideo(user, 11L, 7L, upload);
 
-        assertThat(saved.getStatus()).isEqualTo(VideoProcessingStatus.PENDING);
+        assertThat(saved.getStatus()).isEqualTo(VideoProcessingStatus.STORED);
         assertThat(saved.getPath()).contains("/uploads/workout-videos/user-9/session-11/");
         assertThat(tempDir.resolve("user-9/session-11")
                 .resolve(Path.of(saved.getPath()).getFileName())).exists();
@@ -94,7 +92,6 @@ class WorkoutFormFeedbackServiceTest {
                 setLogRepository,
                 videoRepository,
                 mock(AiFormFeedbackRepository.class),
-                mock(DatabaseTableAvailability.class),
                 tempDir.toString());
         User user = new User();
         user.setId(9L);
@@ -122,7 +119,6 @@ class WorkoutFormFeedbackServiceTest {
                 mock(WorkoutSetLogRepository.class),
                 mock(WorkoutSetVideoRepository.class),
                 mock(AiFormFeedbackRepository.class),
-                mock(DatabaseTableAvailability.class),
                 tempDir.toString());
 
         User user = new User();
@@ -150,7 +146,6 @@ class WorkoutFormFeedbackServiceTest {
                 setLogRepository,
                 videoRepository,
                 feedbackRepository,
-                mock(DatabaseTableAvailability.class),
                 tempDir.toString());
         User user = new User();
         user.setId(9L);
@@ -183,7 +178,6 @@ class WorkoutFormFeedbackServiceTest {
                 mock(WorkoutSetLogRepository.class),
                 videoRepository,
                 mock(AiFormFeedbackRepository.class),
-                mock(DatabaseTableAvailability.class),
                 tempDir.toString());
         User user = new User();
         user.setId(9L);
@@ -193,6 +187,17 @@ class WorkoutFormFeedbackServiceTest {
 
         verify(videoRepository, never()).delete(any());
         assertThat(tempDir).isEmptyDirectory();
+    }
+
+    @Test
+    void historicalPlaceholderResultsAreNeverPresentedAsAnalysis() {
+        var service = new WorkoutFormFeedbackService(mock(WorkoutBuilderService.class), mock(WorkoutSetLogRepository.class),
+                mock(WorkoutSetVideoRepository.class), mock(AiFormFeedbackRepository.class), tempDir.toString());
+        var video = new WorkoutSetVideo(); video.setId(22L); video.setStatus(VideoProcessingStatus.COMPLETE);
+        video.setPath("/uploads/workout-videos/user-9/session-11/set-7-test.mp4");
+        assertThat(service.buildFeedbackPayload(video)).containsEntry("status", "STORED").containsEntry("analysisAvailable", false)
+                .doesNotContainKeys("feedback", "repCount", "confidence", "tempo", "flags");
+        assertThat(service.buildFeedbackPayload(null)).containsEntry("status", "NONE").containsEntry("analysisAvailable", false);
     }
 
     private byte[] mp4HeaderBytes() {

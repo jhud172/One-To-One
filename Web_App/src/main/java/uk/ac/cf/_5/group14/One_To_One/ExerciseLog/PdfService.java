@@ -18,19 +18,8 @@ import java.util.List;
 @Service
 public class PdfService {
 
-    private String moodLabel(Integer mood) {
-        if (mood == null) {
-            return "-";
-        }
-
-        return switch (mood) {
-            case 1 -> "Very Low";
-            case 2 -> "Low";
-            case 3 -> "Neutral";
-            case 4 -> "Good";
-            case 5 -> "Excellent";
-            default -> "-";
-        };
+    private String rating(Integer value) {
+        return value == null ? "-" : value.toString();
     }
 
     public byte[] generateLogsPdf(List<ExerciseLog> logs) {
@@ -45,19 +34,25 @@ public class PdfService {
             title.setSpacingAfter(20);
             document.add(title);
 
-            PdfPTable table = new PdfPTable(5);
+            document.add(new Paragraph("Personal training reflections. Ratings use a 1-4 scale: 1 is low; 4 is high."));
+            PdfPTable table = new PdfPTable(6);
             table.setWidthPercentage(100);
+            table.setSpacingBefore(12);
+            table.setWidths(new float[]{1.4f, 1.1f, 1.1f, 1.1f, 1.1f, 3.2f});
+            table.setHeaderRows(1);
             addHeader(table, "Date");
             addHeader(table, "Mood Before");
             addHeader(table, "Mood After");
             addHeader(table, "Confidence");
+            addHeader(table, "Duration (min)");
             addHeader(table, "Notes");
 
             for (ExerciseLog log : logs) {
-                table.addCell(log.getDate().toString());
-                table.addCell(moodLabel(log.getMoodBefore()));
-                table.addCell(moodLabel(log.getMoodAfter()));
-                table.addCell(String.valueOf(log.getConfidence()));
+                table.addCell(log.getDate() == null ? "-" : log.getDate().toString());
+                table.addCell(rating(log.getMoodBefore()));
+                table.addCell(rating(log.getMoodAfter()));
+                table.addCell(rating(log.getConfidence()));
+                table.addCell(log.getDurationMinutes() == null ? "-" : log.getDurationMinutes().toString());
                 table.addCell(log.getComments() == null ? "" : log.getComments());
             }
 
@@ -66,13 +61,14 @@ public class PdfService {
             return out.toByteArray();
         } catch (Exception e) {
             log.error("Failed to generate exercise log PDF", e);
-            return new byte[0];
+            throw new IllegalStateException("Exercise log export failed", e);
         }
     }
 
     private void addHeader(PdfPTable table, String text) {
-        Font font = new Font(Font.HELVETICA, 12, Font.BOLD);
+        Font font = new Font(Font.HELVETICA, 9, Font.BOLD);
         PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setPadding(4);
         table.addCell(cell);
     }
 }

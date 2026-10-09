@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let actions = [];
     let customizeOpen = false;
+    let returnFocus = toggleBtn;
 
     const PREMIUM_BADGE_CLASS = "text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200/60 rounded-md px-1.5 py-0.5 dark:bg-amber-950/40 dark:border-amber-800/60 dark:text-amber-400";
 
@@ -58,11 +59,13 @@ document.addEventListener("DOMContentLoaded", () => {
         shelf?.setAttribute("aria-hidden", isOpen ? "false" : "true");
         shelf?.toggleAttribute("inert", !isOpen);
         toggleBtn?.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        document.querySelector('#platformPanelTrack [data-action="actions"]')?.setAttribute("aria-expanded", isOpen ? "true" : "false");
         toggleBtn?.setAttribute("aria-label", isOpen ? "Close quick actions" : "Open quick actions");
         toggleBtn?.setAttribute("title", isOpen ? "Close quick actions" : "Open quick actions");
     }
 
-    function openShelf() {
+    function openShelf(trigger = document.activeElement) {
+        returnFocus = trigger instanceof HTMLElement ? trigger : toggleBtn;
         overlayManager?.open("quick-actions");
         shelf?.classList.add("open");
         syncToggleState(true);
@@ -75,18 +78,22 @@ document.addEventListener("DOMContentLoaded", () => {
         shelf?.classList.remove("open");
         syncToggleState(false);
         if (!options.fromOverlayManager) overlayManager?.release("quick-actions");
-        if (options.restoreFocus && focusWasInsideShelf) toggleBtn?.focus();
-    }
-
-    function toggleShelf() {
-        if (shelf?.classList.contains("open")) {
-            closeShelf();
-        } else {
-            openShelf();
+        if (options.restoreFocus && focusWasInsideShelf) {
+            const target = returnFocus?.isConnected ? returnFocus : toggleBtn;
+            target?.focus();
         }
     }
 
-    toggleBtn?.addEventListener("click", toggleShelf);
+    function toggleShelf(trigger = document.activeElement) {
+        if (shelf?.classList.contains("open")) {
+            closeShelf();
+        } else {
+            openShelf(trigger);
+        }
+    }
+
+    window.toggleQuickActionsShelf = toggleShelf;
+    toggleBtn?.addEventListener("click", () => toggleShelf(toggleBtn));
     closeBtn?.addEventListener("click", () => closeShelf({ restoreFocus: true }));
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && shelf?.classList.contains("open")) {
@@ -95,7 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     document.addEventListener("click", (event) => {
         if (!shelf?.classList.contains("open")) return;
-        if (shelf.contains(event.target) || toggleBtn?.contains(event.target)) return;
+        if (shelf.contains(event.target) || toggleBtn?.contains(event.target)
+            || event.target.closest?.('#platformPanelTrack [data-action="actions"]')) return;
         closeShelf();
     });
 

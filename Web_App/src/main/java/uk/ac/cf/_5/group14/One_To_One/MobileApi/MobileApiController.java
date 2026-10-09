@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import uk.ac.cf._5.group14.One_To_One.Users.Role;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
+import uk.ac.cf._5.group14.One_To_One.GymApplications.GymApplicationService;
 
 import java.sql.Date;
 import java.time.LocalDate;
@@ -21,6 +22,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -28,10 +30,12 @@ import java.util.Map;
 public class MobileApiController {
     private final MobileAuthService authService;
     private final JdbcTemplate jdbcTemplate;
+    private final GymApplicationService gymApplications;
 
-    public MobileApiController(MobileAuthService authService, JdbcTemplate jdbcTemplate) {
+    public MobileApiController(MobileAuthService authService, JdbcTemplate jdbcTemplate, GymApplicationService gymApplications) {
         this.authService = authService;
         this.jdbcTemplate = jdbcTemplate;
+        this.gymApplications = gymApplications;
     }
 
     @PostMapping("/auth/login")
@@ -96,18 +100,29 @@ public class MobileApiController {
                                      @RequestParam String month) {
         User user = requireUser(authorization);
         YearMonth ym = YearMonth.parse(month);
+        Map<String, int[]> counts = new LinkedHashMap<>();
+        collectMonthCounts(counts, "SELECT date, COUNT(*) AS total, SUM(CASE WHEN completed = TRUE THEN 1 ELSE 0 END) AS done FROM calendar_tasks WHERE user_id = ? AND date BETWEEN ? AND ? GROUP BY date", user, ym);
+        collectMonthCounts(counts, "SELECT date, COUNT(*) AS total, SUM(CASE WHEN completed = TRUE THEN 1 ELSE 0 END) AS done FROM schedule_occurrences WHERE user_id = ? AND date BETWEEN ? AND ? GROUP BY date", user, ym);
         List<Map<String, Object>> rows = new ArrayList<>();
         LocalDate cursor = ym.atDay(1);
         while (!cursor.isAfter(ym.atEndOfMonth())) {
-            List<Map<String, Object>> items = dayItems(user, cursor);
+            int[] dayCounts = counts.getOrDefault(cursor.toString(), new int[2]);
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("date", cursor.toString());
-            row.put("total", items.size());
-            row.put("completed", items.stream().filter(item -> Boolean.TRUE.equals(item.get("completed"))).count());
+            row.put("total", dayCounts[0]);
+            row.put("completed", dayCounts[1]);
             rows.add(row);
             cursor = cursor.plusDays(1);
         }
         return Map.of("month", month, "days", rows);
+    }
+
+    private void collectMonthCounts(Map<String, int[]> counts, String sql, User user, YearMonth month) {
+        for (Map<String, Object> row : apiRows(sql, user.getId(), Date.valueOf(month.atDay(1)), Date.valueOf(month.atEndOfMonth()))) {
+            int[] day = counts.computeIfAbsent(row.get("date").toString(), ignored -> new int[2]);
+            day[0] += ((Number) row.get("total")).intValue();
+            day[1] += ((Number) row.get("done")).intValue();
+        }
     }
 
     @GetMapping("/calendar/day")
@@ -122,20 +137,24 @@ public class MobileApiController {
     public Map<String, Object> completeTask(@RequestHeader(value = "Authorization", required = false) String authorization,
                                             @PathVariable String id) {
         User user = requireUser(authorization);
+        int updated;
         if (id.startsWith("task-")) {
-            jdbcTemplate.update(
+            updated = jdbcTemplate.update(
                     "UPDATE calendar_tasks SET completed = TRUE WHERE id = ? AND user_id = ?",
-                    Long.parseLong(id.substring(5)),
+                    taskId(id.substring(5)),
                     user.getId()
             );
         } else if (id.startsWith("occurrence-")) {
-            jdbcTemplate.update(
+            updated = jdbcTemplate.update(
                     "UPDATE schedule_occurrences SET completed = TRUE WHERE id = ? AND user_id = ?",
-                    Long.parseLong(id.substring(11)),
+                    taskId(id.substring(11)),
                     user.getId()
             );
         } else {
             throw new MobileApiException(400, "Unknown task id.");
+        }
+        if (updated == 0) {
+            throw new MobileApiException(404, "This item is no longer available in your day plan.");
         }
         return Map.of("ok", true);
     }
@@ -160,6 +179,9 @@ public class MobileApiController {
     public Map<String, Object> addLog(@RequestHeader(value = "Authorization", required = false) String authorization,
                                       @RequestBody TrainingLogRequest request) {
         User user = requireUser(authorization);
+        if (request.durationMinutes() != null && (request.durationMinutes() < 1 || request.durationMinutes() > 1440)) {
+            throw new MobileApiException(400, "Training duration must be between 1 and 1440 minutes.");
+        }
         jdbcTemplate.update(
                 """
                 INSERT INTO exercise_log (user_id, date, mood_before, mood_after, confidence, comments, duration_minutes)
@@ -377,39 +399,35 @@ public class MobileApiController {
     public Map<String, Object> gymTrainers(@RequestHeader(value = "Authorization", required = false) String authorization) {
         User gym = requireRole(authorization, Role.GYM_ADMIN);
         return Map.of("trainers", limitedRows(
-                "SELECT id, first_name, last_name, email, trainer_verified FROM users WHERE role = 'TRAINER' AND (gym_id = ? OR gym_id IS NULL) ORDER BY first_name",
+                "SELECT u.id, u.first_name, u.last_name, u.email, u.trainer_verified FROM users u WHERE u.role = 'TRAINER' AND " + GYM_AFFILIATION_FILTER + " ORDER BY u.first_name, u.id",
                 100,
-                gym.getGymId()
+                gym.getGymId(), gym.getGymId()
         ));
     }
 
     @GetMapping("/gym/requests")
     public Map<String, Object> gymRequests(@RequestHeader(value = "Authorization", required = false) String authorization) {
-        requireRole(authorization, Role.GYM_ADMIN);
+        User gym = requireRole(authorization, Role.GYM_ADMIN);
         return Map.of("requests", limitedRows(
-                "SELECT id, gym_name, admin_email, status, submitted_at FROM gym_applications ORDER BY submitted_at DESC",
-                50
+                "SELECT id, gym_name, admin_email, status, submitted_at FROM gym_applications WHERE LOWER(admin_email) = LOWER(?) ORDER BY submitted_at DESC",
+                50,
+                gym.getEmail()
         ));
     }
 
     @PostMapping("/gym/requests/{id}/approve")
     public Map<String, Object> approveGymRequest(@RequestHeader(value = "Authorization", required = false) String authorization,
                                                  @PathVariable Long id) {
-        User reviewer = requireRole(authorization, Role.GYM_ADMIN);
-        int updated = jdbcTemplate.update(
-                """
-                UPDATE gym_applications
-                SET status = 'APPROVED',
-                    reviewed_at = CURRENT_TIMESTAMP,
-                    reviewed_by_user_id = ?,
-                    review_notes = COALESCE(review_notes, 'Approved from the One To One Android app.')
-                WHERE id = ? AND status <> 'APPROVED'
-                """,
-                reviewer.getId(),
-                id
-        );
-        if (updated == 0) {
-            throw new MobileApiException(404, "Gym request was not found or is already approved.");
+        User reviewer = requireUser(authorization);
+        if (reviewer.getRole() != Role.PLATFORM_ADMIN && reviewer.getRole() != Role.SUPER_ADMIN) {
+            throw new MobileApiException(403, "Only platform staff can review gym applications.");
+        }
+        try {
+            gymApplications.approve(id, reviewer, null);
+        } catch (IllegalArgumentException ex) {
+            throw new MobileApiException(404, "Gym application was not found.");
+        } catch (IllegalStateException ex) {
+            throw new MobileApiException(409, "This application cannot be approved in its current state.");
         }
         return Map.of("ok", true);
     }
@@ -417,6 +435,11 @@ public class MobileApiController {
     @ExceptionHandler(MobileApiException.class)
     public ResponseEntity<Map<String, Object>> mobileError(MobileApiException ex) {
         return ResponseEntity.status(ex.getStatus()).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(java.time.DateTimeException.class)
+    public ResponseEntity<Map<String, Object>> invalidDate(java.time.DateTimeException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", "Use a valid ISO date or month for this request."));
     }
 
     @ExceptionHandler(Exception.class)
@@ -483,16 +506,16 @@ public class MobileApiController {
     private String headlineFor(User user) {
         return switch (user.getRole()) {
             case TRAINER -> "Manage verified coaching, clients and training days.";
-            case GYM_ADMIN -> "Oversee trainers, requests and gym account activity.";
+            case GYM_ADMIN -> "Review linked trainers, your gym application and account activity.";
             default -> "Train with your One To One plan, day view and coach support.";
         };
     }
 
     private List<String> actionsFor(User user) {
         return switch (user.getRole()) {
-            case TRAINER -> List.of("Review clients", "Plan sessions", "Open calendar", "Message clients");
-            case GYM_ADMIN -> List.of("Review trainers", "Handle requests", "Open calendar", "View account");
-            default -> List.of("Open day view", "Log training", "View plan", "Ask coach");
+            case TRAINER -> List.of("Review clients", "Plan sessions", "Open calendar", "Open Charlie helper");
+            case GYM_ADMIN -> List.of("Review trainers", "View gym application", "Open calendar", "View account");
+            default -> List.of("Open day view", "Log training", "Open calendar", "Open Charlie helper");
         };
     }
 
@@ -501,7 +524,7 @@ public class MobileApiController {
             return Map.of("clients", count("SELECT COUNT(*) FROM trainer_client_links WHERE trainer_id = ?", user.getId()));
         }
         if (user.getRole() == Role.GYM_ADMIN) {
-            return Map.of("trainers", count("SELECT COUNT(*) FROM users WHERE role = 'TRAINER' AND (gym_id = ? OR gym_id IS NULL)", user.getGymId()));
+            return Map.of("trainers", count("SELECT COUNT(*) FROM users u WHERE u.role = 'TRAINER' AND " + GYM_AFFILIATION_FILTER, user.getGymId(), user.getGymId()));
         }
         return Map.of("logs", count("SELECT COUNT(*) FROM exercise_log WHERE user_id = ?", user.getId()));
     }
@@ -518,7 +541,7 @@ public class MobileApiController {
 
     private List<Map<String, Object>> dayItems(User user, LocalDate date) {
         List<Map<String, Object>> items = new ArrayList<>();
-        for (Map<String, Object> row : jdbcTemplate.queryForList(
+        for (Map<String, Object> row : apiRows(
                 "SELECT id, title, time, notes, completed, requires_log FROM calendar_tasks WHERE user_id = ? AND date = ? ORDER BY time ASC NULLS LAST, id ASC",
                 user.getId(),
                 Date.valueOf(date)
@@ -527,7 +550,7 @@ public class MobileApiController {
             row.put("type", "TASK");
             items.add(row);
         }
-        for (Map<String, Object> row : jdbcTemplate.queryForList(
+        for (Map<String, Object> row : apiRows(
                 """
                 SELECT so.id, so.schedule_name AS title, so.completed, COALESCE(e.name, ce.name, 'Scheduled exercise') AS notes
                 FROM schedule_occurrences so
@@ -579,19 +602,39 @@ public class MobileApiController {
     }
 
     private List<Map<String, Object>> limitedRows(String sql, int limit, Object... args) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, args);
+        List<Map<String, Object>> rows = apiRows(sql, args);
         return rows.size() <= limit ? rows : rows.subList(0, limit);
     }
 
     private Map<String, Object> oneRow(String sql, Object... args) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, args);
+        List<Map<String, Object>> rows = apiRows(sql, args);
         return rows.isEmpty() ? Map.of() : rows.get(0);
+    }
+
+    private List<Map<String, Object>> apiRows(String sql, Object... args) {
+        // JDBC column-label casing varies by database. Keep the mobile JSON contract stable.
+        return jdbcTemplate.queryForList(sql, args).stream().map(row -> {
+            Map<String, Object> fields = new LinkedHashMap<>();
+            row.forEach((name, value) -> fields.put(name.toLowerCase(Locale.ROOT), value));
+            return fields;
+        }).toList();
+    }
+
+    private long taskId(String value) {
+        try {
+            long id = Long.parseLong(value);
+            if (id > 0) return id;
+        } catch (NumberFormatException ignored) {
+        }
+        throw new MobileApiException(400, "Use a valid day-plan item id.");
     }
 
     private int count(String sql, Object... args) {
         Integer value = jdbcTemplate.queryForObject(sql, Integer.class, args);
         return value == null ? 0 : value;
     }
+
+    private static final String GYM_AFFILIATION_FILTER = "((u.gym_id = ? AND NOT EXISTS (SELECT 1 FROM trainer_gym_affiliations a WHERE a.trainer_user_id = u.id AND a.gym_id = u.gym_id)) OR EXISTS (SELECT 1 FROM trainer_gym_affiliations a WHERE a.trainer_user_id = u.id AND a.gym_id = ? AND a.status = 'ACTIVE'))";
 
     private String safe(String value) {
         return value == null ? "" : value.trim();

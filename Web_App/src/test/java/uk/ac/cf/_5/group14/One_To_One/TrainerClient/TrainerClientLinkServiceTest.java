@@ -57,7 +57,7 @@ class TrainerClientLinkServiceTest {
     }
 
     @Test
-    void acceptRequestEndsOtherActiveLinks() {
+    void acceptingAnOlderRequestCannotReplaceTheClientsActiveTrainer() {
         TrainerClientLink active = new TrainerClientLink(client.getId(), trainerA.getId(), TrainerClientLinkStatus.ACTIVE);
         active.setActivatedAt(Instant.now());
         linkRepository.save(active);
@@ -66,19 +66,16 @@ class TrainerClientLinkServiceTest {
         requested.setRequestedAt(Instant.now());
         linkRepository.save(requested);
 
-        trainerClientLinkService.acceptRequest(trainerB.getId(), client.getId());
+        TrainerClientLinkException error = assertThrows(TrainerClientLinkException.class,
+                () -> trainerClientLinkService.acceptRequest(trainerB.getId(), client.getId()));
+        assertThat(error.getReason()).isEqualTo(TrainerClientLinkException.Reason.CLIENT_ALREADY_HAS_ACTIVE_TRAINER);
 
         List<TrainerClientLink> activeLinks = linkRepository
                 .findByClientUserIdAndStatusOrderByUpdatedAtDesc(client.getId(), TrainerClientLinkStatus.ACTIVE);
         assertThat(activeLinks).hasSize(1);
-        assertThat(activeLinks.get(0).getTrainerUserId()).isEqualTo(trainerB.getId());
-
-        TrainerClientLink ended = linkRepository
-                .findFirstByTrainerUserIdAndClientUserIdAndStatusOrderByUpdatedAtDesc(
-                        trainerA.getId(), client.getId(), TrainerClientLinkStatus.ENDED)
-                .orElse(null);
-        assertThat(ended).isNotNull();
-        assertThat(ended.getEndedAt()).isNotNull();
+        assertThat(activeLinks.get(0).getTrainerUserId()).isEqualTo(trainerA.getId());
+        assertThat(active.getEndedAt()).isNull();
+        assertThat(requested.getStatus()).isEqualTo(TrainerClientLinkStatus.REQUESTED);
     }
 
     @Test
@@ -104,6 +101,30 @@ class TrainerClientLinkServiceTest {
         TrainerClientLinkException ex = assertThrows(TrainerClientLinkException.class,
                 () -> trainerClientLinkService.acceptRequest(savedUnverified.getId(), client.getId()));
         assertThat(ex.getReason()).isEqualTo(TrainerClientLinkException.Reason.TRAINER_NOT_VERIFIED);
+    }
+
+    @Test
+    void repeatedTrainerRequestsReuseThePendingRelationshipAndCanBeWithdrawn() {
+        TrainerClientLink first = trainerClientLinkService.requestLink(client.getId(), trainerA.getId());
+        TrainerClientLink repeated = trainerClientLinkService.requestLink(client.getId(), trainerA.getId());
+        assertThat(repeated.getId()).isEqualTo(first.getId());
+        assertThat(linkRepository.findPendingByTrainerId(trainerA.getId())).hasSize(1);
+        trainerClientLinkService.withdrawRequest(client.getId(), trainerA.getId());
+        assertThat(first.getStatus()).isEqualTo(TrainerClientLinkStatus.ENDED);
+        assertThat(first.getEndedAt()).isNotNull();
+        assertThrows(IllegalArgumentException.class, () -> trainerClientLinkService.acceptRequest(trainerA.getId(), client.getId()));
+    }
+
+    @Test
+    void withdrawalCannotEndAnActiveRelationshipOrAnotherClientsRequest() {
+        TrainerClientLink active = linkRepository.save(new TrainerClientLink(client.getId(), trainerA.getId(), TrainerClientLinkStatus.ACTIVE));
+        assertThrows(IllegalArgumentException.class, () -> trainerClientLinkService.withdrawRequest(client.getId(), trainerA.getId()));
+        assertThat(active.getStatus()).isEqualTo(TrainerClientLinkStatus.ACTIVE);
+        User otherClient = userRepository.save(new User("another-" + UUID.randomUUID() + "@example.com", "Other", "Client", "other-" + UUID.randomUUID(), "test-password"));
+        otherClient.setRole(Role.CLIENT);
+        TrainerClientLink requested = linkRepository.save(new TrainerClientLink(otherClient.getId(), trainerB.getId(), TrainerClientLinkStatus.REQUESTED));
+        assertThrows(IllegalArgumentException.class, () -> trainerClientLinkService.withdrawRequest(client.getId(), trainerB.getId()));
+        assertThat(requested.getStatus()).isEqualTo(TrainerClientLinkStatus.REQUESTED);
     }
 
     @Test
@@ -150,5 +171,37 @@ class TrainerClientLinkServiceTest {
                         trainerA.getId(), client.getId(), TrainerClientLinkStatus.ENDED)
                 .orElseThrow();
         assertThat(ended.getEndedAt()).isNotNull();
+    }
+
+    @Test
+    void resumeRestoresOwnedPausedRelationshipWithoutReplacingItsHistory() {
+        Instant activated = Instant.now().minusSeconds(86400);
+        TrainerClientLink paused = new TrainerClientLink(client.getId(), trainerA.getId(), TrainerClientLinkStatus.PAUSED);
+        paused.setActivatedAt(activated);
+        paused.setPausedAt(Instant.now());
+        linkRepository.save(paused);
+        trainerClientLinkService.resumeLink(trainerA.getId(), client.getId());
+        assertThat(paused.getStatus()).isEqualTo(TrainerClientLinkStatus.ACTIVE);
+        assertThat(paused.getPausedAt()).isNull();
+        assertThat(paused.getActivatedAt()).isEqualTo(activated);
+        assertThat(linkRepository.findActiveByClientId(client.getId()).orElseThrow().getId()).isEqualTo(paused.getId());
+    }
+
+    @Test
+    void resumeCannotReplaceAnotherActiveTrainer() {
+        TrainerClientLink paused = linkRepository.save(new TrainerClientLink(client.getId(), trainerA.getId(), TrainerClientLinkStatus.PAUSED));
+        TrainerClientLink active = linkRepository.save(new TrainerClientLink(client.getId(), trainerB.getId(), TrainerClientLinkStatus.ACTIVE));
+        TrainerClientLinkException error = assertThrows(TrainerClientLinkException.class,
+                () -> trainerClientLinkService.resumeLink(trainerA.getId(), client.getId()));
+        assertThat(error.getReason()).isEqualTo(TrainerClientLinkException.Reason.CLIENT_ALREADY_HAS_ACTIVE_TRAINER);
+        assertThat(paused.getStatus()).isEqualTo(TrainerClientLinkStatus.PAUSED);
+        assertThat(active.getStatus()).isEqualTo(TrainerClientLinkStatus.ACTIVE);
+    }
+
+    @Test
+    void resumeCannotAccessAnotherTrainersPausedRelationship() {
+        TrainerClientLink paused = linkRepository.save(new TrainerClientLink(client.getId(), trainerA.getId(), TrainerClientLinkStatus.PAUSED));
+        assertThrows(IllegalArgumentException.class, () -> trainerClientLinkService.resumeLink(trainerB.getId(), client.getId()));
+        assertThat(paused.getStatus()).isEqualTo(TrainerClientLinkStatus.PAUSED);
     }
 }

@@ -1,0 +1,245 @@
+- banner:
+  - link "One To One Logo One To One":
+    - /url: /
+    - img "One To One Logo"
+    - generic: One To One
+  - navigation "Primary navigation":
+    - link "Dashboard":
+      - /url: /dashboard
+      - generic: Dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: /chat
+      - generic: Charlie
+    - link "Trainers":
+      - /url: /client/trainers
+      - generic: Trainers
+    - link "Shop":
+      - /url: /merch
+      - generic: Shop
+    - link "Leaderboard":
+      - /url: /levels
+      - generic: Leaderboard
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - generic "Premium member":
+      - button "Premium features enabled":
+      - status: Premium Active
+    - button "Open profile menu":
+- main:
+  - link "Skip to day content":
+    - /url: "#day-main-content"
+  - navigation "Calendar mode navigation":
+    - link "Month view":
+      - /url: /calendar?view=month
+    - link "Week view":
+      - /url: /calendar?view=week
+    - generic: Day view
+  - generic: Today
+  - 'button "Time theme: on" [pressed]':
+    - generic: "Time theme: on"
+  - button "Show keyboard shortcuts":
+  - paragraph: Day Completion
+  - paragraph: 0/2 completed (0%)
+  - progressbar
+  - status:
+    - paragraph: 2 items left to complete today
+    - paragraph: 1 tasks left | 1 workouts left
+  - generic "Week navigation":
+    - link "Mon 28":
+      - /url: /calendar/day/2026-09-28
+      - generic: Mon
+      - generic: "28"
+    - link "Tue 29":
+      - /url: /calendar/day/2026-09-29
+      - generic: Tue
+      - generic: "29"
+    - link "Wed 30":
+      - /url: /calendar/day/2026-09-30
+      - generic: Wed
+      - generic: "30"
+    - link "Thu 1":
+      - /url: /calendar/day/2026-10-01
+      - generic: Thu
+      - generic: "1"
+    - link "Fri 2":
+      - /url: /calendar/day/2026-10-02
+      - generic: Fri
+      - generic: "2"
+    - link "Sat 3":
+      - /url: /calendar/day/2026-10-03
+      - generic: Sat
+      - generic: "3"
+    - link "Sun 4":
+      - /url: /calendar/day/2026-10-04
+      - generic: Sun
+      - generic: "4"
+  - link "Previous day":
+    - /url: /calendar/day/2026-09-30
+    - text: ← Prev
+  - generic: 1st of October
+  - generic: "2026"
+  - link "Next day":
+    - /url: /calendar/day/2026-10-02
+    - text: Next →
+  - generic: ⛅
+  - paragraph: Good afternoon
+  - paragraph: Mixed skies. A good day for balanced effort.
+  - paragraph: "Day view: 2026-10-01"
+  - heading "Thursday - 1st October 2026" [level=1]
+  - generic: Today
+  - generic: 0/2 completed (0%)
+  - heading "Timed Focus" [level=2]
+  - generic: Next up
+  - generic: "--:-- --"
+  - generic: Trap Bar Deadlift
+  - generic: 12:13:32
+  - paragraph: No timed items left, showing next incomplete workout.
+  - heading "Daily Focus" [level=2]
+  - generic: Auto-saves
+  - generic: Daily Focus
+  - combobox "Daily Focus" [disabled]:
+    - option "Select a focus..." [selected]
+    - option "Morning"
+    - option "Client premium training block"
+    - option "Custom focus"
+  - button "Save"
+  - button "Optimise with AI":
+    - text: Optimise with AI
+  - link "Choose preferences":
+    - /url: /select-preferences#preferences
+  - generic "Day is 0% complete":
+    - paragraph: 0%
+    - paragraph: Started
+  - list "Day statistics":
+    - paragraph: "0"
+    - paragraph: Done
+    - paragraph: "2"
+    - paragraph: Total
+    - listitem "Go to tasks tab":
+      - paragraph: "1"
+      - paragraph: Tasks left
+    - paragraph: "1"
+    - paragraph: Workouts left
+  - paragraph: Day completion
+  - paragraph: 0/2 completed (0%)
+  - generic "Daily completion streak":
+    - link:
+      - /url: /calendar/day/2026-09-18
+    - link:
+      - /url: /calendar/day/2026-09-19
+    - link:
+      - /url: /calendar/day/2026-09-20
+    - link:
+      - /url: /calendar/day/2026-09-21
+    - link:
+      - /url: /calendar/day/2026-09-22
+    - link:
+      - /url: /calendar/day/2026-09-23
+    - link:
+      - /url: /calendar/day/2026-09-24
+    - link:
+      - /url: /calendar/day/2026-09-25
+    - link:
+      - /url: /calendar/day/2026-09-26
+    - link:
+      - /url: /calendar/day/2026-09-27
+    - link:
+      - /url: /calendar/day/2026-09-28
+    - link:
+      - /url: /calendar/day/2026-09-29
+    - link:
+      - /url: /calendar/day/2026-09-30
+    - link:
+      - /url: /calendar/day/2026-10-01
+  - tablist "Day view sections":
+    - tab "Timeline" [selected]:
+      - generic: Timeline
+    - tab "Tasks 1":
+      - generic: Tasks
+      - generic: "1"
+    - tab "Workouts 1":
+      - generic: Workouts
+      - generic: "1"
+    - tab "Overview":
+      - generic: Overview
+  - tabpanel "Timeline":
+    - heading "Your Timeline for Today" [level=2]
+    - paragraph: Your tasks and workouts visualised across the day. Tasks with a set time appear in their time slots.
+    - link "Focus mode":
+      - /url: /calendar/focus/2026-10-01
+      - generic: Focus mode
+    - generic "Daily timeline":
+      - generic: 🗭
+      - paragraph: No more timed tasks for today
+      - generic: Task
+      - generic: Workout
+      - generic: Now
+      - region "Untimed items":
+        - generic: No fixed time
+        - listitem "Drag to schedule":
+          - generic: Trap Bar Deadlift
+          - generic: Untimed
+      - list "Day timeline":
+        - generic: 06:00
+        - generic: 07:00
+        - listitem "Click to view details, drag to reschedule":
+          - generic: Client premium training block
+          - generic: 07:30
+          - button "Mark complete":
+        - generic: 08:00
+        - generic: 09:00
+        - generic: 10:00
+        - generic: 11:00
+        - generic: 12:00
+        - generic: 13:00
+        - generic: 14:00
+        - generic: 15:00
+        - generic: 16:00
+        - generic: 17:00
+        - generic: 18:00
+        - generic: 19:00
+        - generic: 20:00
+        - generic: 21:00
+        - generic: 22:00
+        - generic: 23:00
+- button "Open Charlie"
+- text: Add photo Send message
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - button "Scroll platform actions left":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Scroll platform actions right":
+  - button "Customize platform panel":

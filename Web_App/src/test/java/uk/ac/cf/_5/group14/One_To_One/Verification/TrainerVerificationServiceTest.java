@@ -30,6 +30,9 @@ class TrainerVerificationServiceTest {
     @Mock
     private EmailService emailService;
     
+    @Mock private jakarta.persistence.EntityManager entities;
+    @Mock private VerificationEventRepository events;
+
     @InjectMocks
     private TrainerVerificationService verificationService;
     
@@ -43,11 +46,17 @@ class TrainerVerificationServiceTest {
         testTrainer.setFirstName("John");
         testTrainer.setLastName("Trainer");
         testTrainer.setTrainerVerified(false);
+        testTrainer.setGymId(100L);
+        lenient().when(userRepository.isTrainerAffiliatedWithGym(1L, 100L)).thenReturn(true);
+        testTrainer.setRole(uk.ac.cf._5.group14.One_To_One.Users.Role.TRAINER);
         
         testAdmin = new User();
         testAdmin.setEmail("admin@example.com");
         testAdmin.setFirstName("Admin");
         testAdmin.setLastName("User");
+        testAdmin.setRole(uk.ac.cf._5.group14.One_To_One.Users.Role.PLATFORM_ADMIN);
+        testAdmin.setId(100L);
+        lenient().when(userRepository.findById(100L)).thenReturn(Optional.of(testAdmin));
     }
     
     @Test
@@ -56,9 +65,9 @@ class TrainerVerificationServiceTest {
         Long gymId = 100L;
         String notes = "Experienced trainer with certifications";
         
-        when(userRepository.findById(trainerId)).thenReturn(Optional.of(testTrainer));
-        when(verificationRepository.findByTrainerUserIdAndStatus(trainerId, VerificationStatus.PENDING))
-            .thenReturn(Optional.empty());
+        when(userRepository.findByIdForUpdate(trainerId)).thenReturn(Optional.of(testTrainer));
+        when(verificationRepository.existsByTrainerUserIdAndStatusIn(eq(trainerId), anyCollection()))
+            .thenReturn(false);
         when(verificationRepository.save(any(TrainerVerificationRequest.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
         
@@ -77,7 +86,7 @@ class TrainerVerificationServiceTest {
     
     @Test
     void testCreateVerificationRequest_TrainerNotFound() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
         
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             verificationService.createVerificationRequest(1L, 100L, "Notes");
@@ -88,18 +97,15 @@ class TrainerVerificationServiceTest {
     
     @Test
     void testCreateVerificationRequest_DuplicatePendingRequest() {
-        TrainerVerificationRequest existingRequest = new TrainerVerificationRequest();
-        existingRequest.setStatus(VerificationStatus.PENDING);
-        
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testTrainer));
-        when(verificationRepository.findByTrainerUserIdAndStatus(1L, VerificationStatus.PENDING))
-            .thenReturn(Optional.of(existingRequest));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testTrainer));
+        when(verificationRepository.existsByTrainerUserIdAndStatusIn(eq(1L), anyCollection()))
+            .thenReturn(true);
         
         Exception exception = assertThrows(IllegalStateException.class, () -> {
             verificationService.createVerificationRequest(1L, 100L, "Notes");
         });
         
-        assertEquals("A pending verification request already exists for this trainer", 
+        assertEquals("An open verification request already exists for this trainer",
             exception.getMessage());
     }
     
@@ -113,8 +119,9 @@ class TrainerVerificationServiceTest {
         request.setTrainerUserId(1L);
         request.setStatus(VerificationStatus.PENDING);
         
+        when(verificationRepository.findLockedById(requestId)).thenReturn(Optional.of(request));
         when(verificationRepository.findById(requestId)).thenReturn(Optional.of(request));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testTrainer));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testTrainer));
         when(verificationRepository.save(any(TrainerVerificationRequest.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -144,9 +151,12 @@ class TrainerVerificationServiceTest {
     @Test
     void testApproveTrainer_AlreadyApproved() {
         TrainerVerificationRequest request = new TrainerVerificationRequest();
+        request.setTrainerUserId(1L);
         request.setStatus(VerificationStatus.APPROVED);
         
+        when(verificationRepository.findLockedById(1L)).thenReturn(Optional.of(request));
         when(verificationRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(testTrainer));
         
         Exception exception = assertThrows(IllegalStateException.class, () -> {
             verificationService.approveTrainer(1L, 100L, "Notes");
@@ -165,7 +175,7 @@ class TrainerVerificationServiceTest {
         request.setTrainerUserId(1L);
         request.setStatus(VerificationStatus.PENDING);
         
-        when(verificationRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(verificationRepository.findLockedById(requestId)).thenReturn(Optional.of(request));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testTrainer));
         when(verificationRepository.save(any(TrainerVerificationRequest.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
@@ -201,7 +211,7 @@ class TrainerVerificationServiceTest {
         request.setTrainerUserId(1L);
         request.setStatus(VerificationStatus.PENDING);
         
-        when(verificationRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(verificationRepository.findLockedById(requestId)).thenReturn(Optional.of(request));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testTrainer));
         when(verificationRepository.save(any(TrainerVerificationRequest.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
@@ -242,7 +252,7 @@ class TrainerVerificationServiceTest {
         request.setStatus(VerificationStatus.NEEDS_INFO);
         request.setReviewedByUserId(100L);
         
-        when(verificationRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(verificationRepository.findLockedById(requestId)).thenReturn(Optional.of(request));
         when(verificationRepository.save(any(TrainerVerificationRequest.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
         
@@ -262,7 +272,7 @@ class TrainerVerificationServiceTest {
         TrainerVerificationRequest request = new TrainerVerificationRequest();
         request.setStatus(VerificationStatus.APPROVED);
         
-        when(verificationRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(verificationRepository.findLockedById(1L)).thenReturn(Optional.of(request));
         
         Exception exception = assertThrows(IllegalStateException.class, () -> {
             verificationService.updateTrainerNotes(1L, "New notes");
@@ -303,6 +313,7 @@ class TrainerVerificationServiceTest {
     @Test
     void testIsTrainerVerified_False() {
         testTrainer.setTrainerVerified(false);
+        testTrainer.setRole(uk.ac.cf._5.group14.One_To_One.Users.Role.TRAINER);
         when(userRepository.findById(1L)).thenReturn(Optional.of(testTrainer));
         
         boolean result = verificationService.isTrainerVerified(1L);
@@ -317,5 +328,14 @@ class TrainerVerificationServiceTest {
         boolean result = verificationService.isTrainerVerified(1L);
         
         assertFalse(result);
+    }
+
+    @Test
+    void queueAcceptsImmutableRepositoryListsAndSortsWithoutMutatingThem() {
+        TrainerVerificationRequest older = new TrainerVerificationRequest(); older.setSubmittedAt(java.time.Instant.parse("2026-09-01T10:00:00Z"));
+        TrainerVerificationRequest newer = new TrainerVerificationRequest(); newer.setSubmittedAt(java.time.Instant.parse("2026-09-02T10:00:00Z"));
+        when(verificationRepository.findByStatusOrderBySubmittedAtAsc(VerificationStatus.PENDING)).thenReturn(List.of(newer));
+        when(verificationRepository.findByStatusOrderBySubmittedAtAsc(VerificationStatus.NEEDS_INFO)).thenReturn(List.of(older));
+        assertEquals(List.of(older, newer), verificationService.getQueueRequests());
     }
 }

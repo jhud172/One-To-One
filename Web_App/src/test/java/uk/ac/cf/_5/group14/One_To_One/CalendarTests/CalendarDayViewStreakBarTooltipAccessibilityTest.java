@@ -139,7 +139,7 @@ public class CalendarDayViewStreakBarTooltipAccessibilityTest {
             .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-describedby=\"daily-streak-tooltip-2026-01-15\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("role=\"tooltip\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"daily-streak-tooltip-2026-01-15\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("group-focus:block")));
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-label=\"Thursday 15 January 2026: Complete, 1/1 completed\"")));
     }
 
     @TestConfiguration

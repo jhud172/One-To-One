@@ -9,12 +9,21 @@ public class TrainerLibraryWorkoutTemplateForm {
     @Size(max = 120)
     private String title;
 
+    @Size(max = 10000)
     private String summary;
 
     /**
      * Newline-separated notes, stored as separate rows.
      */
+    @Size(max = 10000)
     private String notesText;
+
+    @Size(max = 64)
+    private String expectedRevision;
+
+    public String getExpectedRevision() { return expectedRevision; }
+
+    public void setExpectedRevision(String expectedRevision) { this.expectedRevision = expectedRevision; }
 
     public String getTitle() {
         return title;

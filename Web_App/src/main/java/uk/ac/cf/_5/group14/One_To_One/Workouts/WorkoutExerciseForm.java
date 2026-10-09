@@ -6,6 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class WorkoutExerciseForm {
+    private Long id;
     private String exerciseRef;
     private String exerciseName;
     private Long exerciseId;

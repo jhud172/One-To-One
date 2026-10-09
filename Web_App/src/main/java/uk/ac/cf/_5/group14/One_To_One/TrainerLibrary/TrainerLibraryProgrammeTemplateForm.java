@@ -16,7 +16,14 @@ public class TrainerLibraryProgrammeTemplateForm {
     /**
      * Newline-separated notes, stored as separate rows.
      */
+    @Size(max = 10000)
     private String notesText;
+
+    @Size(max = 64)
+    private String expectedRevision;
+
+    public String getExpectedRevision() { return expectedRevision; }
+    public void setExpectedRevision(String expectedRevision) { this.expectedRevision = expectedRevision; }
 
     public String getTitle() {
         return title;

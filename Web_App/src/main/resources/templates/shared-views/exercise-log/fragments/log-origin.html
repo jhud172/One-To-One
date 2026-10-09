@@ -1,0 +1,8 @@
+<th:block xmlns:th="http://www.thymeleaf.org">
+<section th:fragment="logOrigin" class="detail-section personal-log-origin" aria-labelledby="log-origin-title">
+    <h2 id="log-origin-title" class="detail-section-title" th:text="${logOriginLinked} ? #{ui.log.calendarReflection} : #{ui.log.personalReflection}"></h2>
+    <h3 th:if="${logOriginName != null and !#strings.isEmpty(logOriginName)}" dir="auto" th:text="${logOriginName}"></h3>
+    <p th:if="${logOriginUnavailable}" id="log-origin-help" class="profile-editor-errors" role="alert" th:text="#{ui.log.originUnavailable}"></p>
+    <p id="log-origin-help" th:unless="${logOriginUnavailable}" th:text="${logOriginLinked} ? #{ui.log.linkedOriginHint} : #{ui.log.personalOriginHint}"></p>
+    <a th:if="${logOriginUrl != null}" class="detail-btn-secondary" th:href="${logOriginUrl}"><span th:text="#{ui.01297}"></span> · <time dir="ltr" th:datetime="${logOriginDate}" th:text="${logOriginDate}"></time></a>
+</section></th:block>

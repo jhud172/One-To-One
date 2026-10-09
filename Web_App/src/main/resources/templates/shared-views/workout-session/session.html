@@ -1,159 +1,117 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${view.workoutName}, null, ~{::content}, null)}">
-
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(${view.workoutName}, null, ~{::content}, ~{::pageScripts})}">
 <div th:fragment="content">
-    <div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div class="space-y-3">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300"
-                       th:text="${view.sourceLabel}">Scheduled workout</p>
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100"
-                            th:text="${view.workoutName}">Workout</h1>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                           th:text="${'Scheduled for ' + #temporals.format(view.date, 'EEEE d MMMM yyyy')}">Scheduled for today</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2 text-xs font-semibold">
-                        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                              th:text="${view.summary.exerciseCount + ' exercises'}">0 exercises</span>
-                        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                              th:text="${view.summary.completedSets + ' / ' + view.summary.totalSets + ' sets complete'}">0 / 0 sets complete</span>
-                        <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-200"
-                              th:text="${#numbers.formatDecimal(view.summary.totalVolume, 1, 1) + ' kg volume'}">0.0 kg volume</span>
-                    </div>
-                </div>
-                <div class="flex w-full flex-col gap-3 lg:max-w-xs">
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                        <div class="flex items-center justify-between gap-4">
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100" th:text="#{ui.02336}">Session progress</p>
-                            <span class="text-sm font-bold text-slate-900 dark:text-slate-100"
-                                  th:text="${view.summary.completionPercent + '%'}">0%</span>
-                        </div>
-                        <progress class="mt-3 h-2 w-full overflow-hidden rounded-full" max="100"
-                                  th:value="${view.summary.completionPercent}">0</progress>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        <a th:href="@{'/calendar/day/' + ${view.date}}"
-                           class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900" th:text="#{ui.01829}">Back to day</a>
-                        <a href="/workout-management"
-                           class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900" th:text="#{ui.02337}">Manage workouts</a>
-                    </div>
-                </div>
+    <div class="session-player session-workout" th:attr="data-display-layout=${workoutDisplay.layout},data-display-theme=${workoutDisplay.theme},data-display-density=${workoutDisplay.density},data-display-transition=${workoutDisplay.transition},data-display-progress=${workoutDisplay.progress},data-display-rest=${workoutDisplay.restTimer},data-session-id=${view.sessionId},data-saved-label=#{ui.player.saved},data-unsaved-label=#{ui.player.unsaved},data-saving-label=#{ui.player.saving},data-failed-label=#{ui.player.failed},data-other-changes-label=#{ui.player.otherChanges},data-open-label=#{ui.player.open},data-complete-label=#{ui.history.complete},data-done-label=#{v2.session.saveDone},data-reopen-label=#{v2.session.reopen}">
+        <header class="session-workout__header">
+            <div>
+                <p class="session-workout__eyebrow" th:text="${#messages.msg(view.sourceLabel == 'Calendar schedule' ? 'ui.training.sourceCalendar' : 'ui.training.sourceSaved')}">Calendar plan</p>
+                <h1 th:text="${view.workoutName}">Workout</h1>
+                <p class="session-workout__date" th:text="#{ui.player.scheduled(${#temporals.format(view.date, 'EEEE d MMMM yyyy')})}">Scheduled date</p>
             </div>
-        </section>
-
-        <section class="grid gap-4">
-            <article th:each="exercise : ${view.exercises}"
-                     class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <div class="flex flex-col gap-4 border-b border-slate-100 pb-4 dark:border-slate-800 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100"
-                                th:text="${exercise.displayName}">Exercise</h2>
-                            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
-                                  th:classappend="${exercise.completed ? ' border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-200' : ' border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}"
-                                  th:text="${exercise.status}">Not started</span>
-                            <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                                  th:if="${exercise.category != null && !#strings.isEmpty(exercise.category)}"
-                                  th:text="${exercise.category}">Category</span>
+            <nav class="session-workout__returns" th:attr="aria-label=#{ui.training.navigation}">
+                <a class="training-launch__action" th:href="@{'/calendar/day/' + ${view.date}}" th:text="#{ui.01829}">Back to day</a>
+                <a class="training-launch__action" href="/workout-management" th:text="#{ui.02337}">Manage workouts</a>
+            </nav>
+        </header>
+        <div class="session-workout__overview">
+            <div>
+                <p th:text="#{ui.02336}">Session progress</p>
+                <strong data-session-percent th:text="${view.summary.completionPercent + '%'}">0%</strong>
+                <progress max="100" th:value="${view.summary.completionPercent}" th:attr="aria-label=#{ui.02336},aria-valuenow=${view.summary.completionPercent}" th:text="${view.summary.completionPercent + '%'}" data-session-progress>0%</progress>
+            </div>
+            <dl>
+                <div><dt th:text="#{ui.02329}">Exercises</dt><dd data-session-exercises th:text="${view.summary.completedExercises + ' / ' + view.summary.exerciseCount}">0 / 0</dd></div>
+                <div><dt th:text="#{ui.02330}">Sets</dt><dd data-session-sets th:text="${view.summary.completedSets + ' / ' + view.summary.totalSets}">0 / 0</dd></div>
+                <div><dt th:text="#{ui.02331}">Volume</dt><dd><span data-session-volume th:text="${#numbers.formatDecimal(view.summary.totalVolume, 1, 1)}">0.0</span> kg</dd></div>
+            </dl>
+        </div>
+        <p class="session-workout__notice" role="status" aria-live="polite" data-session-notice th:text="#{ui.player.setHelp}">Save each set before moving on.</p>
+        <details class="session-workout__exercise-picker" th:if="${#lists.size(view.exercises) > 1}">
+            <summary th:text="#{ui.02329}">Exercises</summary>
+            <nav th:attr="aria-label=#{ui.02329}">
+                <a th:each="exercise : ${view.exercises}" class="training-launch__action" th:href="${'#exercise-title-' + exercise.exerciseSessionId}" th:text="${exercise.displayName}">Exercise</a>
+            </nav>
+        </details>
+        <div class="session-workout__workspace">
+            <section class="session-player__exercises">
+                <p class="session-workout__empty" th:if="${#lists.isEmpty(view.exercises)}" th:text="#{ui.player.noExercises}">This saved session has no exercises.</p>
+                <article th:each="exercise, exerciseStat : ${view.exercises}" class="session-exercise session-workout__exercise" th:attr="data-exercise-id=${exercise.exerciseSessionId}">
+                    <header class="session-workout__exercise-header">
+                        <div>
+                            <p class="session-workout__eyebrow" th:text="#{ui.player.exercisePosition(${exerciseStat.count},${#lists.size(view.exercises)})}">Exercise</p>
+                            <h2 th:id="${'exercise-title-' + exercise.exerciseSessionId}" th:text="${exercise.displayName}">Exercise</h2>
+                            <p class="session-workout__exercise-state">
+                                <span data-exercise-state th:text="${#messages.msg(exercise.completed ? 'ui.history.complete' : 'ui.player.open')}">To do</span>
+                                <span th:if="${exercise.category != null and !#strings.isEmpty(exercise.category)}" th:text="${exercise.category}">Category</span>
+                            </p>
+                            <a th:if="${exercise.catalogueExerciseId != null}" class="training-launch__action" data-session-instruction th:href="@{/exercise/{id}(id=${exercise.catalogueExerciseId},sessionId=${view.sessionId},entryId=${exercise.exerciseSessionId})}" th:attr="aria-label=#{ui.training.actionFor(#{ui.01947},${exercise.displayName})}" th:text="#{ui.01947}">Instructions</a>
                         </div>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                           th:text="${exercise.type != null && !#strings.isEmpty(exercise.type) ? exercise.type : 'Log the sets you complete and save as you go.'}">Log the sets you complete and save as you go.</p>
-                    </div>
-                    <form th:action="@{'/workout-session/' + ${view.sessionId} + '/exercises/' + ${exercise.exerciseSessionId} + '/sets'}"
-                          method="post">
-                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit"
-                                class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50" th:text="#{ui.02338}">
-                            Add set
-                        </button>
-                    </form>
-                </div>
-
-                <div class="mt-4 space-y-3">
-                    <div th:each="set : ${exercise.sets}"
-                         class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/70">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100"
-                               th:text="${'Set ' + set.setNumber}">Set 1</p>
-                            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
-                                  th:classappend="${set.completed ? ' border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-200' : ' border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'}"
-                                  th:text="${set.completed ? 'Complete' : 'Open'}">Open</span>
+                        <form th:action="@{'/workout-session/' + ${view.sessionId} + '/exercises/' + ${exercise.exerciseSessionId} + '/sets'}" method="post">
+                            <button type="submit" class="training-launch__action" th:attr="aria-label=#{ui.training.actionFor(#{ui.02338},${exercise.displayName})}" th:text="#{ui.02338}">Add set</button>
+                        </form>
+                    </header>
+                    <p class="session-workout__empty" th:if="${#lists.isEmpty(exercise.sets)}" th:text="#{ui.player.noSets}">Add a set to begin.</p>
+                    <div th:each="set : ${exercise.sets}" class="session-set" th:id="${'set-' + set.setId}" th:classappend="${set.completed} ? ' is-complete'">
+                        <div class="session-workout__set-heading">
+                            <h3 th:id="${'set-title-' + set.setId}" th:text="#{ui.player.setTitle(${set.setNumber})}">Set 1</h3>
+                            <span data-set-state th:text="${#messages.msg(set.completed ? 'ui.history.complete' : 'ui.player.open')}">To do</span>
                         </div>
-
-                        <div class="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto_auto]">
-                            <form th:action="@{'/workout-session/' + ${view.sessionId} + '/sets/' + ${set.setId}}"
-                                  method="post"
-                                  class="grid gap-3 sm:grid-cols-4">
-                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                    <th:block th:text="#{ui.00642}">Weight</th:block>
-                                    <input type="number"
-                                           step="0.5"
-                                           min="0"
-                                           name="weight"
-                                           th:value="${set.weight}"
-                                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                        <form th:action="@{'/workout-session/' + ${view.sessionId} + '/sets/' + ${set.setId}}" method="post" class="session-set__form" th:attr="aria-labelledby=${'exercise-title-' + exercise.exerciseSessionId + ' set-title-' + set.setId},data-set-id=${set.setId}">
+                            <div class="session-workout__values">
+                                <label th:for="${'weight-' + set.setId}"><span th:text="#{ui.00642} + ' (kg)'">Weight (kg)</span>
+                                    <input th:id="${'weight-' + set.setId}" type="number" inputmode="decimal" step="0.5" min="0" name="weight" th:value="${set.weight}" th:attr="aria-describedby=${'save-status-' + set.setId}">
                                 </label>
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                    <th:block th:text="#{ui.02339}">Reps</th:block>
-                                    <input type="number"
-                                           min="0"
-                                           name="reps"
-                                           th:value="${set.reps}"
-                                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                <label th:for="${'reps-' + set.setId}"><span th:text="#{ui.02339}">Reps</span>
+                                    <input th:id="${'reps-' + set.setId}" type="number" inputmode="numeric" min="0" step="1" name="reps" th:value="${set.reps}" th:attr="aria-describedby=${'save-status-' + set.setId}">
                                 </label>
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:col-span-2">
-                                    <th:block th:text="#{ui.00175}">Notes</th:block>
-                                    <input type="text"
-                                           name="notes"
-                                           th:value="${set.notes}"
-                                           class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                <label class="session-workout__notes" th:for="${'notes-' + set.setId}"><span th:text="#{ui.00175}">Notes</span>
+                                    <input th:id="${'notes-' + set.setId}" type="text" name="notes" maxlength="255" th:value="${set.notes}" th:attr="aria-describedby=${'save-status-' + set.setId}">
                                 </label>
-                                <button type="submit"
-                                        class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white sm:col-span-4" th:text="#{ui.02340}">Save set</button>
-                            </form>
-
-                            <div class="flex flex-wrap gap-3">
-                                <form th:action="@{'/workout-session/' + ${view.sessionId} + '/sets/' + ${set.setId} + '/toggle'}"
-                                      method="post">
-                                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                    <button type="submit"
-                                            class="inline-flex items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold transition"
-                                            th:classappend="${set.completed ? ' border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50' : ' border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50'}"
-                                            th:text="${set.completed ? 'Mark open' : 'Mark done'}">Mark done</button>
-                                </form>
-                                <form th:action="@{'/workout-session/' + ${view.sessionId} + '/sets/' + ${set.setId} + '/delete'}"
-                                      method="post">
-                                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                    <button type="submit"
-                                            class="inline-flex items-center justify-center rounded-2xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800 transition hover:bg-rose-100 dark:border-rose-800/40 dark:bg-rose-950/30 dark:text-rose-200 dark:hover:bg-rose-950/50" th:text="#{ui.00139}">Delete</button>
-                                </form>
                             </div>
-                        </div>
+                            <div class="session-workout__save-actions">
+                                <button type="submit" class="training-launch__action" th:text="#{ui.02340}">Save set</button>
+                                <button type="submit" name="completed" th:value="${!set.completed}" class="training-launch__action training-launch__action--primary" th:text="${#messages.msg(set.completed ? 'v2.session.reopen' : 'v2.session.saveDone')}">Save &amp; mark done</button>
+                            </div>
+                            <p class="session-workout__save-status" role="status" aria-live="polite" data-save-status th:id="${'save-status-' + set.setId}" th:text="#{ui.player.saved}">Saved</p>
+                        </form>
+                        <details class="session-workout__set-options">
+                            <summary th:text="#{ui.00135}">Actions</summary>
+                            <form th:action="@{'/workout-session/' + ${view.sessionId} + '/sets/' + ${set.setId} + '/delete'}" th:attr="data-confirm=#{ui.02120}" method="post">
+                                <button type="submit" class="training-launch__action session-workout__delete" th:id="${'delete-set-' + set.setId}" th:attr="aria-labelledby=${'delete-set-' + set.setId + ' set-title-' + set.setId + ' exercise-title-' + exercise.exerciseSessionId}" th:text="#{ui.00139}">Delete</button>
+                            </form>
+                        </details>
                     </div>
+                </article>
+            </section>
+            <aside class="session-rest hidden" data-rest-timer th:attr="aria-label=#{v2.session.rest},data-ready-label=#{v2.session.restReady},data-running-label=#{v2.session.restRunning},data-paused-label=#{v2.session.restPaused},data-finished-label=#{v2.session.restFinished}">
+                <details>
+                <summary>
+                    <span class="session-rest__label" th:text="#{v2.session.rest}">Rest between sets</span>
+                    <output class="session-rest__clock" role="timer" aria-live="off" data-rest-clock>01:00</output>
+                </summary>
+                <div class="session-rest__controls">
+                    <label for="rest-duration" th:text="#{v2.session.duration}">Duration</label>
+                    <select id="rest-duration" class="field__select" data-rest-duration>
+                        <option value="30" th:text="#{v2.session.seconds(30)}">30 s</option>
+                        <option value="60" selected th:text="#{v2.session.seconds(60)}">60 s</option>
+                        <option value="90" th:text="#{v2.session.seconds(90)}">90 s</option>
+                        <option value="120" th:text="#{v2.session.seconds(120)}">120 s</option>
+                        <option value="180" th:text="#{v2.session.seconds(180)}">180 s</option>
+                    </select>
+                    <button class="training-launch__action training-launch__action--primary" type="button" data-rest-start th:text="#{v2.session.startRest}">Start rest</button>
+                    <button class="training-launch__action" type="button" data-rest-pause disabled th:text="#{v2.session.pauseRest}">Pause</button>
+                    <button class="training-launch__action" type="button" data-rest-reset th:text="#{v2.session.resetRest}">Reset</button>
                 </div>
-            </article>
-        </section>
-
-        <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02341}">Finish this scheduled workout</p>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02342}">Completing the session stores the workout, shows the completion summary, and updates the schedule entry everywhere else in the platform.</p>
-                </div>
-                <form th:action="@{'/workout-session/' + ${view.sessionId} + '/complete'}"
-                      method="post">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                    <button type="submit"
-                            class="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 lg:w-auto" th:text="#{ui.02343}">
-                        Finish workout
-                    </button>
-                </form>
-            </div>
+                <p class="session-rest__status" role="status" data-rest-status th:text="#{v2.session.restReady}">Ready when you are.</p>
+                </details>
+            </aside>
+        </div>
+        <section class="session-workout__finish">
+            <div><h2 th:text="#{ui.02341}">Finish this scheduled workout</h2><p th:text="#{v2.session.finishHint}">Save changed values before finishing.</p></div>
+            <form th:action="@{'/workout-session/' + ${view.sessionId} + '/complete'}" th:attr="data-confirm=#{ui.player.finishConfirm}" method="post">
+                <button type="submit" class="training-launch__action" th:text="#{ui.02343}">Finish workout</button>
+            </form>
         </section>
     </div>
 </div>
-
+<th:block th:fragment="pageScripts"><script th:src="@{/js/training/session-player.js(v=${uiCssVersion})}" defer></script></th:block>
 </th:block>

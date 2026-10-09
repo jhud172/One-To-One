@@ -22,6 +22,8 @@ document.addEventListener('click', (event) => {
     const notesInput = modal.querySelector('textarea[name="notes"]');
     const exerciseInput = modal.querySelector('input[name="exercise"]');
     const modalForms = Array.from(modal.querySelectorAll('form'));
+    const dialog = modal.querySelector('[data-add-task-dialog]');
+    let returnFocus = openBtn;
 
     function resetModalSubmitState() {
         modalForms.forEach((form) => {
@@ -40,7 +42,11 @@ document.addEventListener('click', (event) => {
         });
     }
 
-    function open() {
+    function open(event) {
+        if (event) {
+            event.preventDefault();
+            returnFocus = event.currentTarget;
+        }
         resetModalSubmitState();
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
@@ -53,10 +59,19 @@ document.addEventListener('click', (event) => {
         resetModalSubmitState();
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
-        openBtn.focus();
+        returnFocus.focus();
     }
 
     openBtn.addEventListener('click', open);
+    document.querySelectorAll('[data-open-add-task-alias]').forEach((trigger) => {
+        trigger.addEventListener('click', open);
+    });
+    document.querySelectorAll('#open-add-task, [data-open-add-task-alias]').forEach((trigger) => {
+        trigger.setAttribute('role', 'button');
+        trigger.addEventListener('keydown', (event) => {
+            if (event.key === ' ') open(event);
+        });
+    });
     closeBtn.addEventListener('click', close);
 
     if (backdrop) {
@@ -64,8 +79,23 @@ document.addEventListener('click', (event) => {
     }
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        if (modal.classList.contains('hidden')) return;
+        if (e.key === 'Escape') {
+            e.preventDefault();
             close();
+        } else if (e.key === 'Tab') {
+            const focusable = Array.from(modal.querySelectorAll(
+                'a[href], button, input, select, textarea, [tabindex]'))
+                .filter((element) => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length);
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+                e.preventDefault();
+                if (last) last.focus();
+            } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+                e.preventDefault();
+                if (first) first.focus();
+            }
         }
     });
 
@@ -107,6 +137,13 @@ document.addEventListener('click', (event) => {
             });
         });
     });
+    if (dialog) {
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+    }
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.dataset.taskModalEnhanced = 'true';
 })();
 
 (function initDashboardDeepLinks() {
@@ -316,42 +353,113 @@ document.addEventListener('click', (event) => {
     const drawerBody = document.getElementById('workout-drawer-body');
     const closeBtn = drawer.querySelector('[data-testid="workout-drawer-close"]');
     const backdrop = drawer.querySelector('[data-testid="workout-drawer-backdrop"]');
+    const dialog = drawer.querySelector('[data-workout-dialog]');
+    const placeholder = drawerBody ? drawerBody.innerHTML : '';
+    let opener = null;
+    let previousOverflow = '';
 
-    function open(workoutId) {
-        if (!drawerBody) return;
-        const content = document.getElementById('workout-drawer-content-' + workoutId);
-        if (!content) return;
+    function open(trigger) {
+        if (!drawerBody || !dialog || typeof dialog.showModal !== 'function') return false;
+        const card = trigger.closest('[data-workout-card]');
+        const kind = trigger.dataset.workoutKind || (card && card.dataset.workoutKind);
+        if (kind !== 'session' && kind !== 'occurrence') return false;
+        const content = document.getElementById('workout-drawer-content-' + kind + '-' + trigger.dataset.workoutId);
+        if (!content) return false;
 
+        opener = trigger;
+        previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
         drawerBody.innerHTML = content.innerHTML;
         drawer.classList.remove('hidden');
         drawer.setAttribute('aria-hidden', 'false');
-        if (closeBtn) closeBtn.focus();
+        window.OneToOneOverlay?.open('calendar-workout');
+        dialog.showModal();
+        (closeBtn || dialog).focus();
+        return true;
     }
 
-    function close() {
+    function close(restoreFocus = true) {
+        if (drawer.classList.contains('hidden')) return;
+        if (dialog && dialog.open) dialog.close();
         drawer.classList.add('hidden');
         drawer.setAttribute('aria-hidden', 'true');
-        if (drawerBody) {
-            drawerBody.innerHTML = '<p class="text-sm text-slate-600 dark:text-slate-300">Select a workout to view details.</p>';
-        }
+        window.OneToOneOverlay?.release('calendar-workout');
+        document.body.style.overflow = previousOverflow;
+        if (drawerBody) drawerBody.innerHTML = placeholder;
+        if (restoreFocus && opener && opener.isConnected) opener.focus();
+        opener = null;
     }
 
     document.addEventListener('click', (e) => {
         const trigger = e.target && e.target.closest ? e.target.closest('[data-open-workout-drawer]') : null;
-        if (!trigger) return;
-        const workoutId = trigger.getAttribute('data-workout-id');
-        if (!workoutId) return;
-        e.preventDefault();
-        open(workoutId);
+        if (!trigger || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        if (open(trigger)) e.preventDefault();
     });
 
-    if (closeBtn) closeBtn.addEventListener('click', close);
-    if (backdrop) backdrop.addEventListener('click', close);
+    window.OneToOneOverlay?.register('calendar-workout', {
+        group: 'modal', close: options => close(options.restoreFocus !== false)
+    });
+    if (closeBtn) closeBtn.addEventListener('click', () => close());
+    if (backdrop) backdrop.addEventListener('click', () => close());
+    if (dialog) {
+        dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
+        dialog.addEventListener('click', event => {
+            if (event.target !== dialog) return;
+            const rect = dialog.getBoundingClientRect();
+            if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
+        });
+    }
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !drawer.classList.contains('hidden')) {
+        if (drawer.classList.contains('hidden')) return;
+        if (e.key === 'Escape') {
+            e.preventDefault();
             close();
+        } else if (e.key === 'Tab' && dialog) {
+            const controls = Array.from(dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]'))
+                .filter(control => control.getClientRects().length && !control.closest('[hidden], [inert]'));
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            if (!first) {
+                e.preventDefault();
+                dialog.focus();
+            } else if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+                e.preventDefault();
+                first.focus();
+            }
         }
     });
+})();
+
+(function initFocusReturn() {
+    const day = document.getElementById('day-main-content');
+    const entry = document.querySelector('[data-enter-calendar-focus]');
+    if (!day || !entry) return;
+    const key = 'oneToOne.calendarFocusReturn';
+    entry.addEventListener('click', event => {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        try {
+            const active = document.querySelector('#day-section-navigation [data-tab-target].is-active');
+            sessionStorage.setItem(key, JSON.stringify({ date: day.dataset.date, scrollY: window.scrollY, tab: active ? active.dataset.tabTarget : 'timeline' }));
+        } catch (_) { /* The dated exit link remains usable when storage is unavailable. */ }
+    });
+    window.addEventListener('load', () => {
+        if (new URLSearchParams(location.search).get('fromFocus') !== '1') return;
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(key) || 'null');
+            sessionStorage.removeItem(key);
+            if (!saved || saved.date !== day.dataset.date || !Number.isFinite(saved.scrollY)) return;
+            const tab = Array.from(document.querySelectorAll('#day-section-navigation [data-tab-target]'))
+                .find(control => control.dataset.tabTarget === saved.tab);
+            if (tab) tab.click();
+            requestAnimationFrame(() => {
+                entry.focus({ preventScroll: true });
+                window.scrollTo({ top: Math.max(0, saved.scrollY), behavior: 'instant' });
+            });
+        } catch (_) { /* Native date/section navigation is the fallback. */ }
+    }, { once: true });
 })();
 
 (function initTasksConfigureJump() {

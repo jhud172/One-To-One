@@ -1,5 +1,6 @@
 package uk.ac.cardiff.trainerhub.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -46,19 +47,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.util.Patterns
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import uk.ac.cardiff.trainerhub.R
 import uk.ac.cardiff.trainerhub.data.remote.AuthState
 import uk.ac.cardiff.trainerhub.data.remote.CalendarDay
@@ -66,12 +74,12 @@ import uk.ac.cardiff.trainerhub.data.remote.ChatMessage
 import uk.ac.cardiff.trainerhub.data.remote.DayItem
 import uk.ac.cardiff.trainerhub.data.remote.HomeSummary
 import uk.ac.cardiff.trainerhub.data.remote.MobileRole
+import uk.ac.cardiff.trainerhub.data.remote.MobileClientDetail
 import uk.ac.cardiff.trainerhub.data.remote.MobileUser
 import uk.ac.cardiff.trainerhub.data.remote.OneToOneMobileRepository
 import uk.ac.cardiff.trainerhub.data.remote.RoleItem
 import uk.ac.cardiff.trainerhub.data.remote.TrainingLog
 import uk.ac.cardiff.trainerhub.data.reminders.ReminderScheduler
-import uk.ac.cardiff.trainerhub.data.repository.TrainerHubRepository
 import uk.ac.cardiff.trainerhub.ui.components.AppBackground
 import uk.ac.cardiff.trainerhub.ui.components.EmptyStateCard
 import uk.ac.cardiff.trainerhub.ui.components.PremiumButton
@@ -81,6 +89,8 @@ import uk.ac.cardiff.trainerhub.ui.components.StatCard
 import uk.ac.cardiff.trainerhub.ui.components.StatusChip
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private data class NavItem(
     val key: String,
@@ -90,26 +100,29 @@ private data class NavItem(
 
 @Composable
 fun TrainerHubApp(
-    repository: TrainerHubRepository,
     mobileRepository: OneToOneMobileRepository,
     reminderScheduler: ReminderScheduler,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    var restoringSession by remember { mutableStateOf(true) }
     val authState by mobileRepository.authState.collectAsStateWithLifecycle()
-    val remindersEnabled by repository.remindersEnabled.collectAsStateWithLifecycle(initialValue = true)
 
     LaunchedEffect(Unit) {
-        repository.ensureSeeded()
-        mobileRepository.restoreSession()
+        try {
+            mobileRepository.restoreSession()
+        } finally {
+            restoringSession = false
+        }
     }
 
-    LaunchedEffect(remindersEnabled) {
-        reminderScheduler.update(remindersEnabled)
+    LaunchedEffect(Unit) {
+        // The current shell uses remote records. Legacy local sample reminders are unrelated.
+        reminderScheduler.update(false)
     }
 
     AppBackground {
         when {
-            authState.loading -> LoadingScreen()
+            restoringSession -> LoadingScreen()
             authState.user == null -> PublicShell(mobileRepository, authState, snackbarHostState)
             else -> SignedInShell(mobileRepository, authState, snackbarHostState)
         }
@@ -119,7 +132,11 @@ fun TrainerHubApp(
 @Composable
 private fun LoadingScreen() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            BrandMark()
+            Text("Opening your coaching space", style = MaterialTheme.typography.titleMedium)
+            CircularProgressIndicator()
+        }
     }
 }
 
@@ -130,7 +147,8 @@ private fun PublicShell(
     authState: AuthState,
     snackbarHostState: SnackbarHostState,
 ) {
-    var route by remember { mutableStateOf("welcome") }
+    var route by rememberSaveable { mutableStateOf("welcome") }
+    BackHandler(enabled = route != "welcome") { if (!authState.loading) route = "welcome" }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -149,8 +167,9 @@ private fun PublicShell(
                 ).forEach { item ->
                     NavigationBarItem(
                         selected = route == item.key,
-                        onClick = { route = item.key },
-                        icon = { Icon(item.icon, contentDescription = item.label) },
+                        enabled = !authState.loading,
+                        onClick = { mobileRepository.clearAuthError(); route = item.key },
+                        icon = { Icon(item.icon, contentDescription = null) },
                         label = { Text(item.label) },
                     )
                 }
@@ -161,7 +180,7 @@ private fun PublicShell(
             "explore" -> ExploreScreen(padding)
             "login" -> LoginScreen(mobileRepository, authState, padding)
             "signup" -> SignupScreen(mobileRepository, authState, padding)
-            else -> WelcomeScreen(mobileRepository, padding, onLogin = { route = "login" }, onSignup = { route = "signup" })
+            else -> WelcomeScreen(mobileRepository, padding, sessionMessage = authState.error, onLogin = { mobileRepository.clearAuthError(); route = "login" }, onSignup = { mobileRepository.clearAuthError(); route = "signup" })
         }
     }
 }
@@ -170,6 +189,7 @@ private fun PublicShell(
 private fun WelcomeScreen(
     mobileRepository: OneToOneMobileRepository,
     padding: PaddingValues,
+    sessionMessage: String?,
     onLogin: () -> Unit,
     onSignup: () -> Unit,
 ) {
@@ -179,10 +199,11 @@ private fun WelcomeScreen(
         contentPadding = screenPadding(padding),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        sessionMessage?.let { message -> item { PremiumCard(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) { Text(message) } } }
         item {
             PremiumCard(tonal = true) {
-                BrandMark()
-                Text("Premium coaching, built around one relationship.", style = MaterialTheme.typography.headlineMedium)
+                Text("YOUR COACHING SPACE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text("Your next session. A clearer direction.", style = MaterialTheme.typography.headlineMedium)
                 Text("Clients train with a verified coach. Trainers manage real clients. Gyms oversee their coaching team.")
             }
         }
@@ -194,10 +215,10 @@ private fun WelcomeScreen(
         }
         item {
             PremiumCard {
-                Text("Assessment-safe demo", fontWeight = FontWeight.SemiBold)
-                Text("Use this if the live server is not reachable during marking.")
+                Text("See how it works", fontWeight = FontWeight.SemiBold)
+                Text("Explore a sample coaching workspace without creating an account.")
                 TextButton(onClick = { scope.launch { mobileRepository.useDemoMode() } }) {
-                    Text("Continue in demo mode")
+                    Text("Explore sample workspace")
                 }
             }
         }
@@ -232,7 +253,7 @@ private fun LoginScreen(
     padding: PaddingValues,
 ) {
     val scope = rememberCoroutineScope()
-    var username by remember { mutableStateOf("") }
+    var username by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var submitted by remember { mutableStateOf(false) }
     val usernameError = if (submitted && username.isBlank()) "Username or email is required." else null
@@ -244,13 +265,14 @@ private fun LoginScreen(
         contentPadding = screenPadding(padding),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item { SectionTitle("Login", "Connect to your hosted One To One account") }
+        item { SectionTitle("Welcome back", "Return to your coaching space") }
         item {
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Username or email") },
+                enabled = !authState.loading,
                 singleLine = true,
                 isError = usernameError != null,
                 supportingText = { usernameError?.let { Text(it) } },
@@ -262,6 +284,7 @@ private fun LoginScreen(
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Password") },
+                enabled = !authState.loading,
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -283,7 +306,7 @@ private fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !authState.loading,
             ) {
-                Text("Login")
+                Text(if (authState.loading) "Signing in…" else "Log in")
             }
         }
         authState.error?.let { item { EmptyStateCard("Login issue", it) } }
@@ -297,6 +320,7 @@ private fun SignupScreen(
     padding: PaddingValues,
 ) {
     val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
     var role by remember { mutableStateOf(MobileRole.CLIENT) }
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
@@ -339,93 +363,105 @@ private fun SignupScreen(
                 RoleButton("Gym", role == MobileRole.GYM_ADMIN, Modifier.weight(1f)) { role = MobileRole.GYM_ADMIN }
             }
         }
-        item {
-            OutlinedTextField(
-                firstName,
-                { firstName = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("First name") },
-                singleLine = true,
-                isError = firstNameError != null,
-                supportingText = { firstNameError?.let { Text(it) } },
-            )
-        }
-        item {
-            OutlinedTextField(
-                lastName,
-                { lastName = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("Last name") },
-                singleLine = true,
-                isError = lastNameError != null,
-                supportingText = { lastNameError?.let { Text(it) } },
-            )
-        }
-        item {
-            OutlinedTextField(
-                email,
-                { email = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("Email") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = emailError != null,
-                supportingText = { emailError?.let { Text(it) } },
-            )
-        }
-        item {
-            OutlinedTextField(
-                username,
-                { username = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("Username") },
-                singleLine = true,
-                isError = usernameError != null,
-                supportingText = { usernameError?.let { Text(it) } },
-            )
-        }
-        item {
-            OutlinedTextField(
-                password,
-                { password = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("Password") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                isError = passwordError != null,
-                supportingText = { passwordError?.let { Text(it) } },
-            )
-        }
-        if (formErrors.isNotEmpty()) {
-            item { ValidationErrorCard("Complete signup", formErrors) }
-        }
-        item {
-            PremiumButton(
-                onClick = {
-                    submitted = true
-                    if (firstName.isNotBlank() &&
-                        lastName.isNotBlank() &&
-                        isValidEmail(email.trim()) &&
-                        username.trim().length >= 3 &&
-                        password.length >= 8
-                    ) {
-                        scope.launch {
-                            mobileRepository.signup(
-                                role = role,
-                                email = email.trim(),
-                                username = username.trim(),
-                                password = password,
-                                firstName = firstName.trim(),
-                                lastName = lastName.trim(),
-                            )
-                        }
+        if (role == MobileRole.GYM_ADMIN) {
+            item {
+                PremiumCard {
+                    Text("Apply for a gym account", style = MaterialTheme.typography.titleMedium)
+                    Text("Gym accounts are created after your application has been reviewed. Complete the application on the One To One website.")
+                    PremiumButton(onClick = { uriHandler.openUri(mobileRepository.gymApplicationUrl()) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Open gym application")
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !authState.loading,
-            ) {
-                Text("Create ${roleLabel(role)} account")
+                }
+            }
+        } else {
+            item {
+                OutlinedTextField(
+                    firstName,
+                    { firstName = it },
+                    Modifier.fillMaxWidth(),
+                    label = { Text("First name") },
+                    singleLine = true,
+                    isError = firstNameError != null,
+                    supportingText = { firstNameError?.let { Text(it) } },
+                )
+            }
+            item {
+                OutlinedTextField(
+                    lastName,
+                    { lastName = it },
+                    Modifier.fillMaxWidth(),
+                    label = { Text("Last name") },
+                    singleLine = true,
+                    isError = lastNameError != null,
+                    supportingText = { lastNameError?.let { Text(it) } },
+                )
+            }
+            item {
+                OutlinedTextField(
+                    email,
+                    { email = it },
+                    Modifier.fillMaxWidth(),
+                    label = { Text("Email") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    isError = emailError != null,
+                    supportingText = { emailError?.let { Text(it) } },
+                )
+            }
+            item {
+                OutlinedTextField(
+                    username,
+                    { username = it },
+                    Modifier.fillMaxWidth(),
+                    label = { Text("Username") },
+                    singleLine = true,
+                    isError = usernameError != null,
+                    supportingText = { usernameError?.let { Text(it) } },
+                )
+            }
+            item {
+                OutlinedTextField(
+                    password,
+                    { password = it },
+                    Modifier.fillMaxWidth(),
+                    label = { Text("Password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    isError = passwordError != null,
+                    supportingText = { passwordError?.let { Text(it) } },
+                )
+            }
+            if (formErrors.isNotEmpty()) {
+                item { ValidationErrorCard("Complete signup", formErrors) }
+            }
+            item {
+                PremiumButton(
+                    onClick = {
+                        submitted = true
+                        if (firstName.isNotBlank() &&
+                            lastName.isNotBlank() &&
+                            isValidEmail(email.trim()) &&
+                            username.trim().length >= 3 &&
+                            password.length >= 8
+                        ) {
+                            scope.launch {
+                                mobileRepository.signup(
+                                    role = role,
+                                    email = email.trim(),
+                                    username = username.trim(),
+                                    password = password,
+                                    firstName = firstName.trim(),
+                                    lastName = lastName.trim(),
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !authState.loading,
+                ) {
+                    Text("Create ${roleLabel(role)} account")
+                }
             }
         }
         authState.error?.let { item { EmptyStateCard("Signup issue", it) } }
@@ -451,8 +487,14 @@ private fun SignedInShell(
 ) {
     val user = authState.user ?: return
     val destinations = destinationsFor(user.role)
-    var route by remember(user.role) { mutableStateOf(destinations.first().key) }
-    var selectedDay by remember { mutableStateOf(LocalDate.now()) }
+    var route by rememberSaveable(user.id, user.role) { mutableStateOf(destinations.first().key) }
+    var selectedDayValue by rememberSaveable(user.id) { mutableStateOf(LocalDate.now().toString()) }
+    var selectedMonthValue by rememberSaveable(user.id) { mutableStateOf(YearMonth.now().toString()) }
+    var selectedClientId by rememberSaveable(user.id) { mutableStateOf<String?>(null) }
+    val selectedDay = LocalDate.parse(selectedDayValue)
+    BackHandler(enabled = route != destinations.first().key) {
+        route = when (route) { "day" -> "calendar"; "client" -> "clients"; else -> destinations.first().key }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -467,7 +509,7 @@ private fun SignedInShell(
                         BrandMark(modifier = Modifier.size(34.dp))
                         Column {
                         Text("One To One")
-                        Text(user.fullName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(user.fullName, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 },
@@ -479,7 +521,7 @@ private fun SignedInShell(
                     NavigationBarItem(
                         selected = route == item.key,
                         onClick = { route = item.key },
-                        icon = { Icon(item.icon, contentDescription = item.label) },
+                        icon = { Icon(item.icon, contentDescription = null) },
                         label = { Text(item.label) },
                     )
                 }
@@ -492,14 +534,18 @@ private fun SignedInShell(
                 repository = mobileRepository,
                 padding = padding,
                 demoMode = authState.demoMode,
+                month = YearMonth.parse(selectedMonthValue),
+                onMonthChange = { selectedMonthValue = it.toString() },
                 onOpenDay = { day ->
-                    selectedDay = day
+                    selectedDayValue = day.toString()
                     route = "day"
                 },
             )
             "train" -> TrainingScreen(mobileRepository, padding, authState.demoMode)
             "chat" -> ChatScreen(mobileRepository, padding, authState.demoMode)
-            "clients", "trainers", "requests" -> RoleListScreen(mobileRepository, user, route, padding, authState.demoMode)
+            "clients", "trainers", "requests" -> RoleListScreen(mobileRepository, user, route, padding, authState.demoMode,
+                onOpenClient = { id -> selectedClientId = id; route = "client" })
+            "client" -> selectedClientId?.let { id -> ClientRecordScreen(mobileRepository, id, padding, onBack = { route = "clients" }) }
             "more" -> MoreScreen(mobileRepository, user, padding)
             else -> HomeScreen(
                 repository = mobileRepository,
@@ -508,7 +554,7 @@ private fun SignedInShell(
                 demoMode = authState.demoMode,
                 onNavigate = { target ->
                     if (target == "day") {
-                        selectedDay = LocalDate.now()
+                        selectedDayValue = LocalDate.now().toString()
                     }
                     route = target
                 },
@@ -525,45 +571,44 @@ private fun HomeScreen(
     demoMode: Boolean,
     onNavigate: (String) -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
     var home by remember { mutableStateOf<HomeSummary?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(user, demoMode) {
+    var retry by remember { mutableStateOf(0) }
+    LaunchedEffect(user, demoMode, retry) {
+        error = null
         if (demoMode) {
-            home = HomeSummary("Demo mode: local assessment-safe preview.", 3, 1, listOf("Open day view", "Log training", "Ask coach"), emptyList())
+            home = HomeSummary("Sample workspace: explore a training day and log. Changes stay in this preview.", 3, 1, listOf("Open day view", "Log training", "Open Charlie helper"), emptyList())
         } else {
             try {
                 home = repository.home()
             } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
                 error = exception.message
             }
         }
     }
-    ContentState(home, error, padding) { data ->
+    ContentState(home, error, padding, onRetry = { retry++ }) { data ->
         item {
             PremiumCard(tonal = true) {
-                BrandMark()
+                Text("YOUR COACHING SPACE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 Text(roleLabel(user.role) + " home", style = MaterialTheme.typography.headlineMedium)
                 Text(data.headline)
-                if (user.role == MobileRole.TRAINER) StatusChip(if (user.trainerVerified) "VERIFIED" else "PENDING")
+                if (user.role == MobileRole.TRAINER) StatusChip(if (user.trainerVerified) "VERIFIED" else "NOT VERIFIED")
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                StatCard("Today", data.todayCount.toString(), "Items planned", Modifier.weight(1f))
-                StatCard("Done", data.todayCompleted.toString(), "Completed", Modifier.weight(1f))
+                if (data.relationshipCount != null) {
+                    StatCard(if (user.role == MobileRole.TRAINER) "Client links" else "Trainers", data.relationshipCount.toString(), if (user.role == MobileRole.TRAINER) "All relationships" else "Linked to your gym", Modifier.weight(1f))
+                    StatCard("Today", data.todayCount.toString(), "Your day plan", Modifier.weight(1f))
+                } else {
+                    StatCard("Today", data.todayCount.toString(), "Items planned", Modifier.weight(1f))
+                    StatCard("Done", data.todayCompleted.toString(), "Completed", Modifier.weight(1f))
+                }
             }
         }
         items(data.actions) { action ->
             ActionCard(action = action, onClick = { onNavigate(routeForAction(action, user.role)) })
-        }
-        if (user.role == MobileRole.CLIENT) {
-            item {
-                PremiumButton(onClick = { scope.launch { repository.logout() } }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null)
-                    Text("Logout")
-                }
-            }
         }
     }
 }
@@ -573,34 +618,49 @@ private fun DayScreen(repository: OneToOneMobileRepository, date: LocalDate, pad
     val scope = rememberCoroutineScope()
     var items by remember { mutableStateOf<List<DayItem>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var completing by remember { mutableStateOf(false) }
     fun load() {
         scope.launch {
+            error = null
             if (demoMode) {
                 items = listOf(DayItem("demo", "Strength session", "Demo lower body work", "TASK", false))
             } else {
                 try {
                     items = repository.day(date)
                 } catch (exception: Exception) {
+                    if (exception is CancellationException) throw exception
                     error = exception.message
                 }
             }
         }
     }
     LaunchedEffect(demoMode, date) { load() }
-    ContentState(items, error, padding) { data ->
-        item { SectionTitle(if (date == LocalDate.now()) "Today" else date.toString(), "Complete the work assigned for this day") }
+    ContentState(items, error, padding, onRetry = { load() }) { data ->
+        item { SectionTitle(if (date == LocalDate.now()) "Today" else date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.UK)), "Complete the work assigned for this day") }
         if (data.isEmpty()) item { EmptyStateCard("Clear day", "No tasks or sessions are scheduled.") }
         items(data) { item ->
             PremiumCard {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(item.title, fontWeight = FontWeight.SemiBold)
-                        Text(item.notes, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    Text(item.title, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                     StatusChip(if (item.completed) "COMPLETED" else item.type)
                 }
+                if (item.notes.isNotBlank()) Text(item.notes, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (!item.completed && !demoMode) {
-                    TextButton(onClick = { scope.launch { repository.complete(item.id); load() } }) {
+                    TextButton(enabled = !completing, onClick = {
+                        completing = true
+                        scope.launch {
+                            try {
+                                repository.complete(item.id)
+                                error = null
+                                load()
+                            } catch (exception: Exception) {
+                                if (exception is CancellationException) throw exception
+                                error = exception.message ?: "Unable to complete this item. Please try again."
+                            } finally {
+                                completing = false
+                            }
+                        }
+                    }) {
                         Text("Mark complete")
                     }
                 }
@@ -614,31 +674,45 @@ private fun CalendarScreen(
     repository: OneToOneMobileRepository,
     padding: PaddingValues,
     demoMode: Boolean,
+    month: YearMonth,
+    onMonthChange: (YearMonth) -> Unit,
     onOpenDay: (LocalDate) -> Unit,
 ) {
     var days by remember { mutableStateOf<List<CalendarDay>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(demoMode) {
+    var retry by remember { mutableStateOf(0) }
+    LaunchedEffect(demoMode, month, retry) {
+        error = null
+        days = null
         if (demoMode) {
-            days = (1..7).map { CalendarDay(LocalDate.now().plusDays(it.toLong() - 1).toString(), it % 3, it % 2) }
+            days = (1..month.lengthOfMonth()).map { day -> CalendarDay(month.atDay(day).toString(), if (day == LocalDate.now().dayOfMonth) 2 else 0, 0) }
         } else {
             try {
-                days = repository.month(YearMonth.now())
+                days = repository.month(month)
             } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
                 error = exception.message
             }
         }
     }
-    ContentState(days, error, padding) { data ->
-        item { SectionTitle("Calendar", "Tap any active day to open its day plan") }
-        items(data.filter { it.total > 0 }) { day ->
+    ContentState(days, error, padding, onRetry = { retry++ }) { data ->
+        item {
+            SectionTitle("Calendar", month.format(DateTimeFormatter.ofPattern("MMMM uuuu", Locale.UK)))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = { onMonthChange(month.minusMonths(1)) }) { Text("Previous") }
+                TextButton(onClick = { onMonthChange(YearMonth.now()) }) { Text("This month") }
+                TextButton(onClick = { onMonthChange(month.plusMonths(1)) }) { Text("Next") }
+            }
+        }
+        if (data.none { it.total > 0 }) item { EmptyStateCard("A clear month", "No work is scheduled. Open any date to see its day plan.") }
+        items(data, key = { it.date }) { day ->
             PremiumCard(
                 modifier = Modifier.clickable { onOpenDay(LocalDate.parse(day.date)) },
                 tonal = day.date == LocalDate.now().toString(),
             ) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(day.date, fontWeight = FontWeight.SemiBold)
-                    Text("${day.completed}/${day.total} complete")
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(LocalDate.parse(day.date).format(DateTimeFormatter.ofPattern("EEE, d MMM", Locale.UK)), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                    Text(if (day.total == 0) "Clear day" else "${day.completed}/${day.total} complete", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -649,26 +723,32 @@ private fun CalendarScreen(
 private fun TrainingScreen(repository: OneToOneMobileRepository, padding: PaddingValues, demoMode: Boolean) {
     val scope = rememberCoroutineScope()
     var logs by remember { mutableStateOf<List<TrainingLog>?>(null) }
-    var notes by remember { mutableStateOf("") }
+    var notes by rememberSaveable { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var submitted by remember { mutableStateOf(false) }
+    var saving by remember { mutableStateOf(false) }
+    var duration by rememberSaveable { mutableStateOf("45") }
+    val durationMinutes = duration.toIntOrNull()
+    val durationError = if (submitted && (durationMinutes == null || durationMinutes !in 1..1440)) "Enter a duration between 1 and 1440 minutes." else null
     val notesError = if (submitted && notes.isBlank()) "Add training notes before saving." else null
     fun load() {
         scope.launch {
+            error = null
             if (demoMode) {
                 logs = listOf(TrainingLog("demo", LocalDate.now().toString(), "Demo training log", 45))
             } else {
                 try {
                     logs = repository.training()
                 } catch (exception: Exception) {
+                    if (exception is CancellationException) throw exception
                     error = exception.message
                 }
             }
         }
     }
     LaunchedEffect(demoMode) { load() }
-    ContentState(logs, error, padding) { data ->
-        item { SectionTitle("Training logs", "Write progress back to the One To One database") }
+    ContentState(logs, error, padding, onRetry = { load() }) { data ->
+        item { SectionTitle("Training logs", "Record your training and progress") }
         item {
             PremiumCard(tonal = true) {
                 OutlinedTextField(
@@ -676,24 +756,45 @@ private fun TrainingScreen(repository: OneToOneMobileRepository, padding: Paddin
                     { notes = it },
                     Modifier.fillMaxWidth(),
                     label = { Text("Training notes") },
+                    enabled = !saving,
                     isError = notesError != null,
                     supportingText = { notesError?.let { Text(it) } },
                 )
                 notesError?.let { ValidationErrorCard("Complete log", listOf(it)) }
+                OutlinedTextField(
+                    duration,
+                    { duration = it.filter(Char::isDigit).take(4) },
+                    Modifier.fillMaxWidth(),
+                    label = { Text("Duration (minutes)") },
+                    enabled = !saving,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    isError = durationError != null,
+                    supportingText = { durationError?.let { Text(it) } },
+                )
                 PremiumButton(
                     onClick = {
                         submitted = true
-                        if (notes.isNotBlank()) {
+                        if (notes.isNotBlank() && durationMinutes != null && durationMinutes in 1..1440 && !saving) {
+                            saving = true
+                            val pendingNotes = notes.trim()
                             scope.launch {
-                                if (!demoMode) repository.addTrainingLog(notes.trim(), 45)
-                                notes = ""
-                                submitted = false
-                                load()
+                                try {
+                                    if (!demoMode) repository.addTrainingLog(pendingNotes, durationMinutes)
+                                    notes = ""
+                                    submitted = false
+                                    error = null
+                                    load()
+                                } catch (exception: Exception) {
+                                    if (exception is CancellationException) throw exception
+                                    error = exception.message ?: "Unable to save your training. Please try again."
+                                } finally {
+                                    saving = false
+                                }
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = notesError == null,
+                    enabled = !saving && notesError == null && durationError == null,
                 ) { Text("Save log") }
             }
         }
@@ -701,7 +802,7 @@ private fun TrainingScreen(repository: OneToOneMobileRepository, padding: Paddin
             PremiumCard {
                 Text(log.date, fontWeight = FontWeight.SemiBold)
                 Text(log.comments.ifBlank { "Training logged" })
-                Text("${log.durationMinutes} minutes", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(log.durationMinutes?.let { "$it minutes" } ?: "Duration not recorded", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -711,29 +812,32 @@ private fun TrainingScreen(repository: OneToOneMobileRepository, padding: Paddin
 private fun ChatScreen(repository: OneToOneMobileRepository, padding: PaddingValues, demoMode: Boolean) {
     val scope = rememberCoroutineScope()
     var messages by remember { mutableStateOf<List<ChatMessage>?>(null) }
-    var draft by remember { mutableStateOf("") }
+    var draft by rememberSaveable { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var submitted by remember { mutableStateOf(false) }
+    var sending by remember { mutableStateOf(false) }
     val draftError = if (submitted && draft.isBlank()) "Write a message before sending." else null
     fun load() {
         scope.launch {
+            error = null
             if (demoMode) {
                 messages = listOf(ChatMessage("ASSISTANT", "Demo coach ready."))
             } else {
                 try {
                     messages = repository.chatHistory()
                 } catch (exception: Exception) {
+                    if (exception is CancellationException) throw exception
                     error = exception.message
                 }
             }
         }
     }
     LaunchedEffect(demoMode) { load() }
-    ContentState(messages, error, padding) { data ->
-        item { SectionTitle("Coach chat", "Ask about today's training, calendar and next actions") }
+    ContentState(messages, error, padding, onRetry = { load() }) { data ->
+        item { SectionTitle("Charlie", "Your automated training assistant. Messages are separate from conversations with your trainer.") }
         items(data) { msg ->
             PremiumCard(tonal = msg.role.equals("ASSISTANT", true)) {
-                Text(if (msg.role.equals("USER", true)) "You" else "Coach", fontWeight = FontWeight.SemiBold)
+                Text(if (msg.role.equals("USER", true)) "You" else "Charlie", fontWeight = FontWeight.SemiBold)
                 Text(msg.content)
             }
         }
@@ -744,6 +848,7 @@ private fun ChatScreen(repository: OneToOneMobileRepository, padding: PaddingVal
                     { draft = it },
                     Modifier.fillMaxWidth(),
                     label = { Text("Message") },
+                    enabled = !sending,
                     isError = draftError != null,
                     supportingText = { draftError?.let { Text(it) } },
                 )
@@ -751,17 +856,27 @@ private fun ChatScreen(repository: OneToOneMobileRepository, padding: PaddingVal
                 PremiumButton(
                     onClick = {
                         submitted = true
-                        scope.launch {
-                            if (draft.isNotBlank()) {
-                                if (!demoMode) repository.sendChat(draft.trim())
-                                draft = ""
-                                submitted = false
-                                load()
+                        if (draft.isNotBlank() && !sending) {
+                            sending = true
+                            val pendingMessage = draft.trim()
+                            scope.launch {
+                                try {
+                                    if (!demoMode) repository.sendChat(pendingMessage)
+                                    draft = ""
+                                    submitted = false
+                                    error = null
+                                    load()
+                                } catch (exception: Exception) {
+                                    if (exception is CancellationException) throw exception
+                                    error = exception.message ?: "Unable to send your message. Please try again."
+                                } finally {
+                                    sending = false
+                                }
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = draftError == null,
+                    enabled = !sending && draftError == null,
                 ) { Text("Send") }
             }
         }
@@ -769,24 +884,32 @@ private fun ChatScreen(repository: OneToOneMobileRepository, padding: PaddingVal
 }
 
 @Composable
-private fun RoleListScreen(repository: OneToOneMobileRepository, user: MobileUser, route: String, padding: PaddingValues, demoMode: Boolean) {
+private fun RoleListScreen(repository: OneToOneMobileRepository, user: MobileUser, route: String, padding: PaddingValues, demoMode: Boolean, onOpenClient: (String) -> Unit) {
     var items by remember { mutableStateOf<List<RoleItem>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(user, route, demoMode) {
+    var retry by remember { mutableStateOf(0) }
+    var search by rememberSaveable(route) { mutableStateOf("") }
+    LaunchedEffect(user, route, demoMode, retry) {
+        error = null
+        items = null
         if (demoMode) {
-            items = listOf(RoleItem("demo", "Demo relationship", "Assessment preview", "ACTIVE"))
+            items = listOf(RoleItem("demo", "Demo relationship", "Sample coaching record", "ACTIVE"))
         } else {
             try {
-                items = repository.roleItems()
+                items = repository.roleItems(route)
             } catch (exception: Exception) {
+                if (exception is CancellationException) throw exception
                 error = exception.message
             }
         }
     }
-    ContentState(items, error, padding) { data ->
-        item { SectionTitle(route.replaceFirstChar { it.uppercase() }, "Role-specific One To One records") }
-        if (data.isEmpty()) item { EmptyStateCard("Nothing here yet", "Records will appear once the website database has linked data.") }
-        items(data) { row ->
+    ContentState(items, error, padding, onRetry = { retry++ }) { data ->
+        item { SectionTitle(if (route == "requests") "Your gym application" else route.replaceFirstChar { it.uppercase() }, if (route == "requests") "Application status for this account. Reviews are managed by platform staff." else "Coaching relationships linked to your account") }
+        item { OutlinedTextField(search, { search = it.take(100) }, Modifier.fillMaxWidth(), label = { Text("Search records") }, singleLine = true) }
+        val visible = data.filter { search.isBlank() || listOf(it.title, it.subtitle, it.status).any { field -> field.contains(search.trim(), ignoreCase = true) } }
+        if (data.isEmpty()) item { EmptyStateCard("Nothing here yet", if (route == "requests") "No application record is linked to this account." else "Your coaching relationships will appear here when they are linked to your account.") }
+        else if (visible.isEmpty()) item { EmptyStateCard("No matching records", "Try another name or clear your search."); TextButton(onClick = { search = "" }) { Text("Clear search") } }
+        items(visible, key = { it.id }) { row ->
             PremiumCard {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(Modifier.weight(1f)) {
@@ -795,6 +918,46 @@ private fun RoleListScreen(repository: OneToOneMobileRepository, user: MobileUse
                     }
                     StatusChip(row.status.ifBlank { "ACTIVE" })
                 }
+                if (user.role == MobileRole.TRAINER && !demoMode && row.id.toLongOrNull()?.let { it > 0 } == true) {
+                    TextButton(onClick = { onOpenClient(row.id) }) { Text("View client records") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClientRecordScreen(repository: OneToOneMobileRepository, clientId: String, padding: PaddingValues, onBack: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    var detail by remember(clientId) { mutableStateOf<MobileClientDetail?>(null) }
+    var error by remember(clientId) { mutableStateOf<String?>(null) }
+    var retry by remember(clientId) { mutableStateOf(0) }
+    LaunchedEffect(clientId, retry) {
+        error = null
+        try { detail = repository.clientDetail(clientId) }
+        catch (exception: Exception) {
+            if (exception is CancellationException) throw exception
+            error = exception.message
+        }
+    }
+    ContentState(detail, error, padding, onRetry = { retry++ }) { data ->
+        item { TextButton(onClick = onBack) { Text("Back to clients") } }
+        item {
+            PremiumCard(tonal = true) {
+                Text(data.name, style = MaterialTheme.typography.headlineSmall)
+                if (data.email.isNotBlank()) Text(data.email, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Coaching records", style = MaterialTheme.typography.titleMedium)
+                Text("Open the full workspace to manage sessions, plans and client messages. Website sign-in is required.")
+                PremiumButton(onClick = { uriHandler.openUri(repository.websiteUrl("/trainer/clients/$clientId")) }) { Text("Open full coaching workspace") }
+            }
+        }
+        item { SectionTitle("Recent training", "Latest saved logs for this client") }
+        if (data.logs.isEmpty()) item { EmptyStateCard("No training logs yet", "Saved training records will appear here.") }
+        items(data.logs, key = { it.id }) { log ->
+            PremiumCard {
+                Text(log.date, fontWeight = FontWeight.SemiBold)
+                Text(log.comments.ifBlank { "Training logged" })
+                Text(log.durationMinutes?.let { "$it minutes" } ?: "Duration not recorded", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -803,6 +966,8 @@ private fun RoleListScreen(repository: OneToOneMobileRepository, user: MobileUse
 @Composable
 private fun MoreScreen(repository: OneToOneMobileRepository, user: MobileUser, padding: PaddingValues) {
     val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+    var signingOut by remember { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = screenPadding(padding),
@@ -817,14 +982,48 @@ private fun MoreScreen(repository: OneToOneMobileRepository, user: MobileUser, p
         }
         item {
             PremiumCard {
-                Text("Privacy", fontWeight = FontWeight.SemiBold)
-                Text("The app stores the mobile session token encrypted and clears it on logout.")
+                Text("Account and support", fontWeight = FontWeight.SemiBold)
+                Text("Manage your profile and preferences on the One To One website. Website sign-in is required.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = { uriHandler.openUri(repository.websiteUrl("/profile")) }) { Text("Edit profile on website") }
+                TextButton(onClick = { uriHandler.openUri(repository.websiteUrl("/preferences/edit")) }) { Text("Preferences on website") }
+                if (user.role == MobileRole.TRAINER || user.role == MobileRole.GYM_ADMIN) {
+                    val connectionPath = if (user.role == MobileRole.TRAINER) "/trainer/gyms" else "/gym/admin/trainers/affiliations"
+                    TextButton(onClick = { uriHandler.openUri(repository.websiteUrl(connectionPath)) }) { Text("Gym connections on website") }
+                }
+                TextButton(onClick = { uriHandler.openUri(repository.websiteUrl("/support")) }) { Text("Contact support") }
+            }
+        }
+        if (user.role == MobileRole.TRAINER) {
+            item {
+                PremiumCard {
+                    Text("Professional review", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "View your latest review status, manage supporting documents and respond to reviewer questions on the website. Website sign-in is required.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(onClick = { uriHandler.openUri(repository.websiteUrl("/trainer/verification")) }) {
+                        Text("Open professional review on website")
+                    }
+                }
             }
         }
         item {
-            PremiumButton(onClick = { scope.launch { repository.logout() } }, modifier = Modifier.fillMaxWidth()) {
+            PremiumCard {
+                Text("Your privacy", fontWeight = FontWeight.SemiBold)
+                Text("Sign out when you finish using a shared phone. Your training records stay with your account.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = { uriHandler.openUri(repository.websiteUrl("/policies/privacy")) }) { Text("Read privacy policy") }
+                TextButton(onClick = { uriHandler.openUri(repository.websiteUrl("/policies/terms")) }) { Text("Read terms") }
+            }
+        }
+        item {
+            PremiumButton(onClick = {
+                signingOut = true
+                scope.launch {
+                    try { repository.logout() } finally { signingOut = false }
+                }
+            }, enabled = !signingOut, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null)
-                Text("Logout")
+                Text(if (signingOut) "Signing out…" else "Sign out")
             }
         }
     }
@@ -835,6 +1034,7 @@ private fun <T> ContentState(
     data: T?,
     error: String?,
     padding: PaddingValues,
+    onRetry: (() -> Unit)? = null,
     content: LazyListScope.(T) -> Unit,
 ) {
     if (data == null && error == null) {
@@ -847,8 +1047,15 @@ private fun <T> ContentState(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (error != null) {
-            item { EmptyStateCard("Server issue", error) }
-        } else if (data != null) {
+            item {
+                PremiumCard(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+                    Text("Unable to load", style = MaterialTheme.typography.titleMedium)
+                    Text(error, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    onRetry?.let { retry -> TextButton(onClick = retry) { Text("Try again") } }
+                }
+            }
+        }
+        if (data != null) {
             content(data)
         }
     }
@@ -863,25 +1070,27 @@ private fun screenPadding(padding: PaddingValues): PaddingValues =
     )
 
 private fun destinationsFor(role: MobileRole): List<NavItem> = when (role) {
+    MobileRole.UNKNOWN -> listOf(NavItem("more", "Account", Icons.Outlined.Settings))
     MobileRole.TRAINER -> listOf(
         NavItem("home", "Home", Icons.Outlined.Home),
         NavItem("clients", "Clients", Icons.Outlined.People),
         NavItem("calendar", "Calendar", Icons.Outlined.CalendarMonth),
-        NavItem("chat", "Chat", Icons.AutoMirrored.Outlined.Chat),
-        NavItem("more", "More", Icons.Outlined.Settings),
+        NavItem("chat", "Charlie", Icons.AutoMirrored.Outlined.Chat),
+        NavItem("more", "Account", Icons.Outlined.Settings),
     )
     MobileRole.GYM_ADMIN -> listOf(
         NavItem("home", "Home", Icons.Outlined.Home),
         NavItem("trainers", "Trainers", Icons.Outlined.People),
-        NavItem("requests", "Requests", Icons.AutoMirrored.Outlined.ListAlt),
+        NavItem("requests", "Status", Icons.AutoMirrored.Outlined.ListAlt),
         NavItem("calendar", "Calendar", Icons.Outlined.CalendarMonth),
-        NavItem("more", "More", Icons.Outlined.Settings),
+        NavItem("more", "Account", Icons.Outlined.Settings),
     )
     else -> listOf(
         NavItem("home", "Home", Icons.Outlined.Home),
         NavItem("calendar", "Calendar", Icons.Outlined.CalendarMonth),
         NavItem("train", "Train", Icons.Outlined.FitnessCenter),
-        NavItem("chat", "Chat", Icons.AutoMirrored.Outlined.Chat),
+        NavItem("chat", "Charlie", Icons.AutoMirrored.Outlined.Chat),
+        NavItem("more", "Account", Icons.Outlined.Settings),
     )
 }
 
@@ -923,22 +1132,23 @@ private fun ActionCard(action: String, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(action, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+            Text(action, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
             Text("Open", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
-private fun routeForAction(action: String, role: MobileRole): String {
+internal fun routeForAction(action: String, role: MobileRole): String {
     val normalised = action.lowercase()
     return when {
         "day" in normalised -> "day"
-        "log" in normalised || "train" in normalised -> "train"
-        "coach" in normalised || "message" in normalised || "chat" in normalised -> "chat"
-        "calendar" in normalised -> "calendar"
-        "client" in normalised -> "clients"
-        "request" in normalised -> "requests"
         "trainer" in normalised && role == MobileRole.GYM_ADMIN -> "trainers"
+        "client" in normalised && role == MobileRole.TRAINER -> "clients"
+        ("request" in normalised || "application" in normalised) && role == MobileRole.GYM_ADMIN -> "requests"
+        "account" in normalised -> "more"
+        "log" in normalised || "train" in normalised -> "train"
+        "charlie" in normalised || "coach" in normalised || "message" in normalised || "chat" in normalised -> "chat"
+        "calendar" in normalised || "session" in normalised || "plan" in normalised -> "calendar"
         else -> "home"
     }
 }

@@ -26,6 +26,9 @@ class DailyNutritionLogServiceImplTest {
     @Mock
     private DailyNutritionLogRepository repository;
 
+    @Mock private uk.ac.cf._5.group14.One_To_One.Users.UserRepository users;
+    @Mock private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private DailyNutritionLogServiceImpl service;
 
@@ -86,5 +89,17 @@ class DailyNutritionLogServiceImplTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).summaryText()).contains("Calories");
+    }
+
+    @Test
+    void invalidNotesAreRejectedBeforeAnExistingEntryCanBeMutated() {
+        User user = new User(); user.setId(3L);
+        DailyNutritionLog existing = new DailyNutritionLog(); existing.setCalories(1900);
+        org.mockito.Mockito.lenient().when(repository.findByUserAndDate(eq(user), any(LocalDate.class)))
+                .thenReturn(java.util.Optional.of(existing));
+        var invalid = new DailyNutritionLogService.UpsertRequest(2100, 120, 200, 65, null, null, "x".repeat(1001));
+        assertThrows(IllegalArgumentException.class, () -> service.upsert(user, LocalDate.now(), invalid));
+        assertThat(existing.getCalories()).isEqualTo(1900);
+        org.mockito.Mockito.verifyNoInteractions(repository);
     }
 }

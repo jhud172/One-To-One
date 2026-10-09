@@ -235,15 +235,20 @@
                                 </div>
                             </div>
 
-                            <div th:if="${waitlistSuccess}" class="devlogin-flash-ok" th:text="${waitlistSuccess}"></div>
-                            <div th:if="${waitlistError}" class="devlogin-flash-err" th:text="${waitlistError}"></div>
+                            <div th:if="${waitlistSuccess}" class="devlogin-flash-ok" role="status" th:text="${waitlistSuccess}"></div>
+                            <div th:if="${waitlistError}" id="waitlist-error" class="devlogin-flash-err" role="alert" th:text="${waitlistError}"></div>
 
                             <form th:action="@{/dev-mode/waitlist}" method="post" class="devlogin-waitlist-form">
                                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                                 <p class="devlogin-waitlist-caption" th:text="#{ui.01148}">One email when the live platform is ready. No spam.</p>
                                 <div class="devlogin-waitlist-row">
+                                    <label for="waitlist-email" class="sr-only" th:text="#{ui.01149}">Enter your email address</label>
                                     <input type="email"
+                                           id="waitlist-email"
                                            name="email"
+                                           maxlength="255"
+                                           th:value="${waitlistDraft}"
+                                           th:attr="aria-invalid=${waitlistError != null},aria-describedby=${waitlistError != null ? 'waitlist-error' : null}"
                                            required
                                            autocomplete="email"
                                            placeholder="Enter your email address"

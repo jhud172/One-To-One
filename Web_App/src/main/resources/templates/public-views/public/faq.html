@@ -76,8 +76,16 @@
                        aria-atomic="true">5 / 5</p>
                 </div>
 
+                <nav class="guest-faq__topics" aria-labelledby="faq-search-heading" hidden>
+                    <button type="button" data-faq-topic="all" aria-pressed="true" th:text="#{ui.00485}">All</button>
+                    <button type="button" data-faq-topic="verification" aria-pressed="false" th:text="#{ui.02987}">Verification</button>
+                    <button type="button" data-faq-topic="charlie" aria-pressed="false" th:text="#{ui.02943}">Charlie</button>
+                    <button type="button" data-faq-topic="payments" aria-pressed="false" th:text="#{ui.00830}">Payments</button>
+                    <button type="button" data-faq-topic="trainers" aria-pressed="false" th:text="#{ui.00269}">Trainers</button>
+                    <button type="button" data-faq-topic="privacy" aria-pressed="false" th:text="#{ui.02982}">Privacy</button>
+                </nav>
                 <div id="faq-list" class="guest-faq__list">
-                    <details class="faq-item guest-faq__item" data-faq-item>
+                    <details id="trainer-verification" class="faq-item guest-faq__item" data-faq-item data-faq-category="verification">
                         <summary>
                             <span class="guest-faq__index" aria-hidden="true">01</span>
                             <span class="guest-faq__question" th:text="#{ui.01553}">How are trainers verified?</span>
@@ -95,7 +103,7 @@
                         <p th:text="#{ui.01554}">Each trainer profile is manually reviewed for credentials and compliance before being listed as verified.</p>
                     </details>
 
-                    <details class="faq-item guest-faq__item" data-faq-item>
+                    <details id="charlie-and-coaching" class="faq-item guest-faq__item" data-faq-item data-faq-category="charlie">
                         <summary>
                             <span class="guest-faq__index" aria-hidden="true">02</span>
                             <span class="guest-faq__question" th:text="#{ui.01555}">What is the difference between Charlie and a real trainer?</span>
@@ -113,7 +121,7 @@
                         <p th:text="#{ui.01556}">Charlie offers immediate platform and training guidance. A verified trainer provides individual programming, direct feedback and human accountability.</p>
                     </details>
 
-                    <details class="faq-item guest-faq__item" data-faq-item>
+                    <details id="platform-payments" class="faq-item guest-faq__item" data-faq-item data-faq-category="payments">
                         <summary>
                             <span class="guest-faq__index" aria-hidden="true">03</span>
                             <span class="guest-faq__question" th:text="#{ui.01557}">How do payments work?</span>
@@ -131,7 +139,7 @@
                         <p th:text="#{ui.01558}">Platform and coaching payments are handled through One To One. Charges, refunds and subscription changes are recorded in your account history.</p>
                     </details>
 
-                    <details class="faq-item guest-faq__item" data-faq-item>
+                    <details id="switching-trainers" class="faq-item guest-faq__item" data-faq-item data-faq-category="trainers">
                         <summary>
                             <span class="guest-faq__index" aria-hidden="true">04</span>
                             <span class="guest-faq__question" th:text="#{ui.01559}">Can I switch trainers?</span>
@@ -149,7 +157,7 @@
                         <p th:text="#{ui.01560}">Yes. A client can have one active trainer at a time and may change that relationship through the coaching management journey.</p>
                     </details>
 
-                    <details class="faq-item guest-faq__item" data-faq-item>
+                    <details id="privacy-and-data" class="faq-item guest-faq__item" data-faq-item data-faq-category="privacy">
                         <summary>
                             <span class="guest-faq__index" aria-hidden="true">05</span>
                             <span class="guest-faq__question" th:text="#{ui.01561}">How is my data handled?</span>
@@ -190,6 +198,7 @@
                     <p class="guest-lead" th:text="#{ui.01566}">Tell us which page or action is involved and what you expected to happen.</p>
                     <div class="guest-actions">
                         <a th:href="@{/support}"
+                           data-faq-support
                            class="guest-action guest-action--primary"
                            th:text="#{ui.01470}">Contact support</a>
                         <a th:href="@{/policies/privacy}"

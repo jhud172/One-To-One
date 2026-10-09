@@ -5,6 +5,10 @@ public class NoteUpdateRequest {
     private String content;
     private Long folderId;
     private String colour;
+    private String revision;
+
+    public String getRevision() { return revision; }
+    public void setRevision(String revision) { this.revision = revision; }
 
     public String getTitle() {
         return title;

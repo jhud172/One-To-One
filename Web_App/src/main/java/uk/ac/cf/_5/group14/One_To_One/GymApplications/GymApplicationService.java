@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import jakarta.persistence.EntityManager;
 
 @Service
 @Slf4j
@@ -35,6 +36,7 @@ public class GymApplicationService {
     private final GymProfileService gymProfileService;
     private final EmailVerificationService emailVerificationService;
     private final EmailService emailService;
+    private final EntityManager entities;
 
     @Value("${app.site.base-url:https://crystal-production.com}")
     private String baseUrl;
@@ -46,7 +48,7 @@ public class GymApplicationService {
                                  UserService userService,
                                  GymProfileService gymProfileService,
                                  EmailVerificationService emailVerificationService,
-                                 EmailService emailService) {
+                                 EmailService emailService, EntityManager entities) {
         this.gymApplicationRepository = gymApplicationRepository;
         this.gymApplicationMessageRepository = gymApplicationMessageRepository;
         this.passwordEncoder = passwordEncoder;
@@ -55,6 +57,7 @@ public class GymApplicationService {
         this.gymProfileService = gymProfileService;
         this.emailVerificationService = emailVerificationService;
         this.emailService = emailService;
+        this.entities = entities;
     }
 
     @Transactional
@@ -73,13 +76,14 @@ public class GymApplicationService {
 
         GymApplication saved = gymApplicationRepository.save(application);
 
-        addSystemMessage(saved, "Application received",
+        GymApplicationMessage received = addSystemMessage(saved, "Application received",
             "Your gym application has been submitted for review. We will contact you if we need more information.");
-        sendApplicationEmail(saved,
+        received.setEmailed(tryApplicationEmail(saved,
             "Your 1 to 1 gym application is under review",
             buildApplicantEmailBody(saved,
                 "We have received your gym application and placed it into the review queue.",
-                "You can review the application status and reply with more information here: " + buildPortalUrl(saved)));
+                "You can review the application status and reply with more information here: " + buildPortalUrl(saved))));
+        gymApplicationMessageRepository.save(received);
 
         return saved;
     }
@@ -109,6 +113,7 @@ public class GymApplicationService {
     }
 
     public GymApplication getApplicationByAccessToken(String accessToken) {
+        if (accessToken == null || accessToken.isBlank() || accessToken.length() > 120) throw new IllegalArgumentException("Gym application not found.");
         return gymApplicationRepository.findByAccessToken(accessToken)
             .orElseThrow(() -> new IllegalArgumentException("Gym application not found."));
     }
@@ -119,7 +124,9 @@ public class GymApplicationService {
 
     @Transactional
     public GymApplication markUnderReview(Long applicationId, User reviewer, String notes) {
-        GymApplication application = getApplication(applicationId);
+        requireReviewer(reviewer);
+        validateText(notes, 5000, false, "Review notes");
+        GymApplication application = reviewableApplication(applicationId);
         application.setStatus(GymApplicationStatus.UNDER_REVIEW);
         application.setReviewedAt(Instant.now());
         application.setReviewedByUserId(reviewer == null ? null : reviewer.getId());
@@ -129,6 +136,7 @@ public class GymApplicationService {
 
     @Transactional
     public GymApplication requestMoreInfo(Long applicationId, User reviewer, String subject, String message) {
+        validateMessage(subject, message);
         GymApplication application = markUnderReview(applicationId, reviewer, null);
         application.setStatus(GymApplicationStatus.NEEDS_INFO);
         gymApplicationRepository.save(application);
@@ -138,7 +146,10 @@ public class GymApplicationService {
 
     @Transactional
     public GymApplication decline(Long applicationId, User reviewer, String subject, String message, String reviewNotes) {
-        GymApplication application = getApplication(applicationId);
+        requireReviewer(reviewer);
+        validateMessage(subject, message);
+        validateText(reviewNotes, 5000, false, "Review notes");
+        GymApplication application = reviewableApplication(applicationId);
         application.setStatus(GymApplicationStatus.DECLINED);
         application.setReviewedAt(Instant.now());
         application.setReviewedByUserId(reviewer == null ? null : reviewer.getId());
@@ -150,7 +161,13 @@ public class GymApplicationService {
 
     @Transactional
     public GymApplication approve(Long applicationId, User reviewer, String welcomeMessage) {
-        GymApplication application = getApplication(applicationId);
+        requireReviewer(reviewer);
+        validateText(welcomeMessage, 5000, false, "Approval note");
+        GymApplication application = lockedApplication(applicationId);
+        if (application.getStatus() == GymApplicationStatus.APPROVED && application.getApprovedUserId() != null) return application;
+        if (application.getStatus() == GymApplicationStatus.DECLINED || application.getStatus() == GymApplicationStatus.APPROVED) {
+            throw new IllegalStateException("This application is already closed.");
+        }
         if (userRepository.existsByEmailIgnoreCase(application.getAdminEmail())) {
             throw new IllegalStateException("This gym email already belongs to an existing account.");
         }
@@ -205,13 +222,16 @@ public class GymApplicationService {
                 + "\n\nVerify your email to complete access."
                 + (trimToNull(welcomeMessage) == null ? "" : "\n\n" + welcomeMessage)
         );
-        sendApplicationEmail(application, "Your 1 to 1 gym application was approved", body);
-        addSystemMessage(application, "Application approved", body);
+        GymApplicationMessage approval = addSystemMessage(application, "Application approved", body);
+        approval.setEmailed(tryApplicationEmail(application, "Your 1 to 1 gym application was approved", body));
+        gymApplicationMessageRepository.save(approval);
         return application;
     }
 
     @Transactional
     public GymApplicationMessage addAdminMessage(GymApplication application, User sender, String subject, String message) {
+        requireReviewer(sender);
+        validateMessage(subject, message);
         String cleanSubject = trimToNull(subject);
         String cleanMessage = trimToNull(message);
         if (cleanMessage == null) {
@@ -235,6 +255,7 @@ public class GymApplicationService {
 
     @Transactional
     public GymApplicationMessage addApplicantReply(String accessToken, String message) {
+        validateText(message, 5000, true, "Reply");
         GymApplication application = getApplicationByAccessToken(accessToken);
         if (application.getStatus() == GymApplicationStatus.APPROVED || application.getStatus() == GymApplicationStatus.DECLINED) {
             throw new IllegalStateException("This application is already closed.");
@@ -271,6 +292,47 @@ public class GymApplicationService {
 
     private void sendApplicationEmail(GymApplication application, String subject, String body) {
         emailService.sendAdminMessage(application.getAdminEmail(), subject, body);
+    }
+
+    private boolean tryApplicationEmail(GymApplication application, String subject, String body) {
+        try { sendApplicationEmail(application, subject, body); return true; }
+        catch (RuntimeException unavailable) {
+            log.warn("Application {} saved, but its notification was not accepted by the email provider", application.getId());
+            return false;
+        }
+    }
+
+    private GymApplication lockedApplication(Long id) {
+        GymApplication application = gymApplicationRepository.findLockedById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Gym application not found."));
+        entities.refresh(application);
+        return application;
+    }
+
+    private GymApplication reviewableApplication(Long id) {
+        GymApplication application = lockedApplication(id);
+        if (application.getStatus() == GymApplicationStatus.APPROVED || application.getStatus() == GymApplicationStatus.DECLINED) {
+            throw new IllegalStateException("This application is already closed.");
+        }
+        return application;
+    }
+
+    private void requireReviewer(User reviewer) {
+        if (reviewer == null || reviewer.getId() == null || (reviewer.getRole() != Role.PLATFORM_ADMIN && reviewer.getRole() != Role.SUPER_ADMIN)) {
+            throw new IllegalArgumentException("Access denied.");
+        }
+    }
+
+    private void validateMessage(String subject, String message) {
+        validateText(subject, 200, false, "Subject");
+        if (subject != null && (subject.contains("\r") || subject.contains("\n"))) throw new IllegalArgumentException("Use a single-line subject.");
+        validateText(message, 5000, true, "Message");
+    }
+
+    private void validateText(String text, int limit, boolean required, String label) {
+        if ((required && (text == null || text.isBlank())) || (text != null && text.length() > limit)) {
+            throw new IllegalArgumentException(label + " must contain " + (required ? "1" : "0") + "–" + limit + " characters.");
+        }
     }
 
     private String buildApplicantEmailBody(GymApplication application, String headline, String detail) {

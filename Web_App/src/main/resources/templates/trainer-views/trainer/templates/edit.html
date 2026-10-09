@@ -1,130 +1,70 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02777}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        <div th:if="${error} == 'trainer-unverified'" class="mb-4 rounded-2xl border border-amber-200/30 bg-amber-500/10 p-4 text-sm text-amber-200" th:text="#{ui.02758}">
-            Your trainer account needs verification before you can manage templates.
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02759}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content" class="client-workspace-v2 library-exercise-v2 schedule-library-v2 schedule-editor-v2">
+    <header class="detail-header">
+        <div class="detail-header-content"><div><p class="library-resource-label" th:text="#{ui.schedule.templateResource}"></p><h1 class="detail-title" th:text="${template.id == null} ? #{ui.02780} : #{ui.02759}"></h1><p class="detail-subtitle" th:text="#{ui.schedule.editorHint}"></p></div>
+            <div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/trainer/templates(q=${query},page=${libraryPage})} + ${template.id == null ? '' : '#schedule-template-' + template.id}" th:text="#{ui.00668}"></a><a th:if="${template.id != null and !template.archived}" class="detail-btn-primary" th:href="@{/trainer/templates/{id}/apply(id=${template.id},q=${query},page=${libraryPage})}" th:text="#{ui.00925}"></a></div>
         </div>
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02752}">Trainer toolkit</p>
-                <h1 class="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100" th:text="${template.id != null ? 'Edit template' : 'Create template'}">Edit template</h1>
-            </div>
-            <div class="flex gap-2">
-                <a th:href="@{/trainer/templates}" class="inline-flex items-center rounded-xl border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.00668}">Back to list</a>
-                <a th:if="${template.id != null}" th:href="@{/trainer/templates/{id}/apply(id=${template.id})}"
-                   class="inline-flex items-center rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800" th:text="#{ui.00925}">Apply</a>
-            </div>
+        <p th:if="${templateSaved}" class="checkin-feedback" role="status" th:text="#{preferences.saved}"></p><p th:if="${scheduleOrderSaved}" class="checkin-feedback" role="status" th:text="#{ui.library.orderSaved}"></p><p th:if="${scheduleOrderError}" class="profile-editor-errors" role="alert" th:text="#{ui.library.orderError}"></p>
+        <nav th:if="${template.id != null}" class="connection-actions schedule-editor-navigation" th:aria-label="#{ui.library.resourceActions}"><a class="detail-btn-secondary" href="#schedule-metadata" th:text="#{ui.02759}"></a><a class="detail-btn-secondary" href="#schedule-entries" th:text="#{ui.02763}"></a><a class="detail-btn-secondary" href="#schedule-questions" th:text="#{ui.02772}"></a><a class="detail-btn-secondary" href="#schedule-week-preview" th:text="#{ui.library.clientPreview}"></a></nav>
+    </header>
+    <form id="schedule-metadata" class="profile-editor-form library-programme-form" data-library-draft th:object="${metadataForm}" method="post" th:action="${template.id == null} ? @{/trainer/templates/create(q=${query},page=${libraryPage})} : @{/trainer/templates/{id}/edit(id=${template.id},q=${query},page=${libraryPage})}">
+        <input th:if="${template.id != null}" type="hidden" th:field="*{expectedRevision}">
+        <div th:if="${#fields.hasAnyErrors()}" id="schedule-metadata-errors" class="profile-editor-errors" role="alert"><h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.schedule.metadataInvalid}"></p><ul>
+            <li th:if="${#fields.hasErrors('name')}"><a href="#templateName" th:text="#{ui.02760}"></a></li><li th:if="${#fields.hasErrors('tags')}"><a href="#templateTags" th:text="#{ui.02761}"></a></li><li th:if="${#fields.hasErrors('description')}"><a href="#templateDescription" th:text="#{ui.00113}"></a></li>
+        </ul></div>
+        <section th:if="${scheduleConflict}" class="detail-section schedule-metadata-conflict" role="alert" aria-labelledby="schedule-conflict-title"><h2 id="schedule-conflict-title" class="detail-section-title" th:text="#{ui.schedule.metadataChanged}"></h2><p th:text="#{ui.schedule.conflictHelp}"></p><h3 dir="auto" th:text="${latestTemplate.name}"></h3><p dir="auto" th:text="${latestTemplate.tags}"></p><p class="plan-coaching-note" dir="auto" th:text="${latestTemplate.description}"></p><p th:text="${latestTemplate.archived} ? #{ui.00592} : #{ui.00134}"></p></section>
+        <div class="library-exercise-editor-layout">
+            <fieldset class="detail-section library-exercise-fields"><legend class="detail-section-title" th:text="#{ui.02759}"></legend>
+                <label for="templateName" th:text="#{ui.02760}"></label><input id="templateName" dir="auto" type="text" required maxlength="200" th:field="*{name}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('name')},aria-describedby=${#fields.hasErrors('name') ? 'schedule-metadata-errors' : null}">
+                <label for="templateTags" th:text="#{ui.02761}"></label><input id="templateTags" dir="auto" type="text" maxlength="500" th:field="*{tags}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('tags')},aria-describedby=${#fields.hasErrors('tags') ? 'schedule-metadata-errors' : null}">
+                <label for="templateDescription" th:text="#{ui.00113}"></label><textarea id="templateDescription" dir="auto" rows="4" maxlength="800" th:field="*{description}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('description')},aria-describedby=${#fields.hasErrors('description') ? 'schedule-metadata-errors' : null}"></textarea>
+                <label th:if="${template.id != null}" class="profile-editor-visibility"><input type="checkbox" th:field="*{archived}"><span th:text="#{ui.02762}"></span></label>
+            </fieldset>
+            <section class="detail-section library-exercise-preview" aria-labelledby="schedule-draft-title"><h2 id="schedule-draft-title" class="detail-section-title" th:text="#{ui.library.previewTitle}"></h2><p class="detail-subtitle" th:text="#{ui.schedule.metadataPreviewHint}"></p><h3 data-library-preview="name" dir="auto" th:text="${metadataForm.name}"></h3><p data-library-preview="tags" dir="auto" th:text="${metadataForm.tags}"></p><p class="library-preview-text" role="region" th:aria-label="#{ui.00113}" th:tabindex="${#strings.isEmpty(metadataForm.description) ? -1 : 0}" data-library-preview="description" dir="auto" th:text="${metadataForm.description}"></p></section>
         </div>
-
-        <section class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
-            <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02759}">Template details</h2>
-            <form class="mt-4 grid gap-3"
-                th:action="${template.id != null} ? @{/trainer/templates/{id}/edit(id=${template.id})} : @{/trainer/templates/create}"
-                method="post">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <input name="name" placeholder="Template name" required class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-                       th:value="${template.name}" th:placeholder="#{ui.02760}">
-                <input name="tags" placeholder="Tags (comma-separated)" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-                       th:value="${template.tags}" th:placeholder="#{ui.02761}">
-                <textarea name="description" rows="3" placeholder="Description" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
-                          th:text="${template.description}" th:placeholder="#{ui.00113}"></textarea>
-                <label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                    <input type="checkbox" name="archived" th:checked="${template.archived}">
-                    <th:block th:text="#{ui.02762}">Archive template</th:block>
-                </label>
-                <div class="flex justify-end">
-                    <button type="submit" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.00109}">Save</button>
+        <div class="connection-actions"><button type="submit" class="detail-btn-primary" th:text="${scheduleConflict} ? #{ui.library.saveReviewedDraft} : #{ui.00109}"></button><a class="detail-btn-secondary" th:href="@{/trainer/templates(q=${query},page=${libraryPage})} + ${template.id == null ? '' : '#schedule-template-' + template.id}" th:text="#{ui.00125}"></a></div>
+    </form>
+    <th:block th:if="${template.id != null}">
+        <div class="workout-composition-sections" id="schedule-entries">
+            <section class="detail-section"><h2 class="detail-section-title" th:text="#{ui.02763}"></h2><p class="detail-subtitle" th:text="#{ui.schedule.sequenceHint}"></p><p th:if="${#lists.isEmpty(entries)}" class="detail-empty" th:text="#{ui.02764}"></p>
+                <ol class="workout-item-list"><li th:each="entry, position : ${entries}" class="workout-item-card" th:id="${'schedule-entry-' + entry.id}">
+                    <p class="library-resource-label" th:text="#{ui.library.sequenceStep(${position.count},${#lists.size(entries)})}"></p><h3 dir="auto" th:text="${entry.title}"></h3><p><span th:text="${weekdays[entry.dayOfWeek]}"></span> · <span th:text="${entry.type.name() == 'WORKOUT'} ? #{ui.02748} : (${entry.type.name() == 'NOTE'} ? #{ui.02173} : #{ui.01637})"></span></p><p th:if="${entry.timeWindowStart != null}"><span th:text="${entry.timeWindowStart}"></span><span th:if="${entry.timeWindowEnd != null}" th:text="${' – ' + entry.timeWindowEnd}"></span></p><p class="plan-coaching-note" dir="auto" th:text="${entry.defaultsJson}"></p>
+                    <div class="connection-actions">
+                        <form method="post" th:action="@{/trainer/templates/{id}/entries/{entryId}/move(id=${template.id},entryId=${entry.id},q=${query},page=${libraryPage})}"><input type="hidden" name="direction" value="UP"><button class="detail-btn-secondary" type="submit" th:disabled="${position.first}" th:aria-label="#{ui.library.moveEarlier} + ' ' + ${entry.title} + ' · ' + #{ui.library.sequenceStep(${position.count},${#lists.size(entries)})}" th:text="#{ui.library.moveEarlier}"></button></form>
+                        <form method="post" th:action="@{/trainer/templates/{id}/entries/{entryId}/move(id=${template.id},entryId=${entry.id},q=${query},page=${libraryPage})}"><input type="hidden" name="direction" value="DOWN"><button class="detail-btn-secondary" type="submit" th:disabled="${position.last}" th:aria-label="#{ui.library.moveLater} + ' ' + ${entry.title} + ' · ' + #{ui.library.sequenceStep(${position.count},${#lists.size(entries)})}" th:text="#{ui.library.moveLater}"></button></form>
+                        <form method="post" th:action="@{/trainer/templates/{id}/entries/{entryId}/delete(id=${template.id},entryId=${entry.id},q=${query},page=${libraryPage})}"><button class="detail-btn-destructive" type="submit" th:aria-label="#{ui.00801} + ' ' + ${entry.title}" th:text="#{ui.00801}"></button></form>
+                    </div>
+                </li></ol>
+            </section>
+            <form class="detail-section profile-editor-form workout-prescription-form" data-library-draft th:object="${entryForm}" method="post" th:action="@{/trainer/templates/{id}/entries(id=${template.id},q=${query},page=${libraryPage})}">
+                <div th:if="${#fields.hasAnyErrors()}" id="schedule-entry-errors" class="profile-editor-errors" role="alert"><h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.schedule.entryInvalid}"></p><ul><li th:if="${#fields.hasErrors('dayOfWeek')}"><a href="#entryDay" th:text="#{ui.02747}"></a></li><li th:if="${#fields.hasErrors('type')}"><a href="#entryType" th:text="#{ui.00623}"></a></li><li th:if="${#fields.hasErrors('timeWindowStart')}"><a href="#entryStart" th:text="#{ui.schedule.startTime}"></a></li><li th:if="${#fields.hasErrors('timeWindowEnd')}"><a href="#entryEnd" th:text="#{ui.schedule.endTime}"></a></li><li th:if="${#fields.hasErrors('title')}"><a href="#entryTitle" th:text="#{ui.00583}"></a></li><li th:if="${#fields.hasErrors('defaultsJson')}"><a href="#entryNotes" th:text="#{ui.02767}"></a></li><li th:if="${#fields.hasErrors('intensityLabel')}"><a href="#entryIntensityLabel" th:text="#{ui.02768}"></a></li><li th:if="${#fields.hasErrors('intensityLevel')}"><a href="#entryIntensityLevel" th:text="#{ui.02769}"></a></li><li th:if="${#fields.hasErrors('exerciseId')}"><a href="#entryExercise" th:text="#{ui.02770}"></a></li><li th:if="${#fields.hasErrors('customExerciseId')}"><a href="#entryCustomExercise" th:text="#{ui.02771}"></a></li></ul></div>
+                <fieldset><legend class="detail-section-title" th:text="#{ui.02765}"></legend><div class="profile-editor-fields">
+                    <div><label for="entryDay" th:text="#{ui.02747}"></label><select id="entryDay" required th:field="*{dayOfWeek}" th:attr="aria-invalid=${#fields.hasErrors('dayOfWeek')}"><option value="" th:text="#{ui.02747}"></option><option th:each="day : ${weekdays}" th:value="${day.key}" th:text="${day.value}"></option></select></div>
+                    <div><label for="entryType" th:text="#{ui.00623}"></label><select id="entryType" required th:field="*{type}" th:attr="aria-invalid=${#fields.hasErrors('type')}"><option value="TASK" th:text="#{ui.01637}"></option><option value="WORKOUT" th:text="#{ui.02748}"></option><option value="NOTE" th:text="#{ui.02173}"></option></select></div>
+                    <div><label for="entryStart" th:text="#{ui.schedule.startTime}"></label><input id="entryStart" type="time" th:field="*{timeWindowStart}" th:attr="aria-invalid=${#fields.hasErrors('timeWindowStart')}"></div><div><label for="entryEnd" th:text="#{ui.schedule.endTime}"></label><input id="entryEnd" type="time" th:field="*{timeWindowEnd}" th:attr="aria-invalid=${#fields.hasErrors('timeWindowEnd')}"></div>
                 </div>
+                <label for="entryTitle" th:text="#{ui.00583}"></label><input id="entryTitle" dir="auto" required maxlength="200" th:field="*{title}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('title')},aria-describedby=${#fields.hasErrors('title') ? 'schedule-entry-errors' : null}">
+                <label for="entryNotes" th:text="#{ui.02767}"></label><textarea id="entryNotes" dir="auto" rows="3" maxlength="10000" th:field="*{defaultsJson}" th:attr="aria-invalid=${#fields.hasErrors('defaultsJson')}"></textarea>
+                <div class="profile-editor-fields"><div><label for="entryIntensityLabel" th:text="#{ui.02768}"></label><input id="entryIntensityLabel" dir="auto" maxlength="80" th:field="*{intensityLabel}" th:attr="aria-invalid=${#fields.hasErrors('intensityLabel')}"></div><div><label for="entryIntensityLevel" th:text="#{ui.02769}"></label><input id="entryIntensityLevel" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{1,2}" th:field="*{intensityLevel}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('intensityLevel')}"></div></div>
+                <label for="entryExercise" th:text="#{ui.02770}"></label><select id="entryExercise" th:field="*{exerciseId}" th:attr="aria-invalid=${#fields.hasErrors('exerciseId')}"><option value="" th:text="#{ui.02770}"></option><option th:each="exercise : ${exercises}" th:value="${exercise.id}" th:text="${exercise.name}"></option></select>
+                <label for="entryCustomExercise" th:text="#{ui.02771}"></label><select id="entryCustomExercise" th:field="*{customExerciseId}" th:attr="aria-invalid=${#fields.hasErrors('customExerciseId')}"><option value="" th:text="#{ui.02771}"></option><option th:each="exercise : ${customExercises}" th:value="${exercise.id}" th:text="${exercise.name}"></option></select>
+                </fieldset><button class="detail-btn-primary" type="submit" th:text="#{ui.02765}"></button>
+            </form>
+        </div>
+        <section class="detail-section" id="schedule-questions"><h2 class="detail-section-title" th:text="#{ui.02772}"></h2><p class="detail-subtitle" th:text="#{ui.schedule.questionEditingHint}"></p><p th:if="${#lists.isEmpty(questions)}" class="detail-empty" th:text="#{ui.02773}"></p>
+            <ol class="workout-item-list"><li th:each="question, position : ${questions}" class="workout-item-card" th:id="${'schedule-question-' + question.id}"><p class="library-resource-label" th:text="#{ui.library.sequenceStep(${position.count},${#lists.size(questions)})}"></p><h3 dir="auto" th:text="${question.prompt}"></h3><p th:text="${question.required} ? #{ui.02775} : #{ui.02100}"></p>
+                <div class="connection-actions">
+                    <form method="post" th:action="@{/trainer/templates/{id}/questions/{questionId}/move(id=${template.id},questionId=${question.id},q=${query},page=${libraryPage})}"><input type="hidden" name="direction" value="UP"><button class="detail-btn-secondary" type="submit" th:disabled="${position.first}" th:aria-label="#{ui.library.moveEarlier} + ' ' + ${question.prompt} + ' · ' + #{ui.library.sequenceStep(${position.count},${#lists.size(questions)})}" th:text="#{ui.library.moveEarlier}"></button></form>
+                    <form method="post" th:action="@{/trainer/templates/{id}/questions/{questionId}/move(id=${template.id},questionId=${question.id},q=${query},page=${libraryPage})}"><input type="hidden" name="direction" value="DOWN"><button class="detail-btn-secondary" type="submit" th:disabled="${position.last}" th:aria-label="#{ui.library.moveLater} + ' ' + ${question.prompt} + ' · ' + #{ui.library.sequenceStep(${position.count},${#lists.size(questions)})}" th:text="#{ui.library.moveLater}"></button></form>
+                    <form method="post" th:action="@{/trainer/templates/{id}/questions/{questionId}/delete(id=${template.id},questionId=${question.id},q=${query},page=${libraryPage})}"><button class="detail-btn-destructive" type="submit" th:aria-label="#{ui.00801} + ' ' + ${question.prompt}" th:text="#{ui.00801}"></button></form>
+                </div>
+            </li></ol>
+            <form class="profile-editor-form" data-library-draft th:object="${questionForm}" method="post" th:action="@{/trainer/templates/{id}/questions(id=${template.id},q=${query},page=${libraryPage})}">
+                <div th:if="${#fields.hasAnyErrors()}" id="schedule-question-errors" class="profile-editor-errors" role="alert"><h3 th:text="#{auth.form.fixErrors}"></h3><p th:text="#{ui.schedule.questionInvalid}"></p><a href="#questionPrompt" th:text="#{ui.02774}"></a></div><label for="questionPrompt" th:text="#{ui.02774}"></label><input id="questionPrompt" dir="auto" required maxlength="300" th:field="*{prompt}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('prompt')},aria-describedby=${#fields.hasErrors('prompt') ? 'schedule-question-errors' : null}"><label class="profile-editor-visibility"><input type="checkbox" th:field="*{required}"><span th:text="#{ui.02775}"></span></label><button class="detail-btn-primary" type="submit" th:text="#{ui.02776}"></button>
             </form>
         </section>
-
-        <div class="mt-6 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]" th:if="${template.id != null}">
-            <section class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02763}">Entries</h2>
-                <div th:if="${#lists.isEmpty(entries)}" class="mt-3 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02764}">No entries yet.</div>
-                <div th:if="${!#lists.isEmpty(entries)}" class="mt-3 space-y-3">
-                    <div th:each="entry : ${entries}" class="rounded-xl border border-white/10 bg-white/5 p-4">
-                        <div class="flex items-center justify-between gap-2">
-                            <div>
-                                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${entry.title}">Entry</div>
-                                <div class="mt-1 text-xs text-slate-500">
-                                    <span th:text="${entry.type}">TASK</span>
-                                    <span class="ml-2" th:text="${entry.dayOfWeek}">1</span>
-                                    <span class="ml-2" th:text="${entry.timeWindowStart}"></span>
-                                </div>
-                            </div>
-                            <form th:action="@{/trainer/templates/{id}/entries/{entryId}/delete(id=${template.id}, entryId=${entry.id})}" method="post">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <button type="submit" class="text-xs text-rose-300 hover:text-rose-200" th:text="#{ui.00801}">Remove</button>
-                            </form>
-                        </div>
-                        <p class="mt-2 text-xs text-slate-600 dark:text-slate-300" th:text="${entry.defaultsJson}"></p>
-                    </div>
-                </div>
-            </section>
-
-            <section class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02765}">Add entry</h2>
-                <form class="mt-3 space-y-3" th:action="@{/trainer/templates/{id}/entries(id=${template.id})}" method="post">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <input type="number" name="dayOfWeek" min="1" max="7" placeholder="Day (1-7)" required
-                               class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" th:placeholder="#{ui.02766}">
-                        <select name="type" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
-                            <option value="TASK" th:text="#{ui.01637}">Task</option>
-                            <option value="WORKOUT" th:text="#{ui.02748}">Workout</option>
-                            <option value="NOTE" th:text="#{ui.02173}">Note</option>
-                        </select>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <input type="time" name="timeWindowStart" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
-                        <input type="time" name="timeWindowEnd" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
-                    </div>
-                    <input name="title" placeholder="Title" required class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" th:placeholder="#{ui.00583}">
-                    <textarea name="defaultsJson" rows="2" placeholder="Defaults / notes" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" th:placeholder="#{ui.02767}"></textarea>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <input name="intensityLabel" placeholder="Intensity label" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" th:placeholder="#{ui.02768}">
-                        <input type="number" name="intensityLevel" min="1" max="10" placeholder="Intensity (1-10)" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" th:placeholder="#{ui.02769}">
-                    </div>
-                    <select name="exerciseId" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
-                        <option value="" th:text="#{ui.02770}">Workout exercise (optional)</option>
-                        <option th:each="ex : ${exercises}" th:value="${ex.id}" th:text="${ex.name}"></option>
-                    </select>
-                    <select name="customExerciseId" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
-                        <option value="" th:text="#{ui.02771}">Custom exercise (optional)</option>
-                        <option th:each="ex : ${customExercises}" th:value="${ex.id}" th:text="${ex.name}"></option>
-                    </select>
-                    <button type="submit" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.02765}">Add entry</button>
-                </form>
-            </section>
-        </div>
-
-        <section class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5" th:if="${template.id != null}">
-            <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02772}">Weekly check-in questions</h2>
-            <div th:if="${#lists.isEmpty(questions)}" class="mt-3 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02773}">No questions configured.</div>
-            <div th:if="${!#lists.isEmpty(questions)}" class="mt-3 space-y-3">
-                <div th:each="q : ${questions}" class="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3">
-                    <div>
-                        <div class="text-sm text-slate-900 dark:text-slate-100" th:text="${q.prompt}">Prompt</div>
-                        <div class="text-xs text-slate-500" th:text="${q.required} ? 'Required' : 'Optional'"></div>
-                    </div>
-                    <form th:action="@{/trainer/templates/{id}/questions/{questionId}/delete(id=${template.id}, questionId=${q.id})}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit" class="text-xs text-rose-300 hover:text-rose-200" th:text="#{ui.00801}">Remove</button>
-                    </form>
-                </div>
-            </div>
-            <form class="mt-4 grid gap-3 sm:grid-cols-[1.4fr_0.6fr_auto]" th:action="@{/trainer/templates/{id}/questions(id=${template.id})}" method="post">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <input name="prompt" placeholder="New question" required class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100" th:placeholder="#{ui.02774}">
-                <select name="required" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
-                    <option value="true" th:text="#{ui.02775}">Required</option>
-                    <option value="false" th:text="#{ui.02100}">Optional</option>
-                </select>
-                <button type="submit" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.02776}">Add question</button>
-            </form>
-        </section>
-    </div>
-
+        <section class="detail-section" id="schedule-week-preview"><h2 class="detail-section-title" th:text="#{ui.library.clientPreview}"></h2><p class="detail-subtitle" th:text="#{ui.schedule.weekPreviewHint}"></p><p th:if="${#lists.isEmpty(entries)}" class="detail-empty" th:text="#{ui.02764}"></p><div class="schedule-week-preview-grid" th:if="${!#lists.isEmpty(entries)}"><section th:each="day : ${weekdays}" class="workout-item-card"><h3 th:text="${day.value}"></h3><ul class="detail-list"><li th:each="entry : ${entries}" th:if="${entry.dayOfWeek == day.key}"><strong dir="auto" th:text="${entry.title}"></strong><p th:if="${entry.timeWindowStart != null}" th:text="${entry.timeWindowStart}"></p><p class="plan-coaching-note" dir="auto" th:text="${entry.defaultsJson}"></p></li></ul></section></div></section>
+    </th:block>
+</div>
+<th:block th:fragment="pageScripts"><script th:src="@{/js/trainer/trainer-library-editor.js(v=${assetVersion})}" defer></script></th:block>
 </th:block>

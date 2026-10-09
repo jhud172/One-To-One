@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class DailyStreakService {
@@ -66,7 +68,7 @@ public class DailyStreakService {
                 boolean hasLog = task.getExerciseLog() != null;
                 boolean isCompleted = Boolean.TRUE.equals(task.getCompleted());
 
-                if (requiresLog && (!isCompleted || !hasLog)) {
+                if (requiresLog && !hasLog) {
                     logsNeeded++;
                 }
 
@@ -76,20 +78,29 @@ public class DailyStreakService {
                 }
             }
 
-            int totalWorkouts = daySessions.size() + dayOccurrences.size();
+            Set<Long> occurrenceIds = dayOccurrences.stream().map(ScheduleOccurrence::getId)
+                    .filter(java.util.Objects::nonNull).collect(Collectors.toSet());
+            List<WorkoutSession> independentSessions = daySessions.stream()
+                    .filter(session -> session.getSourceOccurrenceId() == null
+                            || !occurrenceIds.contains(session.getSourceOccurrenceId())).toList();
+            Set<Long> completedSourceIds = daySessions.stream().filter(WorkoutSession::isCompleted)
+                    .map(WorkoutSession::getSourceOccurrenceId).filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toSet());
+            int totalWorkouts = independentSessions.size() + dayOccurrences.size();
             int completedWorkouts = 0;
 
-            for (WorkoutSession session : daySessions) {
+            for (WorkoutSession session : independentSessions) {
                 if (session != null && session.isCompleted()) {
                     completedWorkouts++;
                 }
             }
 
             for (ScheduleOccurrence occ : dayOccurrences) {
-                boolean hasLog = occ.getExerciseLog() != null;
+                // A completed strength session is the modern log for its source occurrence.
+                boolean hasLog = occ.getExerciseLog() != null || completedSourceIds.contains(occ.getId());
                 boolean isCompleted = occ.isCompleted();
 
-                if (!isCompleted || !hasLog) {
+                if (!hasLog) {
                     logsNeeded++;
                 }
 

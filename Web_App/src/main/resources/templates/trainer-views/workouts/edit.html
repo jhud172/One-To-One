@@ -1,156 +1,28 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02799}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="styles"></div>
-
-    <div th:fragment="content">
-        <div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-
-
-            <div class="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.02569}">Workout builder</p>
-                        <h1 class="mt-1 text-2xl font-bold text-slate-900" th:text="${template.name}">Workout</h1>
-                        <p class="mt-1 text-sm text-slate-600" th:text="#{ui.02857}">Define exercises, sets, and rest intervals.</p>
-                    </div>
-                    <a class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                       th:href="@{/workouts}" th:text="#{ui.00668}">Back to list</a>
-                </div>
-
-                    <form class="mt-6 space-y-6" method="post" th:action="@{/workouts/{id}/edit(id=${template.id})}" th:object="${form}" data-workout-builder
-                        th:attr="data-default-sets=${defaultSets}, data-default-rep-min=${defaultRepMin}, data-default-rep-max=${defaultRepMax}">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600" th:text="#{ui.00131}">Name</label>
-                            <input type="text" th:field="*{name}" required
-                                   class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10" />
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-600" th:text="#{ui.00113}">Description</label>
-                            <input type="text" th:field="*{description}" placeholder="Upper body strength, 45 mins"
-                                   class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"  th:placeholder="#{ui.02858}"/>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h2 class="text-sm font-semibold text-slate-900" th:text="#{ui.02329}">Exercises</h2>
-                                <p class="text-xs text-slate-500" th:text="#{ui.02859}">Choose from your library or enter a custom name.</p>
-                            </div>
-                            <button type="button" class="inline-flex items-center rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white" data-add-exercise th:text="#{ui.02860}">Add row</button>
-                        </div>
-
-                        <div class="mt-4 space-y-3" data-exercise-list>
-                            <div th:each="row, iter : *{exercises}" class="rounded-xl border border-slate-200 bg-white p-4">
-                                <div class="grid gap-3 lg:grid-cols-[2fr_1fr_1fr_1fr_1.3fr_auto]">
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.01682}">Exercise</label>
-                                        <select th:field="*{exercises[__${iter.index}__].exerciseRef}"
-                                                class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700">
-                                            <option value="" th:text="#{ui.02861}">Manual entry</option>
-                                            <optgroup label="Exercises">
-                                                <option th:each="ex : ${exercises}" th:value="${'e:' + ex.id}" th:text="${ex.name}"></option>
-                                            </optgroup>
-                                            <optgroup label="Custom">
-                                                <option th:each="cx : ${customExercises}" th:value="${'c:' + cx.id}" th:text="${cx.name}"></option>
-                                            </optgroup>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.00131}">Name</label>
-                                        <input type="text" th:field="*{exercises[__${iter.index}__].exerciseName}" placeholder="Bench press"
-                                               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700"  th:placeholder="#{ui.02862}"/>
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.02330}">Sets</label>
-                                        <input type="number" min="1" th:field="*{exercises[__${iter.index}__].sets}"
-                                               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700" />
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.02339}">Reps</label>
-                                        <input type="number" min="1" th:field="*{exercises[__${iter.index}__].reps}"
-                                               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700" />
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.02863}">Rest (sec)</label>
-                                        <input type="number" min="0" th:field="*{exercises[__${iter.index}__].restSeconds}"
-                                               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700" />
-                                    </div>
-                                    <div class="flex items-end">
-                                        <button type="button" class="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-2 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100" data-remove-exercise th:text="#{ui.00801}">Remove</button>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.00175}">Notes</label>
-                                    <input type="text" th:field="*{exercises[__${iter.index}__].notes}" placeholder="Tempo: 3-1-1"
-                                           class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700"  th:placeholder="#{ui.02864}"/>
-                                </div>
-                            </div>
-                        </div>
-
-                        <template data-exercise-template>
-                            <div class="rounded-xl border border-slate-200 bg-white p-4">
-                                <div class="grid gap-3 lg:grid-cols-[2fr_1fr_1fr_1fr_1.3fr_auto]">
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.01682}">Exercise</label>
-                                        <select name="__name__.exerciseRef"
-                                                class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700">
-                                            <option value="" th:text="#{ui.02861}">Manual entry</option>
-                                            <optgroup label="Exercises">
-                                                <option th:each="ex : ${exercises}" th:value="${'e:' + ex.id}" th:text="${ex.name}"></option>
-                                            </optgroup>
-                                            <optgroup label="Custom">
-                                                <option th:each="cx : ${customExercises}" th:value="${'c:' + cx.id}" th:text="${cx.name}"></option>
-                                            </optgroup>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.00131}">Name</label>
-                                        <input name="__name__.exerciseName" type="text" placeholder="Bench press"
-                                               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700"  th:placeholder="#{ui.02862}"/>
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.02330}">Sets</label>
-                                        <input name="__name__.sets" type="number" min="1" th:attr="value=${defaultSets}"
-                                               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700" />
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.02339}">Reps</label>
-                                             <input name="__name__.reps" type="number" min="1" th:attr="value=${defaultRepMin}, placeholder=${defaultRepMin + '-' + defaultRepMax}"
-                                               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700" />
-                                    </div>
-                                    <div>
-                                        <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.02863}">Rest (sec)</label>
-                                        <input name="__name__.restSeconds" type="number" min="0" value="60"
-                                               class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700" />
-                                    </div>
-                                    <div class="flex items-end">
-                                        <button type="button" class="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-2 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100" data-remove-exercise th:text="#{ui.00801}">Remove</button>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <label class="text-[11px] font-semibold text-slate-500" th:text="#{ui.00175}">Notes</label>
-                                    <input name="__name__.notes" type="text" placeholder="Tempo: 3-1-1"
-                                           class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-700"  th:placeholder="#{ui.02864}"/>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <p class="text-xs text-slate-500" th:text="#{ui.02865}">Autosave is not enabled; click save after edits.</p>
-                        <button type="submit" class="inline-flex items-center rounded-xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800" th:text="#{ui.02866}">Save template</button>
-                    </div>
-                </form>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02799}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content">
+    <div class="studio-v2 studio-editor-v2" th:attr="data-draft-changed=${studioDraftChanged == true or studioError != null},data-row-title=#{ui.studio.order('{0}')},data-remove-for=#{ui.studio.removeFor('{0}')},data-limits=#{ui.studio.limits}">
+        <header class="studio-v2__header">
+            <div><p class="studio-v2__eyebrow" th:text="#{ui.02799}">Edit workout</p><h1><bdi th:text="${template.name}">Workout</bdi></h1><p th:text="#{ui.studio.editorHelp}">Changes apply to this template. Started sessions keep their saved sets.</p></div>
+            <a class="training-launch__action" href="/workouts" th:text="#{ui.00668}">Back to list</a>
+        </header>
+        <p class="studio-v2__error" th:if="${studioError != null}" role="alert" th:text="${#messages.msg(studioError)}">Check the workout details.</p>
+        <p class="studio-v2__notice" th:if="${studioSaved == true}" role="status" th:text="#{ui.studio.saved}">Workout saved.</p>
+        <p class="studio-v2__notice" th:if="${studioDraftChanged == true}" role="status" th:text="#{ui.studio.rowsChanged}">Draft updated. Save when ready.</p>
+        <p class="studio-v2__status" data-studio-status role="status" aria-live="polite"></p>
+        <form method="post" th:action="@{/workouts/{id}/edit(id=${template.id})}" data-studio-builder>
+            <!-- Enter in a text field saves; row commands stay explicit. -->
+            <button type="submit" name="editAction" value="save" hidden aria-hidden="true" tabindex="-1" th:text="#{ui.02873}">Save workout</button>
+            <div class="studio-v2__identity">
+                <div><label for="studio-name" th:text="#{ui.02870}">Workout name</label><input id="studio-name" name="name" th:value="${form.name}" type="text" required maxlength="200"></div>
+                <div><label for="studio-description" th:text="#{ui.00113}">Description</label><textarea id="studio-description" name="description" th:text="${form.description}" maxlength="600" rows="2"></textarea></div>
             </div>
-        </div>
+            <div class="studio-v2__plan"><div><h2 th:text="#{ui.02329}">Exercises</h2><p th:text="#{ui.studio.saveHelp}">Choose from the library or enter a name. Empty templates remain drafts.</p></div><button type="submit" name="editAction" value="add" formnovalidate class="training-launch__action" th:disabled="${#lists.size(form.exercises) >= 50}" th:autofocus="${rowFocusIndex != null and rowFocusIndex == -1}" data-add-row th:text="#{ui.02860}">Add row</button></div>
+            <p class="studio-v2__empty" data-empty-rows th:hidden="${!#lists.isEmpty(form.exercises)}" th:text="#{ui.studio.emptyRows}">No exercises in this draft. Add a row.</p>
+            <div data-studio-rows><th:block th:each="row,iter : ${form.exercises}"><th:block th:replace="~{fragments/workout-builder-row :: row(${row},${iter.index})}"></th:block></th:block></div>
+            <template data-studio-row-template><th:block th:replace="~{fragments/workout-builder-row :: row(${null},${0})}"></th:block></template>
+            <div class="studio-v2__save"><p th:text="#{ui.02865}">Autosave is not enabled; click save after edits.</p><button type="submit" class="training-launch__action training-launch__action--primary" th:text="#{ui.02873}">Save workout</button></div>
+        </form>
     </div>
-
-    <div th:fragment="pageScripts">
-        <script src="/js/workouts/workouts-builder.js" defer></script>
-    </div>
+</div>
+<div th:fragment="pageScripts"><script th:src="@{/js/workouts/workouts-builder.js(v=${assetVersion})}" defer></script></div>
 </th:block>

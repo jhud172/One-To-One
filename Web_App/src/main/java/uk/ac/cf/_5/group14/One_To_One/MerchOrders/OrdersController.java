@@ -1,29 +1,23 @@
 package uk.ac.cf._5.group14.One_To_One.MerchOrders;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
-
 import uk.ac.cf._5.group14.One_To_One.Users.AuthHelper;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
-
-import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/orders")
 public class OrdersController {
-
     private final MerchOrderService merchOrderService;
     private final AuthHelper authHelper;
 
-    @Autowired
     public OrdersController(MerchOrderService merchOrderService, AuthHelper authHelper) {
         this.merchOrderService = merchOrderService;
         this.authHelper = authHelper;
@@ -31,60 +25,44 @@ public class OrdersController {
 
     @GetMapping
     public ModelAndView getOrders(
-            @RequestParam(value = "search", required = false, defaultValue = "") String search,
-            @RequestParam(value = "status", required = false, defaultValue = "") String statusFilter,
-            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(value = "size", required = false, defaultValue = "10") int size,
-            @RequestParam(value = "sort", required = false, defaultValue = "created_at") String sortField) {
-
+            @RequestParam(value = "search", defaultValue = "") String search,
+            @RequestParam(value = "status", defaultValue = "") String statusFilter,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sort", defaultValue = "created_at") String sortField) {
         User user = authHelper.getAuthenticatedUser();
-        if (user == null) {
-            return new ModelAndView("redirect:/login");
+        if (user == null) return new ModelAndView("redirect:/login");
+        var view = new ModelAndView("shared-views/orders/orders");
+        boolean invalid = search.length() > 120 || statusFilter.length() > 30 || page < 0;
+        ShippingStatus shippingStatus = null;
+        boolean unknownShippingStatus = false;
+        if (!statusFilter.isEmpty()) {
+            try { shippingStatus = ShippingStatus.valueOf(statusFilter); }
+            catch (IllegalArgumentException ex) { invalid = true; unknownShippingStatus = true; }
         }
-
-        ModelAndView modelAndView = new ModelAndView("shared-views/orders/orders");
-
-        // Get all orders for the user
-        List<MerchOrder> allOrders = merchOrderService.getOrdersForUser(user.getId());
-
-        // Filter by search term (order ID or item name)
-        List<MerchOrder> filteredOrders = allOrders.stream()
-                .filter(order -> search.isEmpty() || 
-                        order.getId().toString().contains(search) ||
-                        order.getItems().stream()
-                            .anyMatch(item -> item.getProductNameSnapshot().toLowerCase().contains(search.toLowerCase())))
-                .filter(order -> statusFilter.isEmpty() || order.getShippingStatus().toString().equals(statusFilter))
-                .toList();
-
-        // Separate into categories
-        List<MerchOrder> activeOrders = filteredOrders.stream()
-                .filter(order -> {
-                    ShippingStatus status = order.getShippingStatus();
-                    return status == ShippingStatus.PENDING || 
-                           status == ShippingStatus.PROCESSING || 
-                           status == ShippingStatus.SHIPPED ||
-                           status == ShippingStatus.OUT_FOR_DELIVERY;
-                })
-                .toList();
-
-        List<MerchOrder> completedOrders = filteredOrders.stream()
-                .filter(order -> order.getShippingStatus() == ShippingStatus.DELIVERED)
-                .toList();
-
-        List<MerchOrder> cancelledOrders = filteredOrders.stream()
-                .filter(order -> order.getShippingStatus() == ShippingStatus.CANCELLED || 
-                                order.getShippingStatus() == ShippingStatus.RETURNED ||
-                                order.getShippingStatus() == ShippingStatus.FAILED_DELIVERY)
-                .toList();
-
-        modelAndView.addObject("user", user);
-        modelAndView.addObject("search", search);
-        modelAndView.addObject("statusFilter", statusFilter);
-        modelAndView.addObject("activeOrders", activeOrders);
-        modelAndView.addObject("completedOrders", completedOrders);
-        modelAndView.addObject("cancelledOrders", cancelledOrders);
-        modelAndView.addObject("shippingStatuses", ShippingStatus.values());
-
-        return modelAndView;
+        // Legacy size/sort links remain accepted; history uses one stable twenty-order bound.
+        Page<MerchOrder> history = invalid ? Page.empty(PageRequest.of(0, 20))
+                : merchOrderService.searchHistory(user.getId(), search, shippingStatus, Math.max(1, page));
+        if (invalid) view.setStatus(HttpStatus.BAD_REQUEST);
+        view.addObject("user", user);
+        view.addObject("search", search.substring(0, Math.min(121, search.length())));
+        view.addObject("statusFilter", statusFilter.substring(0, Math.min(31, statusFilter.length())));
+        view.addObject("historyFilterInvalid", invalid);
+        view.addObject("unknownShippingStatus", unknownShippingStatus);
+        view.addObject("historyPage", history);
+        view.addObject("orders", history.getContent());
+        view.addObject("ownedOrderCount", merchOrderService.countOrdersForUser(user.getId()));
+        view.addObject("firstOrder", history.isEmpty() ? 0L : history.getPageable().getOffset() + 1);
+        view.addObject("lastOrder", history.isEmpty() ? 0L : history.getPageable().getOffset() + history.getNumberOfElements());
+        view.addObject("shippingStatuses", ShippingStatus.values());
+        view.addObject("shippingLabels", Map.of(
+                "PENDING", "ui.00168", "PROCESSING", "ui.02203",
+                "SHIPPED", "ui.02204", "OUT_FOR_DELIVERY", "ui.02205",
+                "DELIVERED", "ui.02206", "CANCELLED", "ui.02207",
+                "RETURNED", "ui.02220", "FAILED_DELIVERY", "ui.02221"));
+        view.addObject("paymentLabels", Map.of(
+                "PENDING_PAYMENT", "ui.orders.paymentPending", "PAID", "ui.orders.paymentPaid",
+                "FAILED", "ui.orders.paymentFailed", "REFUNDED", "ui.orders.paymentRefunded"));
+        return view;
     }
 }

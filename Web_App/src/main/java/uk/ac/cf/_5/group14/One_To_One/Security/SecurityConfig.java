@@ -39,6 +39,7 @@ public class SecurityConfig {
 
     private static final String[] ENDPOINTS_WHITELIST = {
             "/img/**",
+            "/models/one-to-one/**",
             "/css/**",
             "/js/**",
             "/webjars/**",
@@ -137,13 +138,15 @@ public class SecurityConfig {
                             request
                             // Static assets and public pages: always open
                             .requestMatchers(ENDPOINTS_WHITELIST).permitAll()
+                            .requestMatchers(HttpMethod.GET, "/trainers/*/profile").permitAll()
+                            .requestMatchers("/reviews/**").authenticated()
                             .requestMatchers("/actuator/health/liveness", "/actuator/health/readiness").permitAll()
                             .requestMatchers("/api/mobile/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/chat/ask").permitAll()
                             .requestMatchers("/dashboard/public", "/client/dashboard/public").permitAll()
                             .requestMatchers("/confirm-logout").authenticated()
                             .requestMatchers("/verify/phone/**").authenticated()
-                            // Leaderboard: keep protected â€” not open in dev mode
+                            // Leaderboard: keep protected — not open in dev mode
                             .requestMatchers("/levels/**").authenticated()
                             // Trainers area: keep role requirements
                             .requestMatchers("/trainer/**").hasRole("TRAINER")
@@ -154,7 +157,8 @@ public class SecurityConfig {
                             .requestMatchers("/chat", "/chat/**", "/chatv2/**").authenticated()
                             .requestMatchers("/admin/gym-applications", "/admin/gym-applications/**").hasAnyRole("PLATFORM_ADMIN", "SUPER_ADMIN")
                             .requestMatchers("/admin/dashboard", "/admin/feedback", "/admin/feedback/**", "/admin/outreach/**", "/admin/dev-pages/**")
-                            .hasAnyRole("GYM_ADMIN", "PLATFORM_ADMIN", "SUPER_ADMIN")
+                            .hasAnyRole("PLATFORM_ADMIN", "SUPER_ADMIN")
+                            .requestMatchers("/admin/**").hasAnyRole("PLATFORM_ADMIN", "SUPER_ADMIN")
                             .requestMatchers("/trainers/**").hasRole("CLIENT")
                             // Training Vault: keep protected
                             .requestMatchers("/vault/**").authenticated()
@@ -170,9 +174,11 @@ public class SecurityConfig {
                             // All other routes: open for dev browsing
                             .anyRequest().permitAll();
                         } else {
-                            // Normal mode: keep existing security configuration unchanged.
+                            // Public profile reads are separate from protected coaching/review actions.
                             request
                             .requestMatchers(ENDPOINTS_WHITELIST).permitAll()
+                            .requestMatchers(HttpMethod.GET, "/trainers/*/profile").permitAll()
+                            .requestMatchers("/reviews/**").authenticated()
                             .requestMatchers("/actuator/health/liveness", "/actuator/health/readiness").permitAll()
                             .requestMatchers("/api/mobile/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/chat/ask").permitAll()
@@ -186,7 +192,7 @@ public class SecurityConfig {
                             .requestMatchers("/trainers/**").hasRole("CLIENT")
                             .requestMatchers("/admin/gym-applications", "/admin/gym-applications/**").hasAnyRole("PLATFORM_ADMIN", "SUPER_ADMIN")
                             .requestMatchers("/admin/dashboard", "/admin/feedback", "/admin/feedback/**", "/admin/outreach/**", "/admin/dev-pages/**")
-                            .hasAnyRole("GYM_ADMIN", "PLATFORM_ADMIN", "SUPER_ADMIN")
+                            .hasAnyRole("PLATFORM_ADMIN", "SUPER_ADMIN")
                             .requestMatchers("/admin/**").hasAnyRole("PLATFORM_ADMIN", "SUPER_ADMIN")
                             .requestMatchers("/merch/**").authenticated()
                             .requestMatchers("/dashboard", "/dashboard/**", "/client/dashboard", "/client/dashboard/**").authenticated()

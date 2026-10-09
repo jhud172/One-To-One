@@ -4,6 +4,34 @@
    Clean, structured, intentional
    ============================================ */
 
+.calendar-jump-disclosure__summary {
+  width: fit-content;
+  min-height: 44px;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  color: #334155;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calendar-jump-disclosure__summary:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 3px;
+}
+
+.calendar-jump-disclosure[open] > summary {
+  margin-bottom: 0.75rem;
+}
+
+html.dark .calendar-jump-disclosure__summary {
+  border-color: #475569;
+  color: #e2e8f0;
+  background: #0f172a;
+}
+
 /* ===== MONTH GRID OUTER FRAME ===== */
 .calendar-month-container {
   border: 2px solid rgb(226, 232, 240);

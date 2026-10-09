@@ -1,0 +1,86 @@
+- banner:
+  - link "One To One Logo One To One":
+    - /url: /
+    - img "One To One Logo"
+    - generic: One To One
+  - navigation "Primary navigation":
+    - link "Dashboard":
+      - /url: /dashboard
+      - generic: Dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: /chat
+      - generic: Charlie
+    - link "Trainers":
+      - /url: /client/trainers
+      - generic: Trainers
+    - link "Shop":
+      - /url: /merch
+      - generic: Shop
+    - link "Leaderboard":
+      - /url: /levels
+      - generic: Leaderboard
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - generic "Premium member":
+      - button "Premium features enabled":
+      - status: Premium Active
+    - button "Open profile menu":
+- main:
+  - paragraph: Client workspace
+  - heading "Coaching inbox" [level=1]
+  - paragraph: Keep your conversations with your trainer in one place.
+  - link "Back to dashboard":
+    - /url: /dashboard
+  - region "Notifications":
+    - heading "Notifications" [level=2]
+    - paragraph: Session updates, replies and coaching reminders for your account.
+    - button "Mark all read"
+    - generic: No notifications yet.
+  - list:
+    - link "J Jordan Trainer Open":
+      - /url: /inbox/1
+      - generic: J
+      - paragraph: Jordan Trainer
+      - paragraph
+      - generic: Open
+- button "Open Charlie"
+- text: Add photo Send message
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - button "Scroll platform actions left":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Scroll platform actions right":
+  - button "Customize platform panel":

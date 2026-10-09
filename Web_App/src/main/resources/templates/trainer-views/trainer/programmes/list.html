@@ -1,45 +1,35 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02739}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02739}">Library · Programmes</h1>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02740}">Your saved programme templates.</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <a th:href="@{/trainer/library}"
-                       class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.00571}">
-                        Back
-                    </a>
-                    <a th:href="@{/trainer/library/programmes/create}"
-                       class="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.01116}">
-                        Create
-                    </a>
-                </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02739}, null, ~{::content}, null)}">
+    <div th:fragment="content" class="client-workspace-v2 library-exercise-v2 programme-library-v2 library-catalogue-v2">
+        <header class="detail-header">
+            <div class="detail-header-content">
+                <div><h1 class="detail-title" th:text="#{ui.00241}"></h1><p class="detail-subtitle" th:text="#{ui.library.programmeCatalogueHint}"></p></div>
+                <div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/trainer/library}" th:text="#{ui.02654}"></a><a class="detail-btn-primary" th:href="@{/trainer/library/programmes/create(q=${query},page=${libraryPage})}" th:text="#{ui.02735}"></a></div>
             </div>
-
-            <div th:if="${#lists.isEmpty(programmes)}" class="mt-6 border border-dashed border-white/15 rounded-xl p-8 text-center">
-                <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02741}">No programmes yet</h2>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02742}">Create a programme and add days that reference workouts.</p>
-            </div>
-
-            <div th:if="${!#lists.isEmpty(programmes)}" class="mt-6 divide-y divide-white/10">
-                <div th:each="p : ${programmes}" class="py-4 flex items-center justify-between gap-4">
-                    <div class="min-w-0">
-                        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${p.title}">Programme</div>
-                        <div class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="${p.weeks != null ? (p.weeks + ' weeks') : ''}">Weeks</div>
-                    </div>
-                    <div class="shrink-0">
-                        <a th:href="@{/trainer/library/programmes/{id}(id=${p.id})}"
-                           class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.00664}">
-                            View
-                        </a>
-                    </div>
-                </div>
-            </div>
+            <form method="get" th:action="@{/trainer/library/programmes}" class="connection-search">
+                <label for="programmeSearch" th:text="#{ui.library.searchProgrammes}"></label>
+                <div><input id="programmeSearch" type="search" name="q" maxlength="120" dir="auto" th:value="${query}"><button class="detail-btn-primary" type="submit" th:text="#{ui.00260}"></button><a th:if="${!#strings.isEmpty(query)}" class="detail-btn-secondary" th:href="@{/trainer/library/programmes}" th:text="#{ui.00555}"></a></div>
+            </form>
+            <p><span th:text="#{ui.00241}"></span>: <strong th:text="${programmeCount}"></strong> · <span th:text="#{ui.library.resultsRange(${programmePage.totalElements == 0 ? 0 : libraryPage * programmePage.size + 1},${libraryPage * programmePage.size + #lists.size(programmes)},${programmePage.totalElements})}"></span></p>
+        </header>
+        <section th:if="${#lists.isEmpty(programmes)}" class="detail-section library-exercise-empty">
+            <h2 class="detail-section-title" th:text="${programmeCount == 0} ? #{ui.02741} : #{ui.01563}"></h2>
+            <p th:if="${programmeCount == 0}" th:text="#{ui.02742}"></p>
+            <a th:if="${programmeCount == 0}" class="detail-btn-primary" th:href="@{/trainer/library/programmes/create(q=${query},page=${libraryPage})}" th:text="#{ui.02735}"></a>
+        </section>
+        <div th:unless="${#lists.isEmpty(programmes)}" class="library-exercise-grid">
+            <article th:each="programme : ${programmes}" class="detail-section library-catalogue-card" th:id="${'programme-' + programme.id}">
+                <p class="detail-label" th:text="#{ui.library.programmeResource}"></p>
+                <h2 class="detail-section-title" dir="auto"><a th:href="@{/trainer/library/programmes/{id}(id=${programme.id},q=${query},page=${libraryPage})}" th:text="${programme.title}"></a></h2>
+                <p class="library-workout-count" th:text="${programme.weeks != null} ? #{ui.plan.weeks(${programme.weeks})} : #{ui.library.programmeDurationOpen}"></p>
+                <p class="library-programme-sequence" th:text="#{ui.library.programmeSessions(${programmeDayCounts[programme.id] ?: 0})}"></p>
+                <p th:if="${(programmeDayCounts[programme.id] ?: 0) == 0}" class="library-exercise-description" th:text="#{ui.library.programmeEmptySequence}"></p>
+                <div class="library-catalogue-card-footer"><a class="detail-btn-secondary" th:href="@{/trainer/library/programmes/{id}(id=${programme.id},q=${query},page=${libraryPage})}" th:text="#{ui.00664}"></a><a class="detail-btn-secondary" th:href="@{/trainer/library/programmes/{id}/edit(id=${programme.id},q=${query},page=${libraryPage})}" th:text="#{ui.00138}"></a></div>
+            </article>
         </div>
+        <nav th:if="${programmePage.totalPages > 1}" class="library-catalogue-pagination" th:attr="aria-label=#{ui.00241}">
+            <a th:if="${programmePage.hasPrevious()}" class="detail-btn-secondary" th:href="@{/trainer/library/programmes(q=${query},page=${libraryPage - 1})}" th:text="#{ui.library.previousPage}"></a>
+            <p th:text="#{ui.library.pageNumber(${libraryPage + 1},${programmePage.totalPages})}"></p>
+            <a th:if="${programmePage.hasNext()}" class="detail-btn-secondary" th:href="@{/trainer/library/programmes(q=${query},page=${libraryPage + 1})}" th:text="#{ui.library.nextPage}"></a>
+        </nav>
     </div>
-
 </th:block>

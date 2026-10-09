@@ -1,104 +1,17 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02688}, null, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <!-- Breadcrumb Navigation -->
-        <nav class="workout-breadcrumb">
-            <a th:href="@{/trainer/library}" class="workout-breadcrumb-item">
-                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                </svg>
-                <th:block th:text="#{ui.02654}">Library</th:block>
-            </a>
-            <span class="workout-breadcrumb-separator">›</span>
-            <span class="workout-breadcrumb-item active" th:text="#{ui.02329}">Exercises</span>
-        </nav>
-
-        <!-- Header -->
-        <div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 mb-6">
-            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div class="flex-1">
-                    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100" th:text="#{ui.02688}">Exercise Library</h1>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400" th:text="#{ui.02689}">Create and manage your exercise templates for workout programs</p>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <a th:href="@{/trainer/library}"
-                       class="workout-btn-ghost">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                        </svg>
-                        <th:block th:text="#{ui.00571}">Back</th:block>
-                    </a>
-                    <a th:href="@{/trainer/library/exercises/create}"
-                       class="workout-btn-primary">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        <th:block th:text="#{ui.02655}">Create Exercise</th:block>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Search and Stats Row -->
-            <div th:if="${!#lists.isEmpty(exercises)}" class="mt-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div class="flex-1 max-w-md">
-                    <input type="text" id="exerciseSearch" placeholder="Search exercises by name or muscle group..."
-                           class="workout-search-input"  th:placeholder="#{ui.02690}"/>
-                </div>
-                <div class="workout-stat-card px-4 py-2">
-                    <span class="workout-stat-label" th:text="#{ui.02691}">Total Exercises</span>
-                    <span class="text-xl font-bold text-emerald-600 dark:text-emerald-400 ml-2" th:text="${#lists.size(exercises)}">0</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Empty State -->
-        <div th:if="${#lists.isEmpty(exercises)}" class="empty-state bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 p-12">
-            <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-            </svg>
-            <h2 class="empty-state-title" th:text="#{ui.02692}">No exercises yet</h2>
-            <p class="empty-state-description" th:text="#{ui.02693}">Create your first exercise template to start building your library</p>
-            <a th:href="@{/trainer/library/exercises/create}" class="workout-btn-primary">
-                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                <th:block th:text="#{ui.02694}">Create First Exercise</th:block>
-            </a>
-        </div>
-
-        <!-- Exercise Grid -->
-        <div th:if="${!#lists.isEmpty(exercises)}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="exerciseGrid">
-            <div th:each="exercise : ${exercises}" 
-                 class="exercise-card"
-                 th:attr="data-name=${exercise.name?.toLowerCase()}, data-muscles=${exercise.primaryMuscles?.toLowerCase()}">
-                <div class="exercise-card-header">
-                    <div class="flex-1">
-                        <h3 class="exercise-card-title" th:text="${exercise.name}">Exercise name</h3>
-                        <span class="exercise-card-badge badge-standard mt-1" th:text="#{ui.02695}">Trainer Exercise</span>
-                    </div>
-                </div>
-                <div class="exercise-card-body">
-                    <p class="line-clamp-2" th:text="${exercise.description} ?: 'No description provided'">Description</p>
-                </div>
-                <div class="exercise-card-footer">
-                    <div class="flex-1 flex flex-wrap gap-1">
-                        <span th:if="${exercise.primaryMuscles}" class="exercise-muscle-tag" th:text="${exercise.primaryMuscles}">Primary</span>
-                        <span th:if="${exercise.secondaryMuscles}" class="exercise-muscle-tag" th:text="${exercise.secondaryMuscles}">Secondary</span>
-                    </div>
-                    <a th:href="@{/trainer/library/exercises/{id}(id=${exercise.id})}"
-                       class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium text-sm" th:text="#{ui.02696}">
-                        View →
-                    </a>
-                </div>
-            </div>
-        </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02688}, null, ~{::content}, null)}">
+<div th:fragment="content" class="client-workspace-v2 library-exercise-v2 library-catalogue-v2">
+    <header class="detail-header"><div class="detail-header-content"><div><p class="detail-label" th:text="#{ui.library.privateCatalogue}"></p><h1 class="detail-title" th:text="#{ui.02688}"></h1><p class="detail-subtitle" th:text="#{ui.library.catalogueHint}"></p></div><div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/trainer/library}" th:text="#{ui.02654}"></a><a class="detail-btn-primary" th:href="@{/trainer/library/exercises/create(q=${query},page=${libraryPage})}" th:text="#{ui.02655}"></a></div></div>
+        <form method="get" th:action="@{/trainer/library/exercises}" class="connection-search"><label for="exerciseSearch" th:text="#{ui.02690}"></label><div><input id="exerciseSearch" type="search" name="q" maxlength="120" th:value="${query}" th:placeholder="#{ui.02690}"><button class="detail-btn-primary" type="submit" th:text="#{ui.00260}"></button><a th:if="${!#strings.isEmpty(query)}" class="detail-btn-secondary" th:href="@{/trainer/library/exercises}" th:text="#{ui.00555}"></a></div></form>
+        <p><span th:text="#{ui.02691}"></span>: <strong th:text="${exerciseCount}"></strong> · <span th:text="#{ui.library.resultsRange(${exercisePage.totalElements == 0 ? 0 : libraryPage * exercisePage.size + 1},${libraryPage * exercisePage.size + #lists.size(exercises)},${exercisePage.totalElements})}"></span></p>
+    </header>
+    <section th:if="${#lists.isEmpty(exercises)}" class="detail-section library-exercise-empty"><h2 class="detail-section-title" th:text="${exerciseCount == 0} ? #{ui.02692} : #{ui.01563}"></h2><p th:if="${exerciseCount == 0}" th:text="#{ui.02693}"></p><a th:if="${exerciseCount == 0}" class="detail-btn-primary" th:href="@{/trainer/library/exercises/create(q=${query},page=${libraryPage})}" th:text="#{ui.02694}"></a></section>
+    <div th:unless="${#lists.isEmpty(exercises)}" class="library-exercise-grid">
+        <article th:each="exercise : ${exercises}" class="detail-section library-catalogue-card" th:id="${'exercise-' + exercise.id}">
+            <div class="library-catalogue-card-heading"><p class="detail-label" th:text="#{ui.02695}"></p><span class="library-catalogue-difficulty" th:switch="${#strings.toUpperCase(exercise.difficulty)}"><span th:case="'BEGINNER'" th:text="#{ui.02668}"></span><span th:case="'INTERMEDIATE'" th:text="#{ui.02669}"></span><span th:case="'ADVANCED'" th:text="#{ui.02670}"></span><span th:case="'*'" th:text="${exercise.difficulty}"></span></span></div>
+            <h2 class="detail-section-title"><a th:href="@{/trainer/library/exercises/{id}(id=${exercise.id},q=${query},page=${libraryPage})}" dir="auto" th:text="${exercise.name}"></a></h2><p class="library-exercise-description" th:if="${!#strings.isEmpty(exercise.description)}" dir="auto" th:text="${exercise.description}"></p>
+            <dl class="portfolio-metadata"><div><dt th:text="#{ui.02684}"></dt><dd dir="auto" th:text="${exercise.primaryMuscles}"></dd></div><div><dt th:text="#{ui.02065}"></dt><dd dir="auto" th:text="${exercise.equipment}"></dd></div></dl>
+            <div class="library-catalogue-card-footer"><p class="library-catalogue-media"><span aria-hidden="true" th:text="${videoExerciseIds.contains(exercise.id) ? '▶' : '○'}"></span><span th:text="${videoExerciseIds.contains(exercise.id)} ? #{ui.library.videoAvailable} : #{ui.library.noVideo}"></span></p><a class="detail-btn-secondary" th:href="@{/trainer/library/exercises/{id}(id=${exercise.id},q=${query},page=${libraryPage})}" th:text="#{ui.02696}"></a></div>
+        </article>
     </div>
-
-    <!-- Page Scripts -->
-    <div th:fragment="pageScripts">
-        <script th:src="@{/js/trainer/trainer-exercises-list-page.js}"></script>
-    </div>
-
-</th:block>
+    <nav th:if="${exercisePage.totalPages > 1}" class="library-catalogue-pagination" th:attr="aria-label=#{ui.02688}"><a th:if="${exercisePage.hasPrevious()}" class="detail-btn-secondary" th:href="@{/trainer/library/exercises(q=${query},page=${libraryPage - 1})}" th:text="#{ui.library.previousPage}"></a><p th:text="#{ui.library.pageNumber(${libraryPage + 1},${exercisePage.totalPages})}"></p><a th:if="${exercisePage.hasNext()}" class="detail-btn-secondary" th:href="@{/trainer/library/exercises(q=${query},page=${libraryPage + 1})}" th:text="#{ui.library.nextPage}"></a></nav>
+</div></th:block>

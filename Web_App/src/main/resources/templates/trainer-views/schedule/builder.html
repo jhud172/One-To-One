@@ -1,330 +1,110 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02483}, null, ~{::content}, ~{::pageScripts})}">
-
-<div th:fragment="content">
-    <div class="schedule-designer">
-        <!-- Breadcrumb Navigation -->
-        <nav class="workout-breadcrumb">
-            <a th:href="@{/}" class="workout-breadcrumb-item">
-                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                </svg>
-                <th:block th:text="#{ui.01401}">Home</th:block>
-            </a>
-            <span class="workout-breadcrumb-separator">›</span>
-            <a th:href="@{/schedules}" class="workout-breadcrumb-item" th:text="#{ui.00266}">Schedules</a>
-            <span class="workout-breadcrumb-separator">›</span>
-            <span class="workout-breadcrumb-item active" th:text="#{ui.02483}">Training Structure Designer</span>
-        </nav>
-
-        <!-- Save Panel -->
-        <div class="schedule-save-panel">
-            <form id="saveForm" method="post" action="/schedules/builder/save">
-                <div class="save-panel-content">
-                    <div class="save-panel-input-group">
-                        <label class="save-panel-label">
-                            <th:block th:text="#{ui.02484}">Schedule Name</th:block>
-                            <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="name" id="scheduleName" required 
-                               placeholder="e.g., Push Pull Legs, Full Body Split..."
-                               class="save-panel-input" th:placeholder="#{ui.02485}"/>
-                    </div>
-                    <div class="save-panel-actions">
-                        <div id="saveTimestamp" class="save-timestamp hidden">
-                            <span class="save-success-indicator"></span>
-                            <span id="lastSavedText" th:text="#{ui.02486}">Draft saved</span>
-                        </div>
-                        <button type="submit" class="workout-btn-primary">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            <th:block th:text="#{ui.02487}">Save Schedule</th:block>
-                        </button>
-                    </div>
-                </div>
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <input type="hidden" name="payload" id="payloadField"/>
-                <input type="hidden" name="scheduleType" id="scheduleTypeField" value="WEEKLY"/>
-                <input type="hidden" name="rotationMode" id="rotationModeField" value="WEEKLY_REPEAT"/>
-                <input type="hidden" name="customDayCount" id="customDayCountField" value="7"/>
-                <input type="hidden" name="templateId" id="templateIdField" value=""/>
-            </form>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02483}, null, ~{::content}, ~{::pageScripts})}">
+<section th:fragment="content" class="schedule-composer" aria-labelledby="composer-title">
+    <header class="schedule-composer__header">
+        <div>
+            <p class="schedule-composer__eyebrow" th:text="#{ui.training.sourceCalendar}">Calendar plan</p>
+            <h1 id="composer-title" th:text="#{ui.02483}">Training structure designer</h1>
+            <p th:text="#{ui.composer.context}">Arrange your saved workouts into a reusable plan. Save first, then choose its calendar dates.</p>
         </div>
-
-        <!-- Schedule Type Selector -->
-        <div class="schedule-type-selector">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100" th:text="#{ui.02488}">Choose Schedule Type</h2>
-                <button type="button" id="showTemplatesBtn" class="template-library-trigger">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
-                    </svg>
-                    <th:block th:text="#{ui.02489}">Start from Template</th:block>
-                </button>
+        <a class="training-launch__action" th:href="@{/schedules}" th:text="#{ui.scheduleCentre.title}">Schedule workspace</a>
+    </header>
+    <p class="schedule-composer__notice schedule-composer__notice--error" role="alert" th:if="${composerError != null}" th:text="${#messages.msg(composerError)}">Check the draft.</p>
+    <form id="schedule-composer-form" th:action="@{/schedules/builder/save}" method="post">
+        <input type="hidden" name="composerForm" value="true"/>
+        <button hidden tabindex="-1" aria-hidden="true" type="submit" name="editAction" value="save" th:text="#{ui.02487}">Save schedule</button>
+        <div class="schedule-composer__grid">
+            <div class="schedule-composer__structure">
+                <section class="schedule-composer__panel" aria-labelledby="composer-settings-title">
+                    <h2 id="composer-settings-title" th:text="#{ui.00725}">Settings</h2>
+                    <label for="composer-name" th:text="#{ui.02484}">Schedule name</label>
+                    <input id="composer-name" name="name" required maxlength="200" dir="auto" th:value="${composerDraft.name}" autocomplete="off"/>
+                    <label for="composer-type" th:text="#{ui.02488}">Schedule type</label>
+                    <select id="composer-type" name="scheduleType">
+                        <option value="WEEKLY" th:selected="${composerDraft.type.name() == 'WEEKLY'}" th:text="#{ui.02490}">Weekly</option>
+                        <option value="DAILY" th:selected="${composerDraft.type.name() == 'DAILY'}" th:text="#{ui.02493}">Daily</option>
+                        <option value="CUSTOM" th:selected="${composerDraft.type.name() == 'CUSTOM'}" th:text="#{ui.02495}">Custom</option>
+                    </select>
+                    <label for="composer-cycle" th:text="#{ui.02498}">Number of days</label>
+                    <input id="composer-cycle" type="number" name="customDayCount" min="1" max="14" th:value="${composerDraft.dayCount}"/>
+                    <label for="composer-rotation" th:text="#{ui.02499}">Rotation mode</label>
+                    <select id="composer-rotation" name="rotationMode">
+                        <option value="WEEKLY_REPEAT" th:selected="${composerDraft.rotation.name() == 'WEEKLY_REPEAT'}" th:text="#{ui.02500}">Weekly repeat</option>
+                        <option value="CONTINUOUS_ROTATION" th:selected="${composerDraft.rotation.name() == 'CONTINUOUS_ROTATION'}" th:text="#{ui.02502}">Continuous rotation</option>
+                        <option value="NONE" th:selected="${composerDraft.rotation.name() == 'NONE'}" th:text="#{ui.composer.once}">Run once</option>
+                    </select>
+                    <p class="schedule-composer__hint" th:text="#{ui.composer.cycleHelp}">Weekly uses Monday–Sunday; daily uses one day. Custom days start on the first calendar date. Continuous rotation repeats after the last day; weekly repeat starts again after whole weeks. Run once creates one cycle.</p>
+                    <button class="training-launch__action" type="submit" formnovalidate name="editAction" value="refresh" th:text="#{ui.composer.refresh}">Update structure</button>
+                </section>
+                <details class="schedule-composer__panel">
+                    <summary th:text="#{ui.02504}">Choose a template</summary>
+                    <p class="schedule-composer__hint" th:text="#{ui.composer.templateHelp}">Templates change the cycle structure and retain your rows. Choose your own saved workouts; no workouts are created automatically.</p>
+                    <label for="composer-template" th:text="#{ui.02506}">Select template</label>
+                    <select id="composer-template" name="templateId">
+                        <option value="" th:text="#{ui.02506}">Select template</option>
+                        <option th:each="template : ${templates}" th:value="${template.id}" th:selected="${template.id == composerDraft.templateId}" th:text="${template.name}">Template</option>
+                    </select>
+                    <button class="training-launch__action" type="submit" formnovalidate name="editAction" value="template" th:text="#{ui.composer.useStructure}">Use structure</button>
+                    <ul class="schedule-composer__template-library">
+                        <li th:each="template : ${templates}"><details><summary th:text="${template.name}">Template</summary><p th:text="${template.description}">Description</p></details></li>
+                    </ul>
+                </details>
+                <details class="schedule-composer__panel">
+                    <summary th:text="#{ui.02507}">Your workouts</summary>
+                    <a class="training-launch__action" th:href="@{/workout}" th:text="#{ui.02508}">Create a workout</a>
+                    <ul class="schedule-composer__library">
+                        <li th:each="workout : ${workouts}">
+                            <details><summary dir="auto" th:text="${workout.name}">Workout</summary><ul><li th:each="movement : ${workoutMovements[workout.id]}" th:text="${movement}">Movement</li></ul></details>
+                        </li>
+                    </ul>
+                </details>
             </div>
-            
-            <div class="schedule-type-options">
-                <label class="schedule-type-option">
-                    <input type="radio" name="scheduleType" value="WEEKLY" checked>
-                    <div class="schedule-type-card">
-                        <div class="schedule-type-header">
-                            <div class="schedule-type-icon">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <div class="schedule-type-title" th:text="#{ui.02490}">Weekly Schedule</div>
-                            </div>
-                            <span class="schedule-type-badge" th:text="#{ui.02491}">Most Popular</span>
-                        </div>
-                        <p class="schedule-type-description" th:text="#{ui.02492}">
-                            Traditional Monday–Sunday schedule. Perfect for consistent weekly training routines.
-                        </p>
-                    </div>
-                </label>
-
-                <label class="schedule-type-option">
-                    <input type="radio" name="scheduleType" value="DAILY">
-                    <div class="schedule-type-card">
-                        <div class="schedule-type-header">
-                            <div class="schedule-type-icon">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <div class="schedule-type-title" th:text="#{ui.02493}">Daily Schedule</div>
-                            </div>
-                        </div>
-                        <p class="schedule-type-description" th:text="#{ui.02494}">
-                            Single day routine. Ideal for simple, consistent daily workouts.
-                        </p>
-                    </div>
-                </label>
-
-                <label class="schedule-type-option">
-                    <input type="radio" name="scheduleType" value="CUSTOM">
-                    <div class="schedule-type-card">
-                        <div class="schedule-type-header">
-                            <div class="schedule-type-icon">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <div class="schedule-type-title" th:text="#{ui.02495}">Custom Schedule</div>
-                            </div>
-                            <span class="schedule-type-badge" th:text="#{ui.02496}">Flexible</span>
-                        </div>
-                        <p class="schedule-type-description" th:text="#{ui.02497}">
-                            Choose your own number of days (e.g., 5-day split that rotates continuously).
-                        </p>
-                        <div id="customDayControls" class="custom-day-controls hidden">
-                            <label class="custom-day-label" th:text="#{ui.02498}">Number of days:</label>
-                            <input type="number" id="customDayInput" min="1" max="14" value="5" class="custom-day-input"/>
-                            <button type="button" id="applyCustomDays" class="workout-btn-secondary text-sm px-3 py-1.5" th:text="#{ui.00925}">
-                                Apply
-                            </button>
-                        </div>
-                    </div>
-                </label>
-            </div>
-
-            <!-- Rotation Mode Selector (for custom schedules) -->
-            <div id="rotationModeSection" class="rotation-mode-selector hidden">
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3" th:text="#{ui.02499}">Rotation Mode</h3>
-                <div class="rotation-mode-options">
-                    <label class="rotation-mode-option">
-                        <input type="radio" name="rotationMode" value="WEEKLY_REPEAT" checked class="rotation-mode-radio">
-                        <div>
-                            <div class="rotation-mode-label" th:text="#{ui.02500}">Weekly Repeat</div>
-                            <div class="rotation-mode-description" th:text="#{ui.02501}">Schedule repeats every week</div>
-                        </div>
-                    </label>
-                    <label class="rotation-mode-option">
-                        <input type="radio" name="rotationMode" value="CONTINUOUS_ROTATION" class="rotation-mode-radio">
-                        <div>
-                            <div class="rotation-mode-label" th:text="#{ui.02502}">Continuous Rotation</div>
-                            <div class="rotation-mode-description" th:text="#{ui.02503}">Schedule rotates continuously across calendar weeks</div>
-                        </div>
-                    </label>
+            <section class="schedule-composer__panel schedule-composer__placements" aria-labelledby="composer-rows-title">
+                <div class="schedule-composer__heading">
+                    <h2 id="composer-rows-title" th:text="#{ui.composer.placements}">Workout placements</h2>
+                    <button class="training-launch__action" type="button" hidden data-composer-undo th:text="#{ui.display.undo}">Undo</button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Template Library (initially hidden) -->
-        <div id="templateLibrary" class="template-library hidden">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100" th:text="#{ui.02504}">Choose a Template</h2>
-                <button type="button" id="hideTemplatesBtn" class="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100" th:text="#{ui.02505}">
-                    Hide Templates
-                </button>
-            </div>
-            <div class="template-grid">
-                <div th:each="template : ${templates}" class="template-card group" th:attr="data-template-id=${template.id}">
-                    <div class="template-card-header">
-                        <h3 class="template-card-title" th:text="${template.name}">Template Name</h3>
-                        <span class="template-card-badge" th:text="${template.scheduleType}">Type</span>
-                    </div>
-                    <p class="template-card-description" th:text="${template.description}">Description</p>
-                    <div class="template-preview-days">
-                        <div th:each="day : ${#numbers.sequence(1, template.dayCount)}" 
-                             th:if="${template.dayWorkouts.containsKey(day)}"
-                             class="template-preview-day">
-                            <span class="template-preview-day-label" th:text="${template.getDayLabel(day)}">Day</span>
-                            <span class="template-preview-day-workout" th:text="${template.dayWorkouts.get(day).get(0)}">Workout</span>
-                        </div>
-                    </div>
-                    <button type="button" class="template-select-btn" th:attr="data-template-id=${template.id}" th:text="#{ui.02506}">
-                        Select Template
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
-            <!-- Sidebar: Workout Library -->
-            <aside class="lg:col-span-3">
-                <div class="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-4 sticky top-4">
-                    <div class="flex items-center justify-between gap-3 mb-4">
-                        <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02507}">
-                            Your Workouts
-                        </h2>
-                        <a href="/workout"
-                           class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition-colors"
-                           title="Create a new workout" th:title="#{ui.02508}">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                        </a>
-                    </div>
-
-                    <!-- Search -->
-                    <div class="mb-4">
-                        <input id="workout-search" type="text" placeholder="Search workouts..."
-                               class="workout-search-input text-sm py-2" th:placeholder="#{ui.02509}"/>
-                    </div>
-
-                    <!-- Workout List -->
-                    <div id="workout-list" class="space-y-2 overflow-y-auto pr-1 max-h-[500px]">
-                        <div th:if="${#lists.isEmpty(workouts)}" class="text-center py-8">
-                            <svg class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                            </svg>
-                            <p class="text-sm text-slate-600 dark:text-slate-400 mb-2" th:text="#{ui.02510}">No workouts yet</p>
-                            <a href="/workout" class="text-sm text-emerald-600 dark:text-emerald-400 hover:underline" th:text="#{ui.02511}">Create one now →</a>
-                        </div>
-
-                        <div th:each="w : ${workouts}"
-                             class="workout-item draggable-ex cursor-move rounded-lg border-2 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-500/5 dark:to-slate-900/50 p-3 shadow-sm transition-all hover:shadow-md hover:border-emerald-400 dark:hover:border-emerald-600"
-                             draggable="true"
-                             th:attr="data-id=${w.id},data-name=${w.name}">
-                            <div class="flex items-start gap-2">
-                                <svg class="w-4 h-4 mt-0.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                                </svg>
-                                <div class="flex-1 min-w-0">
-                                    <span class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 block" th:text="${w.name}">Workout</span>
-                                    <span class="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5 block" th:text="#{ui.02512}">Drag to a day →</span>
-                                </div>
+                <p class="schedule-composer__hint" th:text="#{ui.composer.copyHelp}">Saving copies the movements from your workouts, with catalogue movements before custom movements. Existing calendar items keep their saved movements.</p>
+                <p class="schedule-composer__hint" data-composer-empty th:if="${composerDraft.placements.isEmpty()}" th:text="#{ui.composer.empty}">Add a saved workout to a day. Days without placements remain empty.</p>
+                <ol class="schedule-composer__rows" data-composer-rows>
+                    <li class="schedule-placement" th:each="row, state : ${composerDraft.placements}" th:with="rowName=${workoutNames[row.workoutId] != null ? workoutNames[row.workoutId] : #messages.msg('ui.scheduleCentre.unavailable')}">
+                        <div class="schedule-composer__heading"><h3 tabindex="-1" data-row-heading dir="auto" th:text="${rowName}">Workout</h3><span class="schedule-composer__ordinal" data-row-index th:text="${state.count}">1</span></div>
+                        <p class="schedule-composer__notice schedule-composer__notice--error" th:if="${row.day > composerDraft.dayCount}" th:text="#{ui.composer.outsideCycle}">Move this row into the selected cycle before saving.</p>
+                        <div class="schedule-placement__fields">
+                            <div>
+                                <label data-day-label th:for="${'composer-day-' + state.index}" th:text="#{ui.composer.dayField}">Day</label>
+                                <select name="days" data-day-select th:id="${'composer-day-' + state.index}" required>
+                                    <option th:each="day : ${#numbers.sequence(1,14)}" th:value="${day}" th:selected="${day == row.day}" th:text="${composerDraft.type.name() == 'WEEKLY' and day &lt;= 7 ? #temporals.format(T(java.time.LocalDate).of(2026, 9, 28).plusDays(day - 1), 'EEEE') : #messages.msg('ui.composer.day',day)}">Day</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label data-workout-label th:for="${'composer-workout-' + state.index}" th:text="#{ui.02507}">Your workouts</label>
+                                <select name="workoutIds" data-workout-select th:id="${'composer-workout-' + state.index}" required>
+                                    <option th:if="${workoutNames[row.workoutId] == null}" th:value="${row.workoutId}" selected th:text="#{ui.scheduleCentre.unavailable}">Unavailable</option>
+                                    <option th:each="workout : ${workouts}" th:value="${workout.id}" th:selected="${workout.id == row.workoutId}" th:text="${workout.name}">Workout</option>
+                                </select>
                             </div>
                         </div>
+                        <div class="schedule-composer__actions">
+                            <button class="training-launch__action" type="submit" formnovalidate name="editAction" th:value="${'up:' + state.index}" data-row-command="up" th:disabled="${state.first}" th:attr="aria-label=#{ui.training.actionFor(#{ui.studio.moveUp},${rowName})}" th:text="#{ui.studio.moveUp}">Move up</button>
+                            <button class="training-launch__action" type="submit" formnovalidate name="editAction" th:value="${'down:' + state.index}" data-row-command="down" th:disabled="${state.last}" th:attr="aria-label=#{ui.training.actionFor(#{ui.studio.moveDown},${rowName})}" th:text="#{ui.studio.moveDown}">Move down</button>
+                            <button class="training-launch__action" type="submit" formnovalidate name="editAction" th:value="${'remove:' + state.index}" data-row-command="remove" th:attr="aria-label=#{ui.training.actionFor(#{ui.00801},${rowName})}" th:text="#{ui.00801}">Remove</button>
+                        </div>
+                    </li>
+                </ol>
+                <fieldset class="schedule-composer__add">
+                    <legend th:text="#{ui.display.add}">Add</legend>
+                    <div class="schedule-placement__fields">
+                        <div><label for="composer-add-day" th:text="#{ui.composer.dayField}">Day</label><select id="composer-add-day" name="addDay"><option th:each="day : ${#numbers.sequence(1,composerDraft.dayCount)}" th:value="${day}" th:text="${composerDraft.type.name() == 'WEEKLY' ? #temporals.format(T(java.time.LocalDate).of(2026, 9, 28).plusDays(day - 1), 'EEEE') : #messages.msg('ui.composer.day',day)}">Day</option></select></div>
+                        <div><label for="composer-add-workout" th:text="#{ui.02507}">Your workouts</label><select id="composer-add-workout" name="addWorkout"><option th:each="workout : ${workouts}" th:value="${workout.id}" th:text="${workout.name}">Workout</option></select></div>
                     </div>
-                </div>
-            </aside>
-
-            <!-- Main Area: Schedule Grid -->
-            <section class="lg:col-span-9">
-                <!-- Info Banner -->
-                <div class="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-500/5 dark:to-slate-900/50 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 mb-4">
-                    <div class="flex gap-3">
-                        <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <div class="flex-1">
-                            <p class="text-sm text-slate-900 dark:text-slate-100">
-                                <strong th:text="#{ui.02513}">Quick Start:</strong> <th:block th:text="#{ui.02514}">Choose a template above or drag workouts from the left onto any day. Click and drag to reorder. Hover over workouts for quick actions.</th:block>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Schedule Grid Container -->
-                <div id="scheduleGridContainer">
-                    <div id="scheduleGrid" class="schedule-grid"></div>
-                </div>
-
-                <!-- Intelligence Panel -->
-                <div class="schedule-intelligence-panel">
-                    <div class="intelligence-panel-header">
-                        <div class="intelligence-panel-icon">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="intelligence-panel-title" th:text="#{ui.02515}">Training Intelligence</h2>
-                            <p class="text-sm text-slate-600 dark:text-slate-400" th:text="#{ui.02516}">Smart insights about your schedule</p>
-                        </div>
-                    </div>
-
-                    <!-- Quick Stats -->
-                    <div class="intelligence-grid">
-                        <div class="intelligence-stat">
-                            <div class="intelligence-stat-label" th:text="#{ui.02517}">Total Workouts</div>
-                            <div class="intelligence-stat-value" id="totalWorkouts">0</div>
-                            <div class="intelligence-stat-description" th:text="#{ui.02518}">Across all days</div>
-                        </div>
-                        <div class="intelligence-stat">
-                            <div class="intelligence-stat-label" th:text="#{ui.02519}">Training Days</div>
-                            <div class="intelligence-stat-value" id="activeDays">0</div>
-                            <div class="intelligence-stat-description">
-                                <span id="restDays">7</span> <th:block th:text="#{ui.02520}">rest days</th:block>
-                            </div>
-                        </div>
-                        <div class="intelligence-stat">
-                            <div class="intelligence-stat-label" th:text="#{ui.01752}">Frequency</div>
-                            <div class="intelligence-stat-value" id="frequency">0%</div>
-                            <div class="intelligence-stat-description" th:text="#{ui.02521}">Training ratio</div>
-                        </div>
-                        <div class="intelligence-stat">
-                            <div class="intelligence-stat-label" th:text="#{ui.02522}">Avg Per Day</div>
-                            <div class="intelligence-stat-value" id="avgPerDay">0.0</div>
-                            <div class="intelligence-stat-description" th:text="#{ui.02523}">Workouts per active day</div>
-                        </div>
-                    </div>
-
-                    <!-- Insights -->
-                    <div id="intelligenceInsights" class="intelligence-insights">
-                        <!-- Insights will be dynamically added here -->
-                    </div>
-                </div>
-
-                <!-- Advanced Controls -->
-                <div class="schedule-advanced-controls">
-                    <button type="button" id="duplicateScheduleBtn" class="advanced-control-btn">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
-                        <th:block th:text="#{ui.02448}">Duplicate Schedule</th:block>
-                    </button>
-                    <button type="button" id="clearAllBtn" class="advanced-control-btn destructive">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
-                        <th:block th:text="#{ui.02524}">Clear All</th:block>
-                    </button>
-                </div>
+                    <button class="training-launch__action" type="submit" formnovalidate name="editAction" value="add" th:disabled="${workouts.isEmpty() or composerDraft.placements.size() >= 100}" th:text="#{ui.display.add}">Add</button>
+                    <a th:if="${workouts.isEmpty()}" class="training-launch__action" th:href="@{/workout}" th:text="#{ui.02508}">Create a workout</a>
+                </fieldset>
+                <p class="schedule-composer__hint" role="status" aria-live="polite" data-composer-status th:attr="data-message=#{ui.composer.changed}"></p>
+                <div class="schedule-composer__save"><button class="training-launch__action training-launch__action--primary" type="submit" name="editAction" value="save" th:text="#{ui.02487}">Save schedule</button></div>
             </section>
         </div>
-    </div>
-</div>
-
-<div th:fragment="pageScripts">
-    <script src="/js/schedule/schedule-designer.js"></script>
-</div>
-
+    </form>
+</section>
+<th:block th:fragment="pageScripts"><script th:src="@{/js/schedule/schedule-composer.js(v=${uiCssVersion})}" defer></script></th:block>
 </th:block>

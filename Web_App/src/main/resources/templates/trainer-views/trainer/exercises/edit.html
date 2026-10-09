@@ -1,78 +1,40 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02683}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02683}">Edit Exercise</h1>
-                </div>
-                <a th:href="@{/trainer/library/exercises/{id}(id=${exerciseId})}"
-                   class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.00571}">
-                    Back
-                </a>
-            </div>
-
-            <form class="mt-6 space-y-4" method="post" th:action="@{/trainer/library/exercises/{id}/edit(id=${exerciseId})}" th:object="${form}">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
-                <div>
-                    <label class="block text-sm font-semibold" for="name" th:text="#{ui.00131}">Name</label>
-                    <input id="name" type="text" th:field="*{name}"
-                           class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30" />
-                    <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold" for="description" th:text="#{ui.00113}">Description</label>
-                    <textarea id="description" rows="4" th:field="*{description}"
-                              class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"></textarea>
-                </div>
-
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="block text-sm font-semibold" for="primaryMuscles" th:text="#{ui.02684}">Primary muscles</label>
-                        <input id="primaryMuscles" type="text" th:field="*{primaryMuscles}"
-                               class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30" />
-                        <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('primaryMuscles')}" th:errors="*{primaryMuscles}"></div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold" for="equipment" th:text="#{ui.02065}">Equipment</label>
-                        <input id="equipment" type="text" th:field="*{equipment}"
-                               class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30" />
-                        <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('equipment')}" th:errors="*{equipment}"></div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="block text-sm font-semibold" for="difficulty" th:text="#{ui.02685}">Difficulty</label>
-                        <input id="difficulty" type="text" th:field="*{difficulty}"
-                               class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30" />
-                        <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('difficulty')}" th:errors="*{difficulty}"></div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold" for="videoUrl" th:text="#{ui.02686}">Video URL (optional)</label>
-                        <input id="videoUrl" type="url" th:field="*{videoUrl}"
-                               class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30" />
-                        <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('videoUrl')}" th:errors="*{videoUrl}"></div>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold" for="notesText" th:text="#{ui.02687}">Coaching notes (one per line)</label>
-                    <textarea id="notesText" rows="5" th:field="*{notesText}"
-                              class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"></textarea>
-                </div>
-
-                <div class="flex items-center justify-end gap-2">
-                    <button type="submit"
-                            class="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.00382}">
-                        Save changes
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02683}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content" class="client-workspace-v2 library-exercise-v2">
+    <header class="detail-header"><div class="detail-header-content"><h1 class="detail-title" th:text="#{ui.02683}"></h1><a class="detail-btn-secondary" th:href="@{/trainer/library/exercises(q=${query},page=${libraryPage})}" th:text="#{ui.02688}"></a></div></header>
+    <form th:fragment="exerciseForm" th:object="${form}" th:action="${exerciseId == null} ? @{/trainer/library/exercises/create(q=${query},page=${libraryPage})} : @{/trainer/library/exercises/{id}/edit(id=${exerciseId},q=${query},page=${libraryPage})}" method="post" class="profile-editor-form library-exercise-form">
+    <div th:if="${#fields.hasAnyErrors()}" id="exercise-errors" class="profile-editor-errors" role="alert"><h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.library.exerciseInvalid}"></p><ul>
+        <li th:if="${#fields.hasErrors('name')}"><a href="#name" th:text="#{ui.02658}"></a></li>
+        <li th:if="${#fields.hasErrors('primaryMuscles')}"><a href="#primaryMuscles" th:text="#{ui.02663}"></a></li>
+        <li th:if="${#fields.hasErrors('equipment')}"><a href="#equipment" th:text="#{ui.02065}"></a></li>
+        <li th:if="${#fields.hasErrors('difficulty')}"><a href="#difficulty" th:text="#{ui.02666}"></a></li>
+        <li th:if="${#fields.hasErrors('description')}"><a href="#description" th:text="#{ui.00113}"></a></li>
+        <li th:if="${#fields.hasErrors('videoUrl') or #fields.hasErrors('videoUrlValid')}"><a href="#videoUrl" th:text="#{ui.02686}"></a></li>
+        <li th:if="${#fields.hasErrors('notesText')}"><a href="#notesText" th:text="#{ui.02687}"></a></li>
+    </ul></div>
+    <div class="library-exercise-editor-layout"><div class="library-exercise-fields">
+    <fieldset class="detail-section"><legend class="detail-section-title" th:text="#{ui.02657}"></legend><div class="profile-editor-fields">
+        <div><label for="name"><span th:text="#{ui.02658}"></span> <span aria-hidden="true">*</span></label><input id="name" dir="auto" type="text" th:field="*{name}" maxlength="120" required th:errorclass="profile-field-invalid" th:placeholder="#{ui.02659}" th:attr="aria-invalid=${#fields.hasErrors('name')},aria-describedby=${#fields.hasErrors('name') ? 'exercise-errors' : null}"></div>
+        <div><label for="primaryMuscles"><span th:text="#{ui.02663}"></span> <span aria-hidden="true">*</span></label><input id="primaryMuscles" dir="auto" type="text" th:field="*{primaryMuscles}" maxlength="255" required th:errorclass="profile-field-invalid" th:placeholder="#{ui.02664}" th:attr="aria-invalid=${#fields.hasErrors('primaryMuscles')},aria-describedby=${#fields.hasErrors('primaryMuscles') ? 'exercise-errors' : null}"></div>
+        <div><label for="equipment"><span th:text="#{ui.02065}"></span> <span aria-hidden="true">*</span></label><input id="equipment" dir="auto" type="text" th:field="*{equipment}" maxlength="255" required th:errorclass="profile-field-invalid" th:placeholder="#{ui.02665}" th:attr="aria-invalid=${#fields.hasErrors('equipment')},aria-describedby=${#fields.hasErrors('equipment') ? 'exercise-errors' : null}"></div>
+        <div><label for="difficulty"><span th:text="#{ui.02666}"></span> <span aria-hidden="true">*</span></label><select id="difficulty" th:field="*{difficulty}" required th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('difficulty')},aria-describedby=${#fields.hasErrors('difficulty') ? 'exercise-errors' : null}">
+            <option value="" th:text="#{ui.02667}"></option><option th:if="${form.difficulty != null and !#strings.isEmpty(form.difficulty) and form.difficulty != 'Beginner' and form.difficulty != 'Intermediate' and form.difficulty != 'Advanced'}" th:value="${form.difficulty}" th:text="${form.difficulty}"></option><option value="Beginner" th:text="#{ui.02668}"></option><option value="Intermediate" th:text="#{ui.02669}"></option><option value="Advanced" th:text="#{ui.02670}"></option>
+        </select></div>
+        <div class="profile-editor-bio"><label for="description" th:text="#{ui.00113}"></label><textarea id="description" dir="auto" th:field="*{description}" rows="5" maxlength="10000" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('description')}" th:placeholder="#{ui.02660}"></textarea></div>
+        <div class="profile-editor-bio"><label for="videoUrl" th:text="#{ui.02686}"></label><input id="videoUrl" dir="ltr" type="url" maxlength="500" th:field="*{videoUrl}" th:classappend="${#fields.hasErrors('videoUrl') or #fields.hasErrors('videoUrlValid')} ? 'profile-field-invalid'" th:attr="aria-invalid=${#fields.hasErrors('videoUrl') or #fields.hasErrors('videoUrlValid')}" aria-describedby="video-help" th:placeholder="#{ui.02673}"><p id="video-help" th:text="#{ui.02674}"></p></div>
+    </div></fieldset>
+    <fieldset class="detail-section"><legend class="detail-section-title" th:text="#{ui.02675}"></legend><label for="notesText" th:text="#{ui.02687}"></label><textarea id="notesText" dir="auto" th:field="*{notesText}" rows="6" maxlength="10000" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('notesText')}" aria-describedby="notes-help" th:placeholder="#{ui.02677}"></textarea><p id="notes-help" th:text="#{ui.library.instructionSharing}"></p></fieldset>
+    </div><section class="detail-section library-exercise-preview" aria-labelledby="exercise-preview-title">
+        <h2 id="exercise-preview-title" class="detail-section-title" th:text="#{ui.library.previewTitle}"></h2>
+        <p class="detail-subtitle" th:text="#{ui.library.previewHint}"></p>
+        <h3 data-exercise-preview="name" dir="auto" th:text="${form.name}"></h3>
+        <dl class="portfolio-metadata"><div><dt th:text="#{ui.02684}"></dt><dd data-exercise-preview="primaryMuscles" dir="auto" th:text="${form.primaryMuscles}"></dd></div><div><dt th:text="#{ui.02065}"></dt><dd data-exercise-preview="equipment" dir="auto" th:text="${form.equipment}"></dd></div><div><dt th:text="#{ui.02685}"></dt><dd data-exercise-preview="difficulty" th:text="${form.difficulty}"></dd></div></dl>
+        <h3 id="exercise-preview-description" th:text="#{ui.00113}"></h3><p class="library-preview-text" role="region" aria-labelledby="exercise-preview-description" th:tabindex="${#strings.isEmpty(form.description) ? -1 : 0}" data-exercise-preview="description" dir="auto" th:text="${form.description}"></p>
+        <h3 id="exercise-preview-notes" th:text="#{ui.00239}"></h3><p class="library-preview-text" role="region" aria-labelledby="exercise-preview-notes" th:tabindex="${#strings.isEmpty(form.notesText) ? -1 : 0}" data-exercise-preview="notesText" dir="auto" th:text="${form.notesText}"></p>
+        <h3 th:text="#{ui.02686}"></h3><p class="library-preview-text" data-exercise-preview="videoUrl" dir="auto" th:text="${form.videoUrl}"></p>
+        <p data-exercise-video-status th:text="#{ui.library.previewVideo}"></p>
+    </section></div>
+    <div class="connection-actions"><button class="detail-btn-primary" type="submit" th:text="${exerciseId == null} ? #{ui.02655} : #{ui.00686}"></button><a class="detail-btn-secondary" th:href="@{/trainer/library/exercises(q=${query},page=${libraryPage})}" th:text="#{ui.00125}"></a></div>
+</form>
+</div>
+<div th:fragment="pageScripts"><script th:src="@{/js/trainer/trainer-library-editor.js(v=${assetVersion})}" defer></script></div>
 </th:block>

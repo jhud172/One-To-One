@@ -15,7 +15,23 @@ import java.util.Optional;
 
 public interface HealthRecordRepository extends JpaRepository<HealthRecord, Long> {
 
+    @Query("""
+            select hr from HealthRecord hr where hr.user = :owner
+            and (:fromDate is null or hr.baselineDate >= :fromDate)
+            and (:untilDate is null or hr.baselineDate <= :untilDate)
+            and (:activity = '' or hr.activityLevel = :activity)
+            and (lower(coalesce(hr.activityLevel, '')) like :pattern escape '!'
+                 or lower(cast(hr.baselineDate as string)) like :pattern escape '!')
+            order by case when hr.baselineDate is null then 1 else 0 end
+            """)
+    org.springframework.data.domain.Page<HealthRecord> searchHistory(@Param("owner") User owner,
+            @Param("pattern") String pattern, @Param("fromDate") LocalDateTime fromDate,
+            @Param("untilDate") LocalDateTime untilDate, @Param("activity") String activity,
+            org.springframework.data.domain.Pageable pageable);
+
     Optional<HealthRecord> findTopByUserOrderByBaselineDateDescIdDesc(User user);
+
+    Optional<HealthRecord> findByIdAndUser(Long id, User user);
 
         List<HealthRecord> findTop2ByUserOrderByBaselineDateDescIdDesc(User user);
 

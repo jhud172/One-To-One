@@ -1,111 +1,55 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
-          th:replace="~{base :: layout(#{ui.00269}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="grid gap-4 lg:grid-cols-3">
-
-            <section class="lg:col-span-2">
-                <div class="rounded-2xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00245}">My Trainer</h1>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00246}">Your current one-to-one trainer connection.</p>
-
-                    <div th:if="${error == 'active'}" class="mt-4 rounded-xl border border-white/15 bg-amber-400/10 p-4 text-sm text-amber-200" th:text="#{ui.00247}">
-                        You already have an active trainer.
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.00269}, null, ~{::content}, null)}">
+    <div th:fragment="content" class="client-workspace-v2 trainer-connection-v2 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <header class="detail-header"><div><h1 th:text="#{ui.00245}">My Trainer</h1><p th:text="#{ui.00246}">Your current one-to-one trainer connection.</p></div></header>
+        <p th:if="${trainerRequestSent == true}" role="status" class="connection-feedback" th:text="#{ui.coaching.requestSent}">Trainer request sent.</p>
+        <p th:if="${trainerRequestWithdrawn == true}" role="status" class="connection-feedback" th:text="#{ui.coaching.withdrawn}">Trainer request withdrawn.</p>
+        <p th:if="${error == 'active'}" role="alert" class="checkin-review-error" th:text="#{ui.00247}">You already have an active trainer.</p>
+        <p th:if="${error == 'trainer-unverified'}" role="alert" class="checkin-review-error" th:text="#{ui.00248}">This trainer is not yet verified.</p>
+        <p th:if="${error == 'invalid'}" role="alert" class="checkin-review-error" th:text="#{ui.00249}">Unable to create trainer request.</p>
+        <p th:if="${verifyError != null}" role="alert" class="checkin-review-error" th:text="${verifyError}"></p>
+        <div class="connection-layout">
+            <section class="connection-current detail-card">
+                <div th:if="${activeLink == null}" class="connection-empty"><h2 th:text="#{ui.00250}">No trainer yet</h2><p th:text="#{ui.00251}">Choose a trainer below to send a request.</p></div>
+                <div th:if="${activeLink != null}" class="connection-card">
+                    <div class="connection-identity"><h2 th:text="${trainer != null ? trainer.fullName : ''}"></h2><span class="connection-status" th:text="#{ui.00252}">ACTIVE</span></div>
+                    <p th:text="${trainer != null ? '@' + trainer.username : ''}"></p>
+                    <div class="connection-actions">
+                        <a th:href="@{/client/assigned-plan}" th:text="#{ui.01433}">Plan</a>
+                        <a th:href="@{/inbox}" th:text="#{ui.00447}">Message trainer</a>
+                        <a th:if="${trainer != null}" th:href="@{/u/{username}(username=${trainer.username})}" th:text="#{ui.00567}">View profile</a>
                     </div>
-                    <div th:if="${error == 'trainer-unverified'}" class="mt-4 rounded-xl border border-white/15 bg-amber-400/10 p-4 text-sm text-amber-200" th:text="#{ui.00248}">
-                        This trainer is not yet verified.
-                    </div>
-                    <div th:if="${error == 'invalid'}" class="mt-4 rounded-xl border border-white/15 bg-rose-400/10 p-4 text-sm text-rose-200" th:text="#{ui.00249}">
-                        Unable to create trainer request.
-                    </div>
-                    <div th:if="${verifyError}" class="mt-4 rounded-xl border border-amber-200/40 bg-amber-400/10 p-4 text-sm text-amber-200" th:text="${verifyError}">
-                        Verify your account before requesting a trainer.
-                    </div>
-
-                    <div th:if="${activeLink == null}" class="mt-6 border border-dashed border-white/15 rounded-2xl p-8 text-center">
-                        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00250}">No trainer yet</h2>
-                        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00251}">Choose a trainer below to send a request.</p>
-                    </div>
-
-                    <div th:if="${activeLink != null}" class="mt-6 rounded-2xl border border-white/10 p-5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
-                                          th:text="${trainer != null ? trainer.fullName : 'Trainer'}">Trainer</span>
-                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ring-white/10"
-                                        th:classappend="${activeLink.status.name() == 'ACTIVE' ? 'bg-emerald-400/10 text-emerald-300' : (activeLink.status.name() == 'PAUSED' ? 'bg-amber-400/10 text-amber-300' : (activeLink.status.name() == 'ENDED' ? 'bg-rose-400/10 text-rose-300' : 'bg-slate-400/10 text-slate-300'))}"
-                                          th:text="${activeLink.status.name()}">STATUS</span>
-                                </div>
-                                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                                   th:text="${trainer != null ? '@' + trainer.username : ''}"></p>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 rounded-xl border border-amber-200/40 bg-amber-400/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-400/20">
-                            <div class="flex items-start gap-2">
-                                <svg class="mt-0.5 h-4 w-4 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3.5l9 16H3l9-16z" />
-                                </svg>
-                                <div>
-                                    <p class="font-semibold text-amber-100" th:text="#{ui.00254}">In-platform payments only</p>
-                                    <p class="mt-1 text-amber-100/80" th:text="#{ui.00255}">Keep every payment protected inside ONE TO ONE.</p>
-                                    <a th:href="@{/policies/payments}" class="mt-2 inline-flex items-center text-amber-100 underline-offset-4 hover:underline" th:text="#{ui.00256}">Learn more</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                </div>
+                <div class="connection-payment-notice"><h3 th:text="#{ui.00254}">In-platform payments only</h3><p th:text="#{ui.00255}">Keep every payment protected inside ONE TO ONE.</p><a th:href="@{/policies/payments}" th:text="#{ui.00256}">Learn more</a></div>
+                <div th:if="${!#lists.isEmpty(pendingLinks)}" class="connection-pending">
+                    <h2 th:text="#{ui.coaching.pending}">Pending requests</h2>
+                    <article th:each="link : ${pendingLinks}" class="connection-row">
+                        <div><h3 th:text="${trainersById[link.trainerUserId] != null ? trainersById[link.trainerUserId].fullName : ''}"></h3><span class="connection-status" th:text="#{ui.02648}">REQUESTED</span></div>
+                        <form method="post" th:action="@{/client/trainers/{id}/withdraw(id=${link.trainerUserId})}" th:attr="data-confirm=#{ui.coaching.withdrawConfirm}">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" th:text="#{ui.coaching.withdraw}">Withdraw request</button>
+                        </form>
+                    </article>
+                </div>
+                <div th:if="${!#lists.isEmpty(pausedLinks)}" class="connection-paused">
+                    <h2 th:text="#{ui.coaching.paused}">Paused coaching</h2><p th:text="#{ui.coaching.pausedHint}">Contact your coach to discuss resuming your plan.</p>
+                    <article th:each="link : ${pausedLinks}" class="connection-row"><h3 th:text="${trainersById[link.trainerUserId] != null ? trainersById[link.trainerUserId].fullName : ''}"></h3><a th:href="@{/inbox}" th:text="#{ui.02083}">Messages</a></article>
                 </div>
             </section>
-
-            <aside data-site-tour="client-trainers-search">
-                <div class="rounded-2xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00257}">Find Trainer</h2>
-                        <span class="text-xs text-slate-600 dark:text-slate-300" th:text="${#lists.size(trainers)} + ' available'"></span>
+            <section class="detail-card connection-directory" data-site-tour="client-trainers-search">
+                <h2 th:text="#{ui.00257}">Find Trainer</h2><p th:text="#{ui.coaching.available(${#lists.size(trainers)})}"></p>
+                <form method="get" th:action="@{/client/trainers}" class="connection-search">
+                    <label for="trainerSearch" th:text="#{ui.00258}">Search trainers</label>
+                    <div><input id="trainerSearch" name="q" th:value="${q}" th:placeholder="#{ui.00259}"><button type="submit" th:text="#{ui.00260}">Search</button><a th:if="${q != null and !#strings.isEmpty(q)}" th:href="@{/client/trainers}" th:text="#{ui.00555}">Clear</a></div>
+                </form>
+                <p th:if="${#lists.isEmpty(trainers)}" class="connection-empty" th:text="${q != null and !#strings.isEmpty(q)} ? #{ui.01563} : #{ui.00261}">No trainers available yet.</p>
+                <article th:each="t : ${trainers}" class="connection-row">
+                    <div class="connection-directory-identity"><h3 th:text="${t.fullName}"></h3><p th:text="${'@' + t.username}"></p><span class="connection-status" th:text="#{ui.00564}">Verified</span></div>
+                    <div class="connection-actions">
+                        <a th:href="@{/u/{username}(username=${t.username})}" th:text="#{ui.00567}">View profile</a>
+                        <form th:action="@{/client/trainers/{id}/request(id=${t.id})}" method="post"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button type="submit" th:disabled="${activeLink != null or pendingTrainerIds.contains(t.id)}" th:text="${pendingTrainerIds.contains(t.id)} ? #{ui.02648} : #{ui.00262}">Request</button></form>
                     </div>
-
-                    <form method="get" th:action="@{/client/trainers}" class="mt-3">
-                        <label for="trainerSearch" class="sr-only" th:text="#{ui.00258}">Search trainers</label>
-                        <div class="flex gap-2">
-                            <input id="trainerSearch"
-                                   name="q"
-                                   th:value="${q}"
-                                   placeholder="Search by name or username"
-                                   class="w-full min-h-11 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"  th:placeholder="#{ui.00259}"/>
-                            <button type="submit"
-                                    class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40" th:text="#{ui.00260}">
-                                Search
-                            </button>
-                        </div>
-                    </form>
-
-                    <div th:if="${#lists.isEmpty(trainers)}" class="mt-4 border border-dashed border-white/15 rounded-2xl p-8 text-center">
-                        <p class="text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00261}">No trainers available yet.</p>
-                    </div>
-
-                    <div th:if="${!#lists.isEmpty(trainers)}" class="mt-4 divide-y divide-white/10">
-                        <div th:each="t : ${trainers}" class="py-3 flex items-center justify-between gap-3">
-                            <div class="min-w-0">
-                                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${t.fullName}">Trainer Name</div>
-                                <div class="text-xs text-slate-600 dark:text-slate-300" th:text="${'@' + t.username}">@trainer</div>
-                            </div>
-
-                            <form th:action="@{/client/trainers/{id}/request(id=${t.id})}" method="post" class="shrink-0">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <button type="submit"
-                                        th:disabled="${activeLink != null}"
-                                        class="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed" th:text="#{ui.00262}">
-                                    Request
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
+                </article>
+            </section>
         </div>
     </div>
-
 </th:block>

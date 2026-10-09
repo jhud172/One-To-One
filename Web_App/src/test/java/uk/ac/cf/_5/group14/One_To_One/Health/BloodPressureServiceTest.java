@@ -46,6 +46,15 @@ class BloodPressureServiceTest {
     }
 
     @Test
+    void mixedReadingsCannotHideHigherCategoryBehindLowComponent() {
+        var category = uk.ac.cf._5.group14.One_To_One.Health.BloodPressure.BpCategory.CRISIS;
+        assertThat(uk.ac.cf._5.group14.One_To_One.Health.BloodPressure.BpCategory.classify(190, 50)).isEqualTo(category);
+        assertThat(uk.ac.cf._5.group14.One_To_One.Health.BloodPressure.BpCategory.classify(80, 130)).isEqualTo(category);
+        assertThat(uk.ac.cf._5.group14.One_To_One.Health.BloodPressure.BpCategory.classify(145, 50))
+                .isEqualTo(uk.ac.cf._5.group14.One_To_One.Health.BloodPressure.BpCategory.HIGH_STAGE2);
+    }
+
+    @Test
     void saveShouldThrowWhenDailyReadingAlreadyExistsWithNoTime() {
         User user = makeUser(2L);
         LocalDate date = LocalDate.of(2026, 3, 1);

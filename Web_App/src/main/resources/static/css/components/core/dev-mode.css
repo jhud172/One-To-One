@@ -33,6 +33,25 @@
                     color 0.2s ease;
     }
 
+    @media (max-width: 1377px) {
+        .navheader .dev-mode-pill {
+            flex: 0 0 2.75rem;
+            width: 2.75rem;
+            min-height: 2.75rem;
+            padding: 0;
+            justify-content: center;
+        }
+
+        .navheader .dev-mode-pill__label {
+            display: none;
+        }
+
+        .navheader .authsurface {
+            min-width: 0;
+            gap: 0.35rem;
+        }
+    }
+
     .dev-mode-pill:hover {
         border-color: rgba(217, 119, 6, 0.68);
         background:

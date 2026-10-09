@@ -11,6 +11,10 @@ public interface DailyNutritionLogService {
 
     DailyNutritionLog upsert(User user, LocalDate date, UpsertRequest request);
 
+    DailyNutritionLog upsert(User user, LocalDate date, UpsertRequest request, String expectedRevision);
+
+    String revision(DailyNutritionLog log);
+
     List<DailyNutritionRangeSummary> getRange(User user, LocalDate start, LocalDate end);
 
     DailyNutritionSummary summarize(DailyNutritionLog log);

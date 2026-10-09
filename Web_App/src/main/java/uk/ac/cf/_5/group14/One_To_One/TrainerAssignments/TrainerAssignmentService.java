@@ -10,6 +10,7 @@ public interface TrainerAssignmentService {
 
     List<AssignedWorkout> listWorkoutsForClient(Long clientId);
     List<AssignedSchedule> listSchedulesForClient(Long clientId);
+    AssignedSchedule getScheduleForClient(Long clientId, Long assignmentId);
     List<AssignedWorkout> listWorkoutsForTrainerClient(Long trainerId, Long clientId);
     List<AssignedSchedule> listSchedulesForTrainerClient(Long trainerId, Long clientId);
 

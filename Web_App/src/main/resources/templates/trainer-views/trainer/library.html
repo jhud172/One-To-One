@@ -1,42 +1,62 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02705}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div th:if="${error} == 'trainer-unverified'" class="mb-4 rounded-2xl border border-amber-200/30 bg-amber-500/10 p-4 text-sm text-amber-200" th:text="#{ui.02704}">
-            Your trainer account needs verification before you can manage the library.
-        </div>
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-            <div class="flex items-start justify-between gap-4" data-site-tour="trainer-library">
-                <div>
-                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02705}">Trainer Library</h1>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02706}">Create and share exercises, workouts, and programmes with your active clients.</p>
-                </div>
-            </div>
-
-            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <a th:href="@{/trainer/library/exercises}"
-                   class="rounded-xl border border-white/10 bg-white/5 p-5 hover:bg-slate-800/60">
-                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02329}">Exercises</div>
-                    <div class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                         th:text="${exerciseCount} + ' total'">0 total</div>
-                </a>
-
-                <a th:href="@{/trainer/library/workouts}"
-                   class="rounded-xl border border-white/10 bg-white/5 p-5 hover:bg-slate-800/60">
-                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00235}">Workouts</div>
-                    <div class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                         th:text="${workoutCount} + ' total'">0 total</div>
-                </a>
-
-                <a th:href="@{/trainer/library/programmes}"
-                   class="rounded-xl border border-white/10 bg-white/5 p-5 hover:bg-slate-800/60">
-                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00241}">Programmes</div>
-                    <div class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                         th:text="${programmeCount} + ' total'">0 total</div>
-                </a>
-            </div>
-        </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02705}, null, ~{::content}, null)}">
+<div th:fragment="content" class="client-workspace-v2 trainer-library-hub-v2">
+    <header class="detail-header" data-site-tour="trainer-library">
+        <div class="detail-header-content"><div><h1 class="detail-title" th:text="#{ui.02705}">Trainer library</h1><p class="detail-subtitle" th:text="#{ui.02706}"></p></div><a class="detail-btn-secondary" th:href="@{/trainer/clients}" th:text="#{ui.02985}">Clients</a></div>
+        <p th:if="${libraryShared}" class="checkin-feedback" role="status" th:text="#{ui.library.shareSaved}"></p>
+        <p th:if="${libraryShareError}" class="profile-editor-errors" role="alert" th:text="#{ui.library.shareError}"></p>
+    </header>
+    <section th:unless="${libraryReady}" class="detail-section library-verification" aria-labelledby="verification-title">
+        <h2 id="verification-title" class="detail-section-title" th:text="#{ui.02704}"></h2>
+        <a class="detail-btn-secondary" th:href="@{/trainer/verification}" th:text="#{ui.proReview.title}">Professional verification</a>
+        <div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/trainer/profile/edit}" th:text="#{ui.02707}">Edit trainer profile</a></div>
+    </section>
+    <section th:if="${libraryReady}" class="detail-section library-overview-search" aria-labelledby="library-search-title">
+        <h2 id="library-search-title" class="detail-section-title" th:text="#{ui.library.searchNames}">Search library names</h2>
+        <p class="detail-subtitle" id="library-search-help" th:text="#{ui.library.searchHint}">Search your saved exercise, workout and programme names.</p>
+        <form th:action="@{/trainer/library}" method="get" class="library-overview-search-form">
+            <label class="sr-only" for="library-query" th:text="#{ui.library.searchNames}">Search library names</label>
+            <input id="library-query" type="search" name="q" maxlength="120" th:value="${query}" aria-describedby="library-search-help"/>
+            <button type="submit" class="detail-btn-primary" th:text="#{ui.00260}">Search</button>
+            <a th:if="${!#strings.isEmpty(query)}" th:href="@{/trainer/library}" class="detail-btn-secondary" th:text="#{ui.00555}">Clear</a>
+        </form>
+        <p class="detail-subtitle" th:text="#{ui.library.hubHint}">Library resources support client coaching; sharing is managed from each resource.</p>
+    </section>
+    <section th:if="${libraryReady}" class="detail-section library-overview-recent" aria-labelledby="library-recent-title">
+        <h2 id="library-recent-title" class="detail-section-title" th:text="#{ui.library.recentCreated}">Recently created</h2>
+        <p class="detail-subtitle" th:text="#{ui.library.shownResources(${#lists.size(libraryOverview.items)},${libraryOverview.totalMatches()})}"></p>
+        <p th:if="${#lists.isEmpty(libraryOverview.items)}" class="detail-empty" th:text="${libraryOverview.totalCount() == 0 ? #messages.msg('ui.library.emptyHub') : #messages.msg('ui.library.noNameMatches')}"></p>
+        <ul th:unless="${#lists.isEmpty(libraryOverview.items)}" class="library-overview-recent-list">
+            <li th:each="item : ${libraryOverview.items}">
+                <a class="library-overview-resource" th:href="${item.href}"><span><small th:text="${#messages.msg(item.kindKey)}"></small><strong th:text="${item.name}"></strong></span><time th:if="${item.createdAt != null}" th:attr="datetime=${item.createdAt}" th:text="${#temporals.format(item.createdAt, 'dd MMM yyyy')}"></time></a>
+            </li>
+        </ul>
+    </section>
+    <div th:if="${libraryReady}" class="library-hub-grid">
+        <section class="detail-section library-hub-card" aria-labelledby="library-exercises">
+            <span class="library-hub-step" aria-hidden="true">01</span>
+            <h2 id="library-exercises" class="detail-section-title"><a th:href="@{/trainer/library/exercises(q=${query})}" th:text="#{ui.02329}"></a></h2>
+            <p class="library-hub-count" th:text="${exerciseCount}">0</p>
+            <p class="detail-subtitle" th:text="#{ui.library.exerciseHint}">Reusable movements with coaching notes.</p>
+            <p th:if="${!#strings.isEmpty(query)}" class="detail-subtitle" th:text="#{ui.library.nameMatches(${libraryOverview.exerciseMatches})}"></p>
+            <div class="connection-actions"><a class="detail-btn-primary" th:href="@{/trainer/library/exercises/create}" th:text="#{ui.02655}"></a></div>
+        </section>
+        <section class="detail-section library-hub-card" aria-labelledby="library-workouts">
+            <span class="library-hub-step" aria-hidden="true">02</span>
+            <h2 id="library-workouts" class="detail-section-title"><a th:href="@{/trainer/library/workouts(q=${query})}" th:text="#{ui.00235}"></a></h2>
+            <p class="library-hub-count" th:text="${workoutCount}">0</p>
+            <p class="detail-subtitle" th:text="#{ui.library.workoutHint}">Sessions built from your library exercises.</p>
+            <p th:if="${!#strings.isEmpty(query)}" class="detail-subtitle" th:text="#{ui.library.nameMatches(${libraryOverview.workoutMatches})}"></p>
+            <div class="connection-actions"><a class="detail-btn-primary" th:href="@{/trainer/library/workouts/create}" th:text="#{ui.02798}"></a></div>
+        </section>
+        <section class="detail-section library-hub-card" aria-labelledby="library-programmes">
+            <span class="library-hub-step" aria-hidden="true">03</span>
+            <h2 id="library-programmes" class="detail-section-title"><a th:href="@{/trainer/library/programmes(q=${query})}" th:text="#{ui.00241}"></a></h2>
+            <p class="library-hub-count" th:text="${programmeCount}">0</p>
+            <p class="detail-subtitle" th:text="#{ui.library.programmeHint}">Training plans built from your library workouts.</p>
+            <p th:if="${!#strings.isEmpty(query)}" class="detail-subtitle" th:text="#{ui.library.nameMatches(${libraryOverview.programmeMatches})}"></p>
+            <div class="connection-actions"><a class="detail-btn-primary" th:href="@{/trainer/library/programmes/create}" th:text="#{ui.02735}"></a></div>
+        </section>
     </div>
 
+</div>
 </th:block>

@@ -1,21 +1,22 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(${pageTitle} ?: #{ui.01682}, null, ~{::content}, ~{::pageScripts})}">
 
-    <div th:fragment="content" class="detail-container">
+    <div th:fragment="content" class="client-workspace-v2 library-exercise-v2 library-exercise-detail-v2">
+        <p th:if="${libraryExerciseSaved}" class="checkin-feedback" role="status" th:text="#{ui.library.exerciseSaved}"></p>
+        <p th:if="${libraryDeleteBlocked}" class="profile-editor-errors" role="alert" th:text="#{ui.library.exerciseInUse}"></p>
         <!-- Header with key metadata at top -->
         <div class="detail-header">
             <div class="detail-header-content">
                 <div class="detail-header-meta">
                     <p class="detail-label" th:text="#{ui.01682}">Exercise</p>
-                    <h1 class="detail-title" th:text="${exercise.name}">Exercise</h1>
-                    <p class="detail-subtitle" th:text="${exercise.primaryMuscles}">Primary muscles</p>
+                    <h1 class="detail-title" dir="auto" th:text="${exercise.name}">Exercise</h1>
+                    <p class="detail-subtitle" dir="auto" th:text="${exercise.primaryMuscles}">Primary muscles</p>
                 </div>
                 <!-- Primary actions - sticky on larger screens -->
                 <div class="detail-actions-sticky">
-                    <a th:href="@{/trainer/library/exercises}" class="detail-btn-secondary" th:text="#{ui.00571}">Back</a>
-                    <a th:href="@{/trainer/library/exercises/{id}/edit(id=${exercise.id})}" class="detail-btn-primary" th:text="#{ui.00138}">Edit</a>
-                    <button type="button" class="detail-btn-secondary"
-                            data-share-dialog-open="shareDialog" th:text="#{ui.02697}">Share</button>
+                    <a th:href="@{/trainer/library/exercises(q=${query},page=${libraryPage})} + ${'#exercise-' + exercise.id}" class="detail-btn-secondary" th:text="#{ui.00571}">Back</a>
+                    <a th:href="@{/trainer/library/exercises/{id}/edit(id=${exercise.id},q=${query},page=${libraryPage})}" class="detail-btn-primary" th:text="#{ui.00138}">Edit</a>
+                    <a href="#shareDialog" class="detail-btn-secondary" data-share-dialog-open="shareDialog" th:text="#{ui.02697}">Share</a>
                 </div>
             </div>
         </div>
@@ -31,23 +32,24 @@
                         <div class="detail-metadata">
                             <div class="detail-metadata-item">
                                 <p class="detail-metadata-label" th:text="#{ui.02065}">Equipment</p>
-                                <p class="detail-metadata-value" th:text="${exercise.equipment}">Equipment</p>
+                                <p class="detail-metadata-value" dir="auto" th:text="${exercise.equipment}">Equipment</p>
                             </div>
                             <div class="detail-metadata-item">
                                 <p class="detail-metadata-label" th:text="#{ui.02685}">Difficulty</p>
-                                <p class="detail-metadata-value" th:text="${exercise.difficulty}">Difficulty</p>
+                                <p class="detail-metadata-value" th:switch="${#strings.toUpperCase(exercise.difficulty)}"><span th:case="'BEGINNER'" th:text="#{ui.02668}"></span><span th:case="'INTERMEDIATE'" th:text="#{ui.02669}"></span><span th:case="'ADVANCED'" th:text="#{ui.02670}"></span><span th:case="'*'" th:text="${exercise.difficulty}"></span></p>
                             </div>
                         </div>
 
                         <div class="mt-4" th:if="${exercise.description != null and !#strings.isEmpty(exercise.description)}">
                             <p class="detail-metadata-label" th:text="#{ui.00113}">Description</p>
-                            <p class="detail-metadata-value mt-1" th:text="${exercise.description}">Description</p>
+                            <p class="detail-metadata-value mt-1 library-technique-text" dir="auto" th:text="${exercise.description}">Description</p>
                         </div>
 
-                        <div class="mt-4" th:if="${exercise.videoUrl != null and !#strings.isEmpty(exercise.videoUrl)}">
+                        <div class="library-exercise-video">
                             <p class="detail-metadata-label" th:text="#{ui.02699}">Video</p>
-                            <a class="detail-metadata-value mt-1 inline-block underline"
-                               th:href="${exercise.videoUrl}" th:text="${exercise.videoUrl}" target="_blank" rel="noreferrer">Video URL</a>
+                            <a th:if="${safeVideoUrl != null and !#strings.isEmpty(safeVideoUrl)}" class="detail-btn-secondary"
+                               th:href="${safeVideoUrl}" th:text="#{ui.02699}" target="_blank" rel="noopener noreferrer">Video URL</a>
+                            <p th:unless="${safeVideoUrl != null and !#strings.isEmpty(safeVideoUrl)}" class="detail-subtitle" th:text="#{ui.library.noVideo}"></p>
                         </div>
                     </div>
                 </section>
@@ -55,32 +57,31 @@
                 <!-- Coaching Notes Section -->
                 <section class="detail-section">
                     <h2 class="detail-section-title" th:text="#{ui.00239}">Coaching notes</h2>
+                    <p class="detail-subtitle library-instruction-sharing" th:text="#{ui.library.instructionSharing}"></p>
                     <div class="detail-section-content">
                         <div th:if="${#lists.isEmpty(notes)}" class="detail-empty" th:text="#{ui.00240}">No notes.</div>
                         <ul th:if="${!#lists.isEmpty(notes)}" class="detail-list">
                             <li th:each="n : ${notes}" class="detail-list-item">
-                                <span class="detail-list-item-description" th:text="${n.noteText}">Note</span>
+                                <span class="detail-list-item-description library-technique-text" dir="auto" th:text="${n.noteText}">Note</span>
                             </li>
                         </ul>
                     </div>
 
-                    <!-- Delete Action -->
-                    <div class="detail-section-content border-t border-slate-200 dark:border-white/10 pt-4 flex items-center justify-end">
-                        <form method="post" th:action="@{/trainer/library/exercises/{id}/delete(id=${exercise.id})}">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                            <button type="submit" class="detail-btn-destructive" th:text="#{ui.02700}">Delete Exercise</button>
-                        </form>
-                    </div>
                 </section>
             </div>
         </div>
-        <th:block th:replace="~{trainer-views/trainer/fragments/library-share-dialog :: libraryShareDialog('shareDialog')}"></th:block>
+        <th:block th:replace="~{trainer-views/trainer/fragments/library-share-dialog :: libraryShareDialog('shareDialog', ${exercise.name})}"></th:block>
+        <section class="detail-section library-resource-actions" aria-labelledby="resource-actions-title">
+            <h2 id="resource-actions-title" class="detail-section-title" th:text="#{ui.library.resourceActions}"></h2>
+            <p id="exercise-delete-help" class="detail-subtitle" th:text="#{ui.library.deleteExerciseEffect}"></p>
+            <form method="post" th:attr="data-confirm=${#messages.msg('ui.02700') + ': ' + exercise.name + '. ' + #messages.msg('ui.library.deleteExerciseEffect')}" th:action="@{/trainer/library/exercises/{id}/delete(id=${exercise.id},q=${query},page=${libraryPage})}"><button type="submit" aria-describedby="exercise-delete-help" class="detail-btn-destructive" th:text="#{ui.02700}"></button></form>
+        </section>
     </div>
 
 
 
     <div th:fragment="pageScripts">
-        <script th:src="@{/js/trainer/trainer-library-share-dialog.js}" defer></script>
+        <script th:src="@{/js/trainer/trainer-library-share-dialog.js(v=${assetVersion})}" defer></script>
     </div>
 
 </th:block>

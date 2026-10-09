@@ -40,4 +40,7 @@ public class MerchOrderItem {
 
     @Column(name = "quantity", nullable = false)
     private int quantity = 1;
+    public BigDecimal getLineTotal() {
+        return priceSnapshot == null ? null : priceSnapshot.multiply(BigDecimal.valueOf(quantity));
+    }
 }

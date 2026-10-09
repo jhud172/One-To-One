@@ -11,4 +11,5 @@ public interface TrainerLibrarySharedTemplateRepository extends JpaRepository<Tr
     List<TrainerLibrarySharedTemplate> findByClientIdAndTrainerIdOrderBySharedAtDesc(Long clientId, Long trainerId);
 
     Optional<TrainerLibrarySharedTemplate> findByClientIdAndTrainerIdAndTemplateTypeAndTemplateId(Long clientId, Long trainerId, TrainerLibraryTemplateType templateType, Long templateId);
+    void deleteByTrainerIdAndTemplateTypeAndTemplateId(Long trainerId, TrainerLibraryTemplateType templateType, Long templateId);
 }

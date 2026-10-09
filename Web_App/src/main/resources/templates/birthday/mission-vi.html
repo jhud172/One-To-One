@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-GB" xmlns:th="http://www.thymeleaf.org" data-birthday-experience>
+<html lang="en-GB" xmlns:th="http://www.thymeleaf.org" data-localisation="fixed" data-birthday-experience>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,13 +8,13 @@
     <meta name="description" th:content="${pageDescription}" content="A private birthday mission and a promise for the launch of Grand Theft Auto VI.">
     <title th:text="${pageTitle}">Mission VI - Happy Birthday Dad</title>
     <link rel="preload" th:href="@{/img/birthday/neon-coast-wide.webp}" href="/img/birthday/neon-coast-wide.webp" as="image" type="image/webp">
-    <link rel="stylesheet" th:href="@{/css/birthday/mission-vi.css(v='20260811b3')}" href="/css/birthday/mission-vi.css?v=20260811b3">
-    <script defer th:src="@{/js/birthday/mission-vi.js(v='20260811b3')}" src="/js/birthday/mission-vi.js?v=20260811b3"></script>
+    <link rel="stylesheet" th:href="@{/css/birthday/mission-vi.css(v='20261001v2a')}" href="/css/birthday/mission-vi.css?v=20261001v2a">
+    <script defer th:src="@{/js/birthday/mission-vi.js(v='20261001v2a')}" src="/js/birthday/mission-vi.js?v=20261001v2a"></script>
 </head>
 <body>
 <a class="birthday-skip-link" href="#birthday-main">Skip to your birthday mission</a>
 
-<div class="birthday-intro" data-birthday-intro aria-hidden="true">
+<div class="birthday-intro" data-birthday-intro aria-hidden="true" hidden>
     <div class="birthday-intro__shutter birthday-intro__shutter--top"></div>
     <div class="birthday-intro__shutter birthday-intro__shutter--bottom"></div>
     <div class="birthday-intro__signal">
@@ -39,7 +39,7 @@
     </div>
 </div>
 
-<main id="birthday-main" class="birthday-experience" data-birthday-main data-state="open">
+<main id="birthday-main" class="birthday-experience is-unlocked" data-birthday-main data-state="open">
     <nav class="birthday-chapter-rail" data-birthday-chapter-rail aria-label="Birthday mission chapters">
         <a href="#birthday-opening" data-chapter-link="opening" aria-current="true"><span>Opening</span></a>
         <a href="#birthday-promise" data-chapter-link="promise"><span>The promise</span></a>
@@ -68,7 +68,7 @@
             <p class="birthday-hero__lead">Happy Birthday, Dad. This is your official IOU for <strong>Grand Theft Auto VI.</strong></p>
 
             <div class="birthday-unlock" data-birthday-unlock>
-                <button class="birthday-hold-button" type="button" data-birthday-hold aria-describedby="hold-help">
+                <button class="birthday-hold-button" type="button" data-birthday-hold aria-describedby="hold-help" hidden>
                     <span class="birthday-hold-button__progress" data-birthday-hold-progress aria-hidden="true"></span>
                     <span class="birthday-hold-button__icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3M6.5 11.5h11v9h-11z"/></svg>
@@ -79,7 +79,8 @@
                     </span>
                     <span class="birthday-hold-button__chevron" aria-hidden="true"></span>
                 </button>
-                <p id="hold-help" class="birthday-unlock__help">Hold the button for a moment. Keyboard: hold Enter or Space.</p>
+                <p id="hold-help" class="birthday-unlock__help" data-birthday-enhancement hidden>Hold the button for a moment. Keyboard: hold Enter or Space. You can also open without holding.</p>
+                <button class="birthday-open-button" type="button" data-birthday-open hidden>Open without holding</button>
             </div>
         </div>
 
@@ -139,7 +140,7 @@
             <h2 id="countdown-title">The wait is part of the mission.</h2>
         </div>
 
-        <div class="birthday-countdown__clock" aria-live="polite" aria-atomic="true">
+        <div class="birthday-countdown__clock" role="timer" aria-label="Time remaining until the birthday mission launch" aria-live="off">
             <div><strong data-countdown-days>--</strong><span>Days</span></div>
             <div><strong data-countdown-hours>--</strong><span>Hours</span></div>
             <div><strong data-countdown-minutes>--</strong><span>Mins</span></div>
@@ -156,11 +157,11 @@
             <h2 id="finale-title">Happy Birthday,<br><em>Dad.</em></h2>
             <p>We wanted to give you something worth waiting for. Your copy is promised, your mission is active, and the first drive is yours.</p>
             <div class="birthday-finale__actions">
-                <button class="birthday-fireworks-button" type="button" data-birthday-fireworks>
+                <button class="birthday-fireworks-button" type="button" data-birthday-fireworks hidden>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4M4.9 4.9l2.8 2.8M2 12h4m10 0h6M4.9 19.1l2.8-2.8M19.1 4.9l-2.8 2.8M12 12l2.7 8.3L12 18.7l-2.7 1.6z"/></svg>
                     Light up the sky
                 </button>
-                <button class="birthday-replay" type="button" data-birthday-replay>
+                <button class="birthday-replay" type="button" data-birthday-replay hidden>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6"/></svg>
                     Replay
                 </button>

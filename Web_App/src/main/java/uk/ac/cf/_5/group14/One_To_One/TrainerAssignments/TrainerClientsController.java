@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import uk.ac.cf._5.group14.One_To_One.Goals.Goal;
 import uk.ac.cf._5.group14.One_To_One.Goals.GoalAdherenceService;
 import uk.ac.cf._5.group14.One_To_One.Goals.GoalAdherenceWeek;
@@ -17,7 +18,6 @@ import uk.ac.cf._5.group14.One_To_One.HealthDataInput.HealthRecordRepository;
 import uk.ac.cf._5.group14.One_To_One.Nutrition.DailyNutritionLog;
 import uk.ac.cf._5.group14.One_To_One.Nutrition.DailyNutritionLogRepository;
 import uk.ac.cf._5.group14.One_To_One.Nutrition.DailyNutritionLogService;
-import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleService;
 import uk.ac.cf._5.group14.One_To_One.Security.AccessGuard;
 import uk.ac.cf._5.group14.One_To_One.DayHealthData.DayHealth;
 import uk.ac.cf._5.group14.One_To_One.DayHealthData.DayHealthRepository;
@@ -32,7 +32,6 @@ import uk.ac.cf._5.group14.One_To_One.Users.Role;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
 import uk.ac.cf._5.group14.One_To_One.Users.UserRepository;
 import uk.ac.cf._5.group14.One_To_One.Users.UserService;
-import uk.ac.cf._5.group14.One_To_One.Workouts.WorkoutTemplateRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -46,8 +45,7 @@ public class TrainerClientsController {
     private final AuthHelper authHelper;
     private final UserService userService;
     private final UserRepository userRepository;
-    private final WorkoutTemplateRepository workoutTemplateRepository;
-    private final ScheduleService scheduleService;
+    private final ClientCoachingWorkspaceService workspaceService;
     private final TrainerAssignmentService trainerAssignmentService;
     private final AccessGuard accessGuard;
     private final GoalService goalService;
@@ -62,8 +60,7 @@ public class TrainerClientsController {
     public TrainerClientsController(AuthHelper authHelper,
                                     UserService userService,
                                     UserRepository userRepository,
-                                    WorkoutTemplateRepository workoutTemplateRepository,
-                                    ScheduleService scheduleService,
+                                    ClientCoachingWorkspaceService workspaceService,
                                     TrainerAssignmentService trainerAssignmentService,
                                     AccessGuard accessGuard,
                                     GoalService goalService,
@@ -77,8 +74,7 @@ public class TrainerClientsController {
         this.authHelper = authHelper;
         this.userService = userService;
         this.userRepository = userRepository;
-        this.workoutTemplateRepository = workoutTemplateRepository;
-        this.scheduleService = scheduleService;
+        this.workspaceService = workspaceService;
         this.trainerAssignmentService = trainerAssignmentService;
         this.accessGuard = accessGuard;
         this.goalService = goalService;
@@ -125,6 +121,10 @@ public class TrainerClientsController {
         }
 
         ModelAndView mav = new ModelAndView("trainer-views/trainer/client-detail");
+        for (String key : List.of("workspaceOutcome", "workspaceError", "workoutDraftId", "workoutDraftNotes",
+                "scheduleDraftId", "scheduleDraftNotes", "phaseDraft", "phaseLabelDraft", "phaseNoteDraft")) {
+            if (model.containsAttribute(key)) mav.addObject(key, model.getAttribute(key));
+        }
         mav.addObject("pageTitle", "Client Overview");
         mav.addObject("client", client);
         mav.addObject("assignedWorkouts", trainerAssignmentService.listWorkoutsForTrainerClient(trainer.getId(), clientId));
@@ -136,8 +136,10 @@ public class TrainerClientsController {
             .collect(Collectors.toMap(Goal::getId, goal -> goalAdherenceService.calculateWeek(goal, weekStart)));
         mav.addObject("clientGoals", goals);
         mav.addObject("goalAdherenceById", adherenceByGoalId);
-        mav.addObject("templates", workoutTemplateRepository.findByOwnerUserOrderByUpdatedAtDesc(trainer));
-        mav.addObject("schedules", scheduleService.findByUser(trainer));
+        var workspace = workspaceService.summary(trainer, clientId);
+        mav.addObject("templates", workspace.workouts());
+        mav.addObject("schedules", workspace.schedules());
+        mav.addObject("workspace", workspace);
         TrainerClientLink activeLink = trainerClientLinkService.getActiveLinkForTrainerClient(trainer.getId(), clientId);
         mav.addObject("activeLink", activeLink);
         mav.addObject("coachingPhases", CoachingPhase.values());
@@ -184,9 +186,10 @@ public class TrainerClientsController {
 
     @PostMapping("/{clientId}/phase")
     public ModelAndView updateCoachingPhase(@PathVariable Long clientId,
-                                            @RequestParam CoachingPhase phase,
+                                            @RequestParam(required = false) CoachingPhase phase,
                                             @RequestParam(required = false) String customLabel,
-                                            @RequestParam(required = false) String notes) {
+                                            @RequestParam(required = false) String notes,
+                                            RedirectAttributes redirectAttributes) {
         User trainer = currentUserOrThrow();
         if (trainer.getRole() != Role.TRAINER) {
             return new ModelAndView("redirect:/access-denied");
@@ -198,14 +201,22 @@ public class TrainerClientsController {
                 return new ModelAndView("redirect:/trainer/clients?error=trainer-unverified");
             }
             throw ex;
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("workspaceError", true);
+            redirectAttributes.addFlashAttribute("phaseDraft", phase == null ? "" : phase.name());
+            redirectAttributes.addFlashAttribute("phaseLabelDraft", customLabel == null ? "" : customLabel);
+            redirectAttributes.addFlashAttribute("phaseNoteDraft", notes == null ? "" : notes);
+            return new ModelAndView("redirect:/trainer/clients/" + clientId + "#clientPhase");
         }
-        return new ModelAndView("redirect:/trainer/clients/" + clientId);
+        redirectAttributes.addFlashAttribute("workspaceOutcome", "phase");
+        return new ModelAndView("redirect:/trainer/clients/" + clientId + "#clientPhase");
     }
 
     @PostMapping("/{clientId}/assign-workout")
     public ModelAndView assignWorkout(@PathVariable Long clientId,
-                                      @RequestParam Long templateId,
-                                      @RequestParam(required = false) String trainerNotes) {
+                                      @RequestParam(required = false) Long templateId,
+                                      @RequestParam(required = false) String trainerNotes,
+                                      RedirectAttributes redirectAttributes) {
         User trainer = currentUserOrThrow();
         if (trainer.getRole() != Role.TRAINER) {
             return new ModelAndView("redirect:/access-denied");
@@ -213,14 +224,21 @@ public class TrainerClientsController {
         if (!trainer.isTrainerVerified() || !trainer.isEnabled()) {
             return new ModelAndView("redirect:/trainer/clients?error=trainer-unverified");
         }
-        trainerAssignmentService.assignWorkout(trainer, clientId, templateId, trainerNotes);
-        return new ModelAndView("redirect:/trainer/clients/" + clientId);
+        try {
+            trainerAssignmentService.assignWorkout(trainer, clientId, templateId, trainerNotes);
+        } catch (IllegalArgumentException ex) {
+            retainAssignment(redirectAttributes, "workout", templateId, trainerNotes);
+            return new ModelAndView("redirect:/trainer/clients/" + clientId + "#clientAssignments");
+        }
+        redirectAttributes.addFlashAttribute("workspaceOutcome", "workout");
+        return new ModelAndView("redirect:/trainer/clients/" + clientId + "#clientAssignments");
     }
 
     @PostMapping("/{clientId}/assign-schedule")
     public ModelAndView assignSchedule(@PathVariable Long clientId,
-                                       @RequestParam Long scheduleId,
-                                       @RequestParam(required = false) String trainerNotes) {
+                                       @RequestParam(required = false) Long scheduleId,
+                                       @RequestParam(required = false) String trainerNotes,
+                                       RedirectAttributes redirectAttributes) {
         User trainer = currentUserOrThrow();
         if (trainer.getRole() != Role.TRAINER) {
             return new ModelAndView("redirect:/access-denied");
@@ -228,7 +246,19 @@ public class TrainerClientsController {
         if (!trainer.isTrainerVerified() || !trainer.isEnabled()) {
             return new ModelAndView("redirect:/trainer/clients?error=trainer-unverified");
         }
-        trainerAssignmentService.assignSchedule(trainer, clientId, scheduleId, trainerNotes);
-        return new ModelAndView("redirect:/trainer/clients/" + clientId);
+        try {
+            trainerAssignmentService.assignSchedule(trainer, clientId, scheduleId, trainerNotes);
+        } catch (IllegalArgumentException ex) {
+            retainAssignment(redirectAttributes, "schedule", scheduleId, trainerNotes);
+            return new ModelAndView("redirect:/trainer/clients/" + clientId + "#clientAssignments");
+        }
+        redirectAttributes.addFlashAttribute("workspaceOutcome", "schedule");
+        return new ModelAndView("redirect:/trainer/clients/" + clientId + "#clientAssignments");
+    }
+
+    private void retainAssignment(RedirectAttributes redirectAttributes, String kind, Long id, String notes) {
+        redirectAttributes.addFlashAttribute("workspaceError", true);
+        if (id != null) redirectAttributes.addFlashAttribute(kind + "DraftId", id);
+        redirectAttributes.addFlashAttribute(kind + "DraftNotes", notes == null ? "" : notes);
     }
 }

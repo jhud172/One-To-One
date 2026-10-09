@@ -2,7 +2,7 @@
           xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
           th:replace="~{base :: layout(${pageTitle} ?: #{ui.01043}, null, ~{::content}, null)}">
 
-    <div th:fragment="content" class="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+    <div th:fragment="content" class="gym-operations-v2 mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
             <div class="flex items-start justify-between gap-4 mb-6">
                 <div>
@@ -105,7 +105,7 @@
                                     <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                                     </svg>
-                                    <span th:text="${change.affectedMemberCount}">12</span> <th:block th:text="#{ui.01033}">member</th:block><span th:if="${change.affectedMemberCount} != 1" th:text="#{ui.00999}">s</span> <th:block th:text="#{ui.01034}">notified</th:block>
+                                    <span th:text="${change.affectedMemberCount}">12</span> <th:block th:text="#{ui.01033}">member</th:block><span th:if="${change.affectedMemberCount} != 1" th:text="#{ui.00999}">s</span> <th:block th:text="#{ui.gym.affected}">notified</th:block>
                                 </span>
                             </div>
 
@@ -121,11 +121,11 @@
                             <div class="grid grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-400">
                                 <div>
                                     <span class="font-semibold" th:text="#{ui.01036}">Effective Date:</span>
-                                    <span th:text="${#temporals.format(change.effectiveAt, 'MMM dd, yyyy')}">Jan 1, 2024</span>
+                                    <span th:text="${#temporals.format(change.effectiveAt, 'dd MMM yyyy', 'Europe/London')}">Jan 1, 2024</span>
                                 </div>
                                 <div>
                                     <span class="font-semibold" th:text="#{ui.01037}">Changed On:</span>
-                                    <span th:text="${#temporals.format(change.createdAt, 'MMM dd, yyyy HH:mm')}">Dec 1, 2023 14:30</span>
+                                    <span th:text="${#temporals.format(change.createdAt, 'dd MMM yyyy HH:mm', 'Europe/London')}">Dec 1, 2023 14:30</span>
                                 </div>
                                 <div class="col-span-2" th:if="${changedByUsers} != null and ${changedByUsers[change.changedByUserId]} != null">
                                     <span class="font-semibold" th:text="#{ui.01038}">Changed By:</span>
@@ -149,11 +149,11 @@
                     <dd class="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100" th:text="${priceChangesPage != null ? priceChangesPage.totalElements : #lists.size(priceChanges)}">5</dd>
                 </div>
                 <div class="rounded-lg bg-white/5 dark:bg-slate-800/40 p-4 text-center">
-                    <dt class="text-sm font-medium text-slate-600 dark:text-slate-400" th:text="#{ui.01041}">Price Increases</dt>
+                    <dt class="text-sm font-medium text-slate-600 dark:text-slate-400" th:text="#{ui.gym.pageIncreases}">Price Increases</dt>
                     <dd class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400" th:text="${increaseCount}">3</dd>
                 </div>
                 <div class="rounded-lg bg-white/5 dark:bg-slate-800/40 p-4 text-center">
-                    <dt class="text-sm font-medium text-slate-600 dark:text-slate-400" th:text="#{ui.01042}">Price Decreases</dt>
+                    <dt class="text-sm font-medium text-slate-600 dark:text-slate-400" th:text="#{ui.gym.pageDecreases}">Price Decreases</dt>
                     <dd class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400" th:text="${decreaseCount}">2</dd>
                 </div>
             </div>

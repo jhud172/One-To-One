@@ -1,192 +1,38 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02596}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-
-<div th:fragment="styles">
-    <meta name="_csrf" th:content="${_csrf.token}">
-    <meta name="_csrf_header" th:content="${_csrf.headerName}">
-    <meta name="_csrf_param" th:content="${_csrf.parameterName}">
-</div>
-
-<div th:fragment="content">
-    <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6" th:attr="data-premium=${isPremium}">
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-
-            <div class="flex flex-col rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50 overflow-hidden min-h-[620px]">
-                <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-950/30">
-                    <div>
-                        <h1 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02569}">Workout builder</h1>
-                        <p class="text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02570}">Drag exercises in and customise the plan.</p>
-                    </div>
-                    <button id="btn-new-workout" data-url="/workout/create" class="text-xs rounded-xl bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700 transition font-semibold uppercase tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" th:text="#{ui.02571}">+ New</button>
-                </div>
-
-                <div class="flex-1 overflow-y-auto p-6 scroll-smooth">
-                    <div id="workout-input-container">
-                        <div th:replace="~{trainer-views/workouts/fragments/workout-frags.html :: createWorkout}"></div>
-                    </div>
-                </div>
-
-                <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-center shrink-0 z-10 dark:border-slate-800 dark:bg-slate-950/30">
-                    <button id="schedule-button" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                        <span th:text="#{ui.02572}">Continue to schedule</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-6 pr-1 pb-4 scroll-smooth">
-
-                <div class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50 shrink-0">
-                    <div class="p-5 border-b border-slate-200 dark:border-slate-800">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02573}">Suggested exercises</h2>
-                                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1" th:text="#{ui.02574}">Based on your preferences and conditions</p>
-                            </div>
-                            <button id="ai-suggestions-btn" class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-200" th:text="#{ui.02575}">
-                                Generate 5 suggestions
-                            </button>
-                        </div>
-                        <div class="mt-3" th:replace="/fragments/workout/searchbar :: searchbar(exercise-search-input)"></div>
-                    </div>
-
-                    <div class="p-4 space-y-4">
-                        <div id="no-exercises-msg" th:classappend="${!#lists.isEmpty(suggestedExercises)} ? 'hidden'" class="text-center p-6 text-sm text-slate-600 italic bg-slate-50 rounded-xl border border-dashed border-slate-300 dark:bg-slate-950/30 dark:text-slate-300 dark:border-slate-700" th:text="#{ui.02576}">No exercises found from your preferences. Please select preferences.</div>
-
-                        <ul id="suggested-list" class="space-y-3">
-                            <li th:each="exercise : ${suggestedExercises}"
-                                th:data-id="${exercise.id}"
-                                th:attr="data-name=${exercise.name},data-description=${exercise.description},data-type='exercise'"
-                                class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 cursor-move transition group dark:bg-slate-950/30 dark:border-slate-800">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="font-bold text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300" th:text="${exercise.name}">Exercise Name</span>
-                                    <svg class="w-4 h-4 text-slate-400" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                                </div>
-                                <p class="text-sm text-slate-600 line-clamp-2 dark:text-slate-300" th:text="${exercise.description}">Description...</p>
-                            </li>
-                        </ul>
-
-                        <div id="ai-suggestions" class="hidden rounded-xl border border-blue-200 bg-blue-50/60 p-4 text-sm text-slate-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-slate-200">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-200" th:text="#{ui.02577}">AI suggestions</p>
-                            <ul id="ai-suggestions-list" class="mt-3 space-y-2"></ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50 shrink-0">
-                    <div class="p-5 border-b border-slate-200 dark:border-slate-800">
-                        <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02578}">Custom exercises</h2>
-                        <p class="text-sm text-slate-600 dark:text-slate-300 mt-1" th:text="#{ui.02579}">Create your own moves and tag them for easy recall.</p>
-                        <input id="custom-exercise-search" type="text" placeholder="Search custom exercises..."
-                               class="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"  th:placeholder="#{ui.02580}"/>
-                    </div>
-
-                    <div class="p-4 space-y-4">
-                        <form id="custom-exercise-form" class="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                            <input type="hidden" id="custom-exercise-id" value="" />
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.00131}">Name</label>
-                                <input id="custom-exercise-name" type="text" required
-                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.00113}">Description</label>
-                                <textarea id="custom-exercise-description" rows="2"
-                                          class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02581}">How-to</label>
-                                <textarea id="custom-exercise-howto" rows="2"
-                                          class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02582}">Video URL (YouTube/Vimeo)</label>
-                                <input id="custom-exercise-video" type="url" placeholder="https://..."
-                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"  th:placeholder="#{ui.02583}"/>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02584}">Colour tag</label>
-                                <select id="custom-exercise-color"
-                                        th:disabled="${!isPremium}"
-                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                                    <option value="" th:text="#{ui.01640}">None</option>
-                                    <option value="#2563eb" th:text="#{ui.02585}">Blue</option>
-                                    <option value="#10b981" th:text="#{ui.02135}">Green</option>
-                                    <option value="#f59e0b" th:text="#{ui.02586}">Amber</option>
-                                    <option value="#ef4444" th:text="#{ui.02587}">Red</option>
-                                    <option value="#8b5cf6" th:text="#{ui.02588}">Violet</option>
-                                    <option value="#0ea5e9" th:text="#{ui.02589}">Sky</option>
-                                </select>
-                                <p th:if="${!isPremium}" class="mt-1 text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02590}">Colour tags are Premium-only.</p>
-                            </div>
-                            <div class="flex flex-wrap gap-2">
-                                <button id="custom-exercise-save" type="submit"
-                                        class="inline-flex flex-1 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm hover:bg-emerald-700" th:text="#{ui.00109}">Save</button>
-                                <button id="custom-exercise-reset" type="button"
-                                        class="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" th:text="#{ui.00918}">Reset</button>
-                            </div>
-                        </form>
-
-                        <ul id="custom-exercise-list" class="space-y-2">
-                            <li th:each="ex : ${customExercises}"
-                                th:attr="data-id=${ex.id},data-name=${ex.name},data-description=${ex.description},data-howto=${ex.howTo},data-video=${ex.videoUrl},data-embed=${ex.embedUrl},data-color=${ex.colorTag},data-type='custom'"
-                                class="custom-ex-item flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950/30">
-                                <div class="flex min-w-0 items-center gap-2">
-                                    <span class="h-2 w-2 rounded-full" th:if="${ex.colorTag}" data-custom-color-dot th:attr="data-color=${ex.colorTag}"></span>
-                                    <span class="truncate font-semibold text-slate-900 dark:text-slate-100" th:text="${ex.name}">Custom</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button class="custom-add inline-flex items-center rounded-lg bg-blue-600 px-2 py-1 text-xs font-semibold text-white" th:text="#{ui.02591}">Add</button>
-                                    <button class="custom-edit text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200" th:text="#{ui.00138}">Edit</button>
-                                    <button class="custom-delete text-xs text-rose-600" th:text="#{ui.00139}">Delete</button>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50 shrink-0">
-                    <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl dark:border-slate-800 dark:bg-slate-950/30">
-                        <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02592}">Your workouts</h2>
-                    </div>
-
-                    <div class="px-4 py-2 bg-slate-50 border-b border-slate-200 dark:bg-slate-950/30 dark:border-slate-800">
-                        <div th:replace="~{trainer-views/workouts/fragments/searchbar :: searchbar(workout-search-input)}"></div>
-                    </div>
-
-                    <div class="p-4">
-                        <ul id="existing-workouts" class="space-y-2">
-                            <li th:each="workout : ${usersWorkouts}" th:data-id="${workout.id}" th:data-url="@{/workout/edit/{id}(id=${workout.id})}" class="workout-item p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition group flex justify-between items-center cursor-pointer dark:bg-slate-950/30 dark:border-slate-800">
-                                <span class="font-bold text-sm text-slate-800 dark:text-slate-100" th:text="${workout.name}">Workout Name</span>
-                                <button class="btn-delete text-slate-400 hover:text-red-600 transition p-1 hover:bg-red-50 rounded-xl dark:hover:bg-red-950/30"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-            </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02596}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content" class="schedule-workshop role-surface" th:attr="data-role-surface=${roleSurface.roleKey},data-draft-changed=${workoutDraftChanged == true or workoutError != null},data-premium=${isPremium},data-count=#{ui.studio.count('{0}')},data-matches=#{ui.scheduleWorkout.matches('{0}')},data-no-matches=#{ui.studio.noMatches},data-draft-updated=#{ui.studio.rowsChanged},data-limit=#{ui.scheduleWorkout.invalid},data-leave=#{ui.scheduleWorkout.leave},data-failed=#{ui.player.failed},data-custom-saved=#{ui.studio.customSaved},data-custom-failed=#{ui.studio.customFailed},data-add-for=#{ui.studio.addFor('{0}')},data-remove-for=#{ui.studio.removeFor('{0}')},data-add=#{ui.02591},data-remove=#{ui.00801},data-edit=#{ui.00138},data-delete=#{ui.00139},data-custom=#{ui.01730},data-exercise=#{ui.01682},data-details=#{ui.02871},data-custom-blocked=#{ui.scheduleWorkout.customBlocked},data-ai-failed=#{ui.scheduleWorkout.aiUnavailable}">
+    <header class="schedule-workshop__header"><div><p class="studio-v2__eyebrow" th:text="#{ui.02592}">Your workouts</p><h1 th:text="#{ui.02569}">Workout builder</h1><p th:text="#{ui.scheduleWorkout.context}">Build reusable workouts for your schedule. Save a plan here, then choose when to train.</p></div><a href="/workout" id="btn-new-workout" class="training-launch__action" th:text="#{ui.02571}">+ New</a></header>
+    <p th:if="${workoutError != null}" class="schedule-workshop__notice schedule-workshop__notice--error" role="alert" th:text="${#messages.msg(workoutError)}"></p>
+    <p th:if="${workoutNotice != null}" class="schedule-workshop__notice" role="status" th:text="${#messages.msg(workoutNotice)}"></p>
+    <p th:if="${workoutDraftChanged == true}" class="schedule-workshop__notice" role="status" th:text="#{ui.studio.rowsChanged}">Draft updated. Save when ready.</p>
+    <p id="response-container" data-workshop-status class="schedule-workshop__notice" role="status" aria-live="polite" hidden></p>
+    <div class="schedule-workshop__grid">
+        <section class="schedule-workshop__panel" th:attr="aria-label=#{ui.02569}"><div id="workout-input-container" th:replace="~{trainer-views/workouts/fragments/workout-frags :: createWorkout}"></div></section>
+        <div class="schedule-workshop__library">
+            <section class="schedule-workshop__panel" aria-labelledby="catalogue-title"><div class="schedule-workshop__section-heading"><h2 id="catalogue-title" th:text="#{ui.02573}">Suggested exercises</h2><button type="button" id="ai-suggestions-btn" th:disabled="${isPremium and !aiSuggestionsAvailable}" class="training-launch__action" th:text="#{ui.02575}">Generate 5 suggestions</button></div><p class="schedule-workshop__hint" th:text="#{ui.02574}">Based on your preferences and conditions</p>
+                <div th:replace="~{trainer-views/workouts/fragments/searchbar :: searchbar('exercise-search-input')}"></div>
+                <p class="schedule-workshop__empty" th:if="${#lists.isEmpty(suggestedExercises)}" th:text="#{ui.02576}">No exercises found from your preferences.</p>
+                <ul id="suggested-list" tabindex="0" aria-labelledby="catalogue-title" class="schedule-workshop__catalogue"><li th:each="exercise : ${suggestedExercises}" th:attr="data-id=${exercise.id},data-name=${exercise.name},data-description=${exercise.description},data-type='e'"><h3 th:text="${exercise.name}"></h3><p th:text="${exercise.description}"></p><button type="submit" form="workout-draft-form" name="editAction" th:value="${'add:e:' + exercise.id}" formnovalidate class="training-launch__action" th:attr="aria-label=#{ui.studio.addFor(${exercise.name})},disabled=${#lists.contains(workoutDraft.exerciseIds, exercise.id)} ? 'disabled' : null" th:text="#{ui.02591}">Add</button></li></ul>
+                <p data-no-results-for="suggested-list" class="schedule-workshop__empty" hidden th:text="#{ui.studio.noMatches}">No matches.</p>
+                <p class="schedule-workshop__hint" th:if="${isPremium and !aiSuggestionsAvailable}" th:text="#{ui.scheduleWorkout.aiUnavailable}"></p><section id="ai-suggestions" hidden><h3 th:text="#{ui.02577}">AI suggestions</h3><ul id="ai-suggestions-list" class="schedule-workshop__catalogue"></ul></section>
+            </section>
+            <section class="schedule-workshop__panel" aria-labelledby="custom-title"><h2 id="custom-title" th:text="#{ui.02578}">Custom exercises</h2><p class="schedule-workshop__hint" th:text="#{ui.02579}">Create your own moves and tag them for easy recall.</p>
+                <div th:replace="~{trainer-views/workouts/fragments/searchbar :: searchbar('custom-exercise-search')}"></div>
+                <ul id="custom-exercise-list" tabindex="0" aria-labelledby="custom-title" class="schedule-workshop__catalogue"><li th:each="ex : ${customExercises}" th:attr="data-id=${ex.id},data-name=${ex.name},data-description=${ex.description},data-howto=${ex.howTo},data-video=${ex.videoUrl},data-color=${ex.colorTag},data-embed=${ex.embedUrl},data-type='c'"><h3 th:text="${ex.name}"></h3><p th:text="${ex.description}"></p><div class="schedule-workshop__actions"><button type="submit" form="workout-draft-form" name="editAction" th:value="${'add:c:' + ex.id}" formnovalidate class="training-launch__action" th:attr="aria-label=#{ui.studio.addFor(${ex.name})},disabled=${#lists.contains(workoutDraft.customExerciseIds, ex.id)} ? 'disabled' : null" th:text="#{ui.02591}">Add</button><a class="training-launch__action" th:href="@{/workout(customEdit=${ex.id}, edit=${workoutDraft.id})}" data-custom-edit th:text="#{ui.00138}">Edit</a><form method="post" th:action="@{/workout/custom-exercises/{id}/remove(id=${ex.id})}" th:attr="data-confirm=#{ui.00139} + ': ' + ${ex.name} + '?'" data-custom-delete><button type="submit" class="training-launch__action schedule-workshop__delete" th:text="#{ui.00139}">Delete</button></form></div></li></ul>
+                <p data-no-results-for="custom-exercise-list" class="schedule-workshop__empty" hidden th:text="#{ui.studio.noMatches}">No matches.</p>
+                <details id="custom-exercise-editor" th:attr="open=${customDraft.id != null or workoutError == 'ui.studio.customFailed'} ? 'open' : null"><summary th:text="#{ui.02578}">Custom exercises</summary><form id="custom-exercise-form" method="post" th:action="@{/workout/custom-exercises/save}">
+                    <input id="custom-exercise-id" type="hidden" name="id" th:value="${customDraft.id}">
+                    <label for="custom-exercise-name" th:text="#{ui.00131}"></label><input id="custom-exercise-name" name="name" type="text" maxlength="200" th:value="${customDraft.name}" required>
+                    <label for="custom-exercise-description" th:text="#{ui.00113}"></label><textarea id="custom-exercise-description" name="description" rows="2" maxlength="5000" th:text="${customDraft.description}"></textarea>
+                    <label for="custom-exercise-howto" th:text="#{ui.02581}"></label><textarea id="custom-exercise-howto" name="howTo" rows="2" maxlength="5000" th:text="${customDraft.howTo}"></textarea>
+                    <label for="custom-exercise-video" th:text="#{ui.02582}"></label><input id="custom-exercise-video" name="videoUrl" type="url" maxlength="255" th:value="${customDraft.videoUrl}">
+                    <label for="custom-exercise-color" th:text="#{ui.02584}">Colour tag</label><select id="custom-exercise-color" name="colorTag" th:disabled="${!isPremium}"><option value="" th:text="#{ui.01640}">None</option><option value="#2563eb" th:selected="${customDraft.colorTag == '#2563eb'}" th:text="#{ui.02585}"></option><option value="#10b981" th:selected="${customDraft.colorTag == '#10b981'}" th:text="#{ui.02135}"></option><option value="#f59e0b" th:selected="${customDraft.colorTag == '#f59e0b'}" th:text="#{ui.02586}"></option><option value="#ef4444" th:selected="${customDraft.colorTag == '#ef4444'}" th:text="#{ui.02587}"></option><option value="#8b5cf6" th:selected="${customDraft.colorTag == '#8b5cf6'}" th:text="#{ui.02588}"></option><option value="#0ea5e9" th:selected="${customDraft.colorTag == '#0ea5e9'}" th:text="#{ui.02589}"></option></select>
+                    <p class="schedule-workshop__hint" th:if="${!isPremium}" th:text="#{ui.02590}">Colour tags are Premium-only.</p><div class="schedule-workshop__actions"><button id="custom-exercise-save" type="submit" class="training-launch__action training-launch__action--primary" th:text="#{ui.00109}">Save</button><button id="custom-exercise-reset" type="reset" class="training-launch__action" th:text="#{ui.00918}">Reset</button></div>
+                </form></details>
+            </section>
         </div>
     </div>
-
-    <div id="upgrade-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 p-4">
-        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900">
-            <div class="flex items-start justify-between">
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02593}">Premium feature</h3>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02594}">Upgrade to unlock AI workout suggestions and colour tags.</p>
-                </div>
-                <button id="upgrade-modal-close" class="text-slate-400 hover:text-slate-600">✕</button>
-            </div>
-            <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <a href="/pricing" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700" th:text="#{ui.02595}">View plans</a>
-                <button id="upgrade-modal-dismiss" class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200" th:text="#{ui.01928}">Not now</button>
-            </div>
-        </div>
-    </div>
+    <section class="schedule-workshop__panel schedule-workshop__saved" aria-labelledby="saved-title"><h2 id="saved-title" th:text="#{ui.02592}">Your workouts</h2><div th:replace="~{trainer-views/workouts/fragments/searchbar :: searchbar('workout-search-input')}"></div><p th:if="${#lists.isEmpty(usersWorkouts)}" class="schedule-workshop__empty" th:text="#{ui.02510}">No workouts yet.</p><ul id="existing-workouts" tabindex="0" aria-labelledby="saved-title" class="schedule-workshop__catalogue"><li th:each="workout : ${usersWorkouts}" th:attr="data-id=${workout.id},data-name=${workout.name}"><h3><a th:href="@{/workout(edit=${workout.id})}" th:attr="aria-current=${workoutDraft.id == workout.id} ? 'page' : null" th:text="${workout.name}"></a></h3><p th:text="${workout.notes}"></p><form method="post" th:action="@{/delete-workout}" th:attr="data-confirm=#{ui.00139} + ': ' + ${workout.name} + '?'" data-workout-delete><input type="hidden" name="id" th:value="${workout.id}"><button type="submit" class="training-launch__action schedule-workshop__delete" th:attr="aria-label=#{ui.00139} + ': ' + ${workout.name}" th:text="#{ui.00139}">Delete</button></form></li></ul><p data-no-results-for="existing-workouts" class="schedule-workshop__empty" hidden th:text="#{ui.studio.noMatches}">No matches.</p></section>
+    <dialog id="upgrade-modal" class="studio-dialog" th:attr="aria-label=#{ui.02593}"><h2 th:text="#{ui.02593}">Premium feature</h2><p th:text="#{ui.02594}">Upgrade to unlock AI workout suggestions and colour tags.</p><div class="schedule-workshop__actions"><a href="/pricing" class="training-launch__action training-launch__action--primary" th:text="#{ui.02595}">View plans</a><form method="dialog"><button type="submit" class="training-launch__action" th:text="#{ui.01928}">Not now</button></form></div></dialog>
 </div>
-
-<div th:fragment="pageScripts">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="/js/schedule/create-workouts.js"></script>
-</div>
-
+<div th:fragment="pageScripts"><script defer th:src="@{/js/schedule/create-workouts.js(v=${uiCssVersion})}"></script></div>
 </th:block>

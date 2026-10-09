@@ -1,44 +1,18 @@
 <th:block xmlns:th="http://www.thymeleaf.org">
-    <dialog th:fragment="libraryShareDialog(dialogId)"
-            th:id="${dialogId}"
-            th:attr="data-share-dialog=${dialogId}"
-            class="rounded-2xl bg-slate-950/90 p-0 text-white ring-1 ring-white/10">
-        <div class="w-[min(92vw,28rem)] p-6">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <div class="text-sm font-semibold" th:text="#{ui.02701}">Share to active client</div>
-                    <div class="mt-1 text-sm text-slate-300" th:text="#{ui.02702}">Only active clients can be selected.</div>
-                </div>
-                <button type="button"
-                        class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10"
-                        th:attr="data-share-dialog-close=${dialogId}" th:text="#{ui.00857}">
-                    Close
-                </button>
-            </div>
-
-            <form class="mt-4 space-y-3" method="post" th:action="@{/trainer/library/share}" th:object="${shareForm}">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                <input type="hidden" th:field="*{templateType}" />
-                <input type="hidden" th:field="*{templateId}" />
-                <input type="hidden" th:field="*{returnUrl}" />
-
-                <div>
-                    <label class="block text-sm font-semibold" th:for="${dialogId + '-clientId'}" th:text="#{ui.01288}">Client</label>
-                    <select th:id="${dialogId + '-clientId'}"
-                            th:field="*{clientId}"
-                            class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30">
-                        <option value="" selected th:text="#{ui.02703}">Select a client…</option>
-                        <option th:each="c : ${activeClients}" th:value="${c.id}" th:text="${c.username != null ? c.username : ('Client #' + c.id)}">Client</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center justify-end gap-2">
-                    <button type="submit"
-                            class="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100" th:text="#{ui.02697}">
-                        Share
-                    </button>
-                </div>
-            </form>
-        </div>
-    </dialog>
-</th:block>
+<div th:fragment="libraryShareDialog(dialogId, resourceName)" class="library-share-v2">
+    <p th:if="${libraryShared}" class="checkin-feedback" role="status" dir="auto" th:text="${librarySharedRecipient != null ? #messages.msg('ui.library.shareSavedFor', librarySharedRecipient) : #messages.msg('ui.library.shareSaved')}"></p>
+    <p th:if="${libraryShareError}" th:id="${dialogId + '-error'}" class="profile-editor-errors" role="alert" th:text="#{ui.library.shareError}"></p>
+    <details th:id="${dialogId}" th:attr="data-share-dialog=${dialogId}" th:open="${libraryShareError}">
+        <summary th:text="#{ui.02701}">Share to active client</summary>
+        <div class="library-share-resource"><p th:text="#{ui.library.resourceToShare}"></p><h3 dir="auto" th:text="${resourceName}"></h3></div>
+        <p class="library-share-scope" th:id="${dialogId + '-scope'}" th:text="#{ui.library.shareScope}"></p>
+        <div th:if="${#lists.isEmpty(activeClients)}" class="library-share-empty"><p th:text="#{ui.library.noActiveClients}"></p><a class="detail-btn-secondary" th:href="@{/trainer/clients}" th:text="#{ui.02985}"></a></div>
+        <form th:unless="${#lists.isEmpty(activeClients)}" method="post" th:action="@{/trainer/library/share}" th:object="${shareForm}">
+            <input type="hidden" th:field="*{templateType}"><input type="hidden" th:field="*{templateId}"><input type="hidden" th:field="*{returnUrl}">
+            <input type="hidden" name="q" th:value="${query ?: ''}"><input type="hidden" name="page" th:value="${libraryPage ?: 0}">
+            <label th:for="${dialogId + '-clientId'}" th:text="#{ui.01288}"></label>
+            <select th:id="${dialogId + '-clientId'}" name="clientId" required th:attr="aria-describedby=${dialogId + '-scope' + (libraryShareError == true ? ' ' + dialogId + '-error' : '')},aria-invalid=${libraryShareError == true ? 'true' : null}"><option value="" th:text="#{ui.02703}"></option><option th:each="client : ${activeClients}" th:value="${client.id}" th:selected="${shareForm.clientId == client.id}" th:text="${client.fullName != null and !#strings.isEmpty(client.fullName) ? client.fullName : client.username}"></option></select>
+            <button type="submit" class="detail-btn-primary" th:text="#{ui.02697}"></button>
+        </form>
+    </details>
+</div></th:block>

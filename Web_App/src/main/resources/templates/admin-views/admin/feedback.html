@@ -1,7 +1,7 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(#{ui.00015}, null, ~{::content}, null)}">
 
-    <div th:fragment="content" class="role-surface role-surface__page" data-role-surface="platform-admin">
+    <div th:fragment="content" class="role-surface role-surface__page support-operations-v2" data-role-surface="platform-admin">
         <div class="role-surface__header px-6 py-6 sm:px-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4" data-site-tour="admin-feedback">
             <div>
                 <p class="role-surface__eyebrow" th:text="#{ui.00001}">Platform operations</p>
@@ -17,12 +17,19 @@
         <div th:if="${adminFeedbackSuccess}" class="mb-4 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" th:text="${adminFeedbackSuccess}">Saved.</div>
         <div th:if="${adminFeedbackError}" class="mb-4 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800" th:text="${adminFeedbackError}">Error.</div>
 
+        <form th:action="@{/admin/feedback}" method="get" class="operations-filters-v2">
+            <div><label for="support-search" th:text="#{ui.02062}"></label><input id="support-search" name="search" type="search" maxlength="120" th:value="${search}"></div>
+            <div><label for="support-status" th:text="#{ui.00006}"></label><select id="support-status" name="status"><option value="" th:text="#{ui.00485}"></option><option th:each="status : ${statuses}" th:value="${status.name()}" th:text="${status.name()}" th:selected="${selectedStatus == status.name()}"></option></select></div>
+            <button type="submit" class="role-surface__action role-surface__action--primary" th:text="#{ui.00554}"></button>
+            <a th:href="@{/admin/feedback}" class="role-surface__action role-surface__action--secondary" th:text="#{ui.00563}"></a>
+        </form>
+        <p><span th:text="${#lists.size(feedbackItems)}"></span> / <span th:text="${totalFeedback}"></span></p>
         <div class="space-y-4" th:if="${feedbackItems != null and !#lists.isEmpty(feedbackItems)}">
-            <article th:each="item : ${feedbackItems}" class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/40">
+            <article th:each="item : ${feedbackItems}" class="support-case-v2">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="${item.subject}">Subject</h2>
-                        <p class="mt-1 text-xs text-slate-500" th:text="${item.requestType} + ' • ' + ${#temporals.format(item.submittedAt, 'yyyy-MM-dd HH:mm')}">Meta</p>
+                        <p class="mt-1 text-xs text-slate-500" th:text="${item.requestType} + ' • ' + ${#temporals.format(item.submittedAt.atZone(T(java.time.ZoneId).of('Europe/London')), 'dd MMM yyyy HH:mm')}">Meta</p>
                         <p class="mt-1 text-xs text-slate-500" th:if="${item.submitterEmail != null}" th:text="'From: ' + ${item.submitterEmail}">From</p>
                     </div>
                     <div class="flex items-center gap-2">
@@ -53,9 +60,9 @@
                     <form th:action="@{/admin/feedback/{id}/respond(id=${item.id})}" method="post" class="rounded-xl border border-slate-200 p-3 dark:border-slate-700 space-y-2">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500" th:for="${'feedback-response-' + item.id}" th:text="#{ui.00008}">Reply email</label>
-                        <textarea name="response" th:id="${'feedback-response-' + item.id}" rows="3" maxlength="5000" class="w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs dark:border-slate-600 dark:bg-slate-900" placeholder="Type response for requester" th:placeholder="#{ui.00009}"></textarea>
+                        <textarea name="response" th:id="${'feedback-response-' + item.id}" rows="3" maxlength="5000" class="w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs dark:border-slate-600 dark:bg-slate-900" placeholder="Type response for requester" required th:text="${responseDraftId != null and responseDraftId == item.id} ? ${responseDraft} : ''" th:placeholder="#{ui.00009}"></textarea>
                         <p class="text-[11px] text-slate-500" th:text="${item.allowEmailReply} ? 'Requester opted in for email reply.' : 'Requester did NOT opt in for email reply.'">Opt-in state</p>
-                        <button type="submit" class="min-h-11 w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500" th:text="#{ui.00010}">Send response email</button>
+                        <button type="submit" class="min-h-11 w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500" th:disabled="${!item.allowEmailReply or item.submitterEmail == null}" th:text="#{ui.00010}">Send response email</button>
                     </form>
                 </div>
 
@@ -67,7 +74,7 @@
         </div>
 
         <div th:if="${feedbackItems == null or #lists.isEmpty(feedbackItems)}" class="role-surface__surface role-surface__empty">
-            <p class="role-surface__empty-title" th:text="#{ui.00012}">Support inbox clear</p>
+            <p class="role-surface__empty-title" th:text="${totalFeedback > 0} ? #{ui.02068} : #{ui.00012}">Support inbox clear</p>
             <p class="role-surface__empty-copy" th:text="#{ui.00013}">There are no support requests in the current view. Return to platform operations or open the public form to verify the submission journey.</p>
             <div class="flex flex-col sm:flex-row gap-3">
                 <a th:href="@{/admin/dashboard}" class="role-surface__action role-surface__action--primary" th:text="#{ui.00014}">Return to operations</a>

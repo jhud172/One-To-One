@@ -26,7 +26,7 @@ public interface SavedPaymentMethodService {
      *
      * @param user            owner
      * @param cardHolderName  name on card
-     * @param providerToken   opaque token from the payment provider â€“ never the raw PAN
+     * @param providerToken   opaque token from the payment provider – never the raw PAN
      * @param lastFour        last 4 digits of the card (for display only)
      * @param brand           Visa / Mastercard / Amex etc.
      * @param expiryMonth     1-12

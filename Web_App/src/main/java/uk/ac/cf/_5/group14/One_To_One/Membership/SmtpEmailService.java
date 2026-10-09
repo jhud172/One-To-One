@@ -100,13 +100,16 @@ public class SmtpEmailService implements EmailService {
         sendEmail(user.getEmail(), subject, body);
     }
 
-    @Async
     @Override
     public void sendAdminMessage(String to, String subject, String body) {
-        sendEmail(to, subject, body);
+        sendEmail(to, subject, body, true);
     }
 
     private void sendEmail(String to, String subject, String body) {
+        sendEmail(to, subject, body, failOnError);
+    }
+
+    private void sendEmail(String to, String subject, String body, boolean requireAcceptance) {
         try {
             if (smtpUsername == null || smtpUsername.isBlank() || smtpPassword == null || smtpPassword.isBlank()) {
                 throw new IllegalStateException(
@@ -125,7 +128,7 @@ public class SmtpEmailService implements EmailService {
             mailSender.send(message);
         } catch (Exception e) {
             log.error("Failed to send email to {}", to, e);
-            if (failOnError) {
+            if (requireAcceptance) {
                 throw new IllegalStateException("SMTP email delivery failed for " + to, e);
             }
         }

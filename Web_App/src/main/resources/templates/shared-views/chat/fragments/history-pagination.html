@@ -1,0 +1,8 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="historyPagination" class="assistant-history-pagination">
+    <p class="assistant-history-meta" th:text="${#messages.msg(historyPageKey, historyPagination.number + 1, historyPagination.totalPages == 0 ? 1 : historyPagination.totalPages, historyPagination.totalElements)}"></p>
+    <nav th:if="${historyPagination.totalPages > 1}" th:attr="aria-label=#{ui.charlie.archive.pages}">
+        <a th:if="${historyPagination.hasPrevious()}" class="assistant-history-action" rel="prev" th:href="@{${historyPagingPath}(page=${historyPagination.number},q=${searchQuery},returnPage=${historyReturnPage},collection=${historyCollectionId})}" th:text="#{ui.library.previousPage}"></a>
+        <a th:if="${historyPagination.hasNext()}" class="assistant-history-action" rel="next" th:href="@{${historyPagingPath}(page=${historyPagination.number + 2},q=${searchQuery},returnPage=${historyReturnPage},collection=${historyCollectionId})}" th:text="#{ui.library.nextPage}"></a>
+        <a th:if="${thread != null and historyPagination.hasNext()}" class="assistant-history-action" th:href="@{${historyPagingPath}(page=${historyPagination.totalPages},q=${searchQuery},returnPage=${historyReturnPage},collection=${historyCollectionId})}" th:text="#{ui.charlie.archive.latest}"></a>
+    </nav>
+</div>

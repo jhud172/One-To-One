@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -71,12 +72,16 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
                                        String clientNotes,
                                        LocalDate weekStartDate) {
         requireClient(client);
+        userRepository.findByIdForUpdate(client.getId())
+                .orElseThrow(() -> new AccessDeniedException("Client not found"));
         TrainerClientLink link = trainerClientLinkService.getActiveLinkForClient(client.getId());
         if (link == null) {
             throw new AccessDeniedException("Active trainer required");
         }
 
         Long trainerId = link.getTrainerUserId();
+        requireTrainer(userRepository.findById(trainerId)
+                .orElseThrow(() -> new AccessDeniedException("Trainer not found")));
         TrainerScheduleTemplate template = null;
         if (templateId != null) {
             template = templateRepository.findById(templateId)
@@ -86,6 +91,9 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
             }
         }
         LocalDate weekStart = normalizeWeekStart(weekStartDate != null ? weekStartDate : LocalDate.now());
+        if (weekStart.isAfter(normalizeWeekStart(LocalDate.now()))) {
+            throw new IllegalArgumentException("invalid-week");
+        }
 
         weeklyCheckInRepository.findByTrainerIdAndClientIdAndWeekStartDate(trainerId, client.getId(), weekStart)
                 .ifPresent(existing -> {
@@ -128,7 +136,7 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
     @Override
     public WeeklyCheckIn respondToCheckIn(User trainer, Long checkInId, String trainerResponse, String nextWeekFocus, Long goalId) {
         requireTrainer(trainer);
-        WeeklyCheckIn checkIn = weeklyCheckInRepository.findById(checkInId)
+        WeeklyCheckIn checkIn = weeklyCheckInRepository.findByIdForUpdate(checkInId)
                 .orElseThrow(() -> new IllegalArgumentException("Check-in not found"));
 
         if (!trainer.getId().equals(checkIn.getTrainerId())) {
@@ -136,13 +144,30 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
         }
         accessGuard.requireTrainerAccessClient(trainer.getId(), checkIn.getClientId());
 
+        String response = trimToNull(trainerResponse);
+        String focus = trimToNull(nextWeekFocus);
+        if (response == null && focus == null) {
+            throw new IllegalArgumentException("empty-response");
+        }
+        if (focus != null && focus.length() > 600) {
+            throw new IllegalArgumentException("focus-length");
+        }
         if (goalId != null) {
-            goalService.getGoalForViewer(trainer, goalId);
-            checkIn.setGoalId(goalId);
+            var goal = goalService.getGoalForViewer(trainer, goalId);
+            if (goal.getOwnerUser() == null || !checkIn.getClientId().equals(goal.getOwnerUser().getId())) {
+                throw new AccessDeniedException("Goal does not belong to this check-in's client");
+            }
         }
 
-        checkIn.setTrainerResponse(trimToNull(trainerResponse));
-        checkIn.setNextWeekFocus(trimToNull(nextWeekFocus));
+        if (checkIn.getStatus() == WeeklyCheckInStatus.RESPONDED
+                && Objects.equals(checkIn.getTrainerResponse(), response)
+                && Objects.equals(checkIn.getNextWeekFocus(), focus)
+                && Objects.equals(checkIn.getGoalId(), goalId)) {
+            return checkIn;
+        }
+        checkIn.setGoalId(goalId);
+        checkIn.setTrainerResponse(response);
+        checkIn.setNextWeekFocus(focus);
         checkIn.setRespondedAt(Instant.now());
         checkIn.setStatus(WeeklyCheckInStatus.RESPONDED);
         WeeklyCheckIn saved = weeklyCheckInRepository.save(checkIn);
@@ -152,7 +177,8 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
             clientUser,
             NotificationType.SYSTEM,
             "Coach response",
-            trainer.getFullName() + " responded to your weekly check-in."
+            trainer.getFullName() + " responded to your weekly check-in.",
+            "/checkins/client-review/" + saved.getId()
         ));
 
         return saved;
@@ -170,6 +196,13 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
     public List<WeeklyCheckIn> listForClient(User client) {
         requireClient(client);
         return weeklyCheckInRepository.findByClientIdOrderBySubmittedAtDesc(client.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WeeklyCheckIn> listRecentForClient(User client) {
+        requireClient(client);
+        return weeklyCheckInRepository.findTop5ByClientIdOrderByWeekStartDateDescIdDesc(client.getId());
     }
 
     @Override
@@ -209,6 +242,8 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
     @Override
     public TrainerCheckInQuestion addQuestion(User trainer, Long templateId, String prompt, boolean required) {
         TrainerScheduleTemplate template = getTemplateForTrainer(trainer, templateId);
+        templateRepository.findOwnedForUpdate(templateId, trainer.getId()).orElseThrow(() -> new AccessDeniedException("Template not found"));
+        if (prompt == null || prompt.isBlank() || prompt.length() > 300) throw new IllegalArgumentException("Question must contain 1 to 300 characters");
         TrainerCheckInQuestion question = new TrainerCheckInQuestion();
         question.setTemplateId(template.getId());
         question.setPrompt(prompt == null ? "" : prompt.trim());
@@ -220,12 +255,32 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
     @Override
     public void deleteQuestion(User trainer, Long templateId, Long questionId) {
         getTemplateForTrainer(trainer, templateId);
+        templateRepository.findOwnedForUpdate(templateId, trainer.getId()).orElseThrow(() -> new AccessDeniedException("Template not found"));
         TrainerCheckInQuestion question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("Question not found"));
+                .orElseThrow(() -> new AccessDeniedException("Question not found"));
         if (!question.getTemplateId().equals(templateId)) {
             throw new AccessDeniedException("Question not linked to template");
         }
         questionRepository.delete(question);
+    }
+
+    @Override
+    public boolean moveQuestion(User trainer, Long templateId, Long questionId, String direction) {
+        requireTrainer(trainer);
+        templateRepository.findOwnedForUpdate(templateId, trainer.getId()).orElseThrow(() -> new AccessDeniedException("Template not found"));
+        int step = "UP".equals(direction) ? -1 : "DOWN".equals(direction) ? 1 : 0;
+        if (step == 0) throw new IllegalArgumentException("Invalid movement");
+        var questions = questionRepository.findByTemplateIdOrderByOrderIndexAsc(templateId);
+        int index = -1;
+        for (int position = 0; position < questions.size(); position++) {
+            if (questions.get(position).getId().equals(questionId)) index = position;
+        }
+        if (index < 0) throw new AccessDeniedException("Question not found");
+        if (index + step < 0 || index + step >= questions.size()) return false;
+        java.util.Collections.swap(questions, index, index + step);
+        for (int position = 0; position < questions.size(); position++) questions.get(position).setOrderIndex(position + 1);
+        questionRepository.saveAll(questions);
+        return true;
     }
 
     private TrainerScheduleTemplate getTemplateForTrainer(User trainer, Long templateId) {
@@ -238,8 +293,8 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
     }
 
     private void requireTrainer(User trainer) {
-        if (trainer == null || trainer.getRole() != Role.TRAINER) {
-            throw new AccessDeniedException("Trainer role required");
+        if (trainer == null || trainer.getRole() != Role.TRAINER || !trainer.isTrainerVerified() || !trainer.isEnabled()) {
+            throw new AccessDeniedException("Verified active trainer required");
         }
     }
 
@@ -250,7 +305,10 @@ public class WeeklyCheckInServiceImpl implements WeeklyCheckInService {
     }
 
     private int nextQuestionOrder(Long templateId) {
-        return questionRepository.findByTemplateIdOrderByOrderIndexAsc(templateId).size() + 1;
+        int last = questionRepository.findByTemplateIdOrderByOrderIndexAsc(templateId).stream()
+                .mapToInt(TrainerCheckInQuestion::getOrderIndex).max().orElse(0);
+        if (last == Integer.MAX_VALUE) throw new IllegalArgumentException("No available question position");
+        return last + 1;
     }
 
     private String toResponsesJson(Long templateId, Map<Long, String> answers) {

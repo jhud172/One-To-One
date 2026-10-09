@@ -1,174 +1,122 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02326}, null, ~{::content}, null)}">
-
-<div th:fragment="content">
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div class="space-y-3">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300" th:text="#{ui.00522}">Workout management</p>
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100" th:text="#{ui.02307}">One place for scheduled workouts, logs, and history</h1>
-                        <p class="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02308}">
-                            Open upcoming workouts, jump back into completed sessions, and edit personal exercise logs without switching between calendar flows.
-                        </p>
-                    </div>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <a th:href="@{/calendar}"
-                       class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900" th:text="#{ui.02309}">Open planner</a>
-                    <a th:href="@{/exercise-log/list}"
-                       class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700" th:text="#{ui.02310}">View log library</a>
-                </div>
-            </div>
-        </section>
-
-        <div class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-            <section class="space-y-6">
-                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400" th:text="#{ui.02311}">Active today</p>
-                            <h2 class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02312}">Workouts ready to launch now</h2>
-                        </div>
-                        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                              th:text="${#lists.size(activeWorkouts) + ' ready'}">0 ready</span>
-                    </div>
-
-                    <div class="mt-5 space-y-3" th:if="${activeWorkouts != null and !#lists.isEmpty(activeWorkouts)}">
-                        <article th:each="item : ${activeWorkouts}"
-                                 class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                <div class="space-y-2">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100"
-                                            th:text="${item.title}">Workout</h3>
-                                        <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-200"
-                                              th:text="${item.statusLabel}">Ready</span>
-                                        <span class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-                                              th:text="${item.sourceLabel}">Scheduled workout</span>
-                                    </div>
-                                    <p class="text-sm text-slate-600 dark:text-slate-300"
-                                       th:text="${#temporals.format(item.date, 'EEEE d MMMM')}">Today</p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400"
-                                       th:text="${item.summary.completedSets + ' of ' + item.summary.totalSets + ' sets logged'}">0 of 0 sets logged</p>
-                                </div>
-                                <a th:href="@{${item.launchUrl}}"
-                                   class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700" th:text="#{ui.02313}">Open workout</a>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div th:if="${activeWorkouts == null or #lists.isEmpty(activeWorkouts)}"
-                         class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" th:text="#{ui.02314}">
-                        Nothing is waiting right now. Upcoming scheduled workouts will appear below.
-                    </div>
-                </section>
-
-                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400" th:text="#{ui.02315}">Upcoming</p>
-                            <h2 class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02316}">Scheduled workouts over the next 3 weeks</h2>
-                        </div>
-                        <a th:href="@{/calendar}" class="text-sm font-semibold text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200" th:text="#{ui.02317}">Open calendar</a>
-                    </div>
-
-                    <div class="mt-5 grid gap-3 lg:grid-cols-2" th:if="${upcomingWorkouts != null and !#lists.isEmpty(upcomingWorkouts)}">
-                        <article th:each="item : ${upcomingWorkouts}"
-                                 class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                               th:text="${item.sourceLabel}">Calendar schedule</p>
-                            <h3 class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100"
-                                th:text="${item.title}">Workout</h3>
-                            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                               th:text="${#temporals.format(item.date, 'EEEE d MMMM yyyy')}">Future date</p>
-                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400"
-                               th:text="${item.summary.exerciseCount + ' exercises planned'}">0 exercises planned</p>
-                            <a th:href="@{${item.launchUrl}}"
-                               class="mt-4 inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900" th:text="#{ui.02318}">Launch workout</a>
-                        </article>
-                    </div>
-
-                    <div th:if="${upcomingWorkouts == null or #lists.isEmpty(upcomingWorkouts)}"
-                         class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" th:text="#{ui.02319}">
-                        No future scheduled workouts were found for the next 3 weeks.
-                    </div>
-                </section>
-            </section>
-
-            <section class="space-y-6">
-                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400" th:text="#{ui.02320}">Session history</p>
-                            <h2 class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02321}">Recently completed workout sessions</h2>
-                        </div>
-                    </div>
-
-                    <div class="mt-5 space-y-3" th:if="${completedSessions != null and !#lists.isEmpty(completedSessions)}">
-                        <article th:each="item : ${completedSessions}"
-                                 class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                            <div class="flex items-start justify-between gap-4">
-                                <div>
-                                    <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100"
-                                        th:text="${item.title}">Workout</h3>
-                                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                                       th:text="${#temporals.format(item.date, 'd MMM yyyy')}">Date</p>
-                                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400"
-                                       th:text="${item.summary.completedSets + ' sets complete'}">0 sets complete</p>
-                                </div>
-                                <a th:href="@{${item.href}}"
-                                   class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900" th:text="#{ui.00933}">Review</a>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div th:if="${completedSessions == null or #lists.isEmpty(completedSessions)}"
-                         class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" th:text="#{ui.02322}">
-                        Completed sessions will appear here once a scheduled workout is finished in the new session flow.
-                    </div>
-                </section>
-
-                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400" th:text="#{ui.00858}">Exercise logs</p>
-                            <h2 class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02323}">Personal log entries you can edit</h2>
-                        </div>
-                        <a th:href="@{/exercise-log/list}" class="text-sm font-semibold text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200" th:text="#{ui.02324}">Full log history</a>
-                    </div>
-
-                    <div class="mt-5 space-y-3" th:if="${exerciseLogs != null and !#lists.isEmpty(exerciseLogs)}">
-                        <article th:each="log : ${exerciseLogs}"
-                                 class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                                <div>
-                                    <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100"
-                                        th:text="${#temporals.format(log.date, 'd MMM yyyy')}">Log date</h3>
-                                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                                       th:text="${log.durationMinutes != null ? log.durationMinutes + ' minutes logged' : 'Duration not recorded'}">Duration</p>
-                                    <p class="mt-2 line-clamp-3 text-sm text-slate-500 dark:text-slate-400"
-                                       th:text="${log.comments != null && !#strings.isEmpty(log.comments) ? log.comments : 'No comments recorded.'}">Comments</p>
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <a th:href="@{'/exercise-log/view/' + ${log.id}}"
-                                       class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900" th:text="#{ui.00664}">View</a>
-                                    <a th:href="@{'/exercise-log/edit/' + ${log.id}}"
-                                       class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white" th:text="#{ui.00138}">Edit</a>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div th:if="${exerciseLogs == null or #lists.isEmpty(exerciseLogs)}"
-                         class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" th:text="#{ui.02325}">
-                        Personal workout logs will appear here after you add them.
-                    </div>
-                </section>
-            </section>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.training.title}, null, ~{::content}, null)}">
+<div th:fragment="content" class="training-launch">
+    <header class="training-launch__header">
+        <div>
+            <p class="training-launch__eyebrow" th:text="#{ui.00522}">Workout management</p>
+            <h1 th:text="#{ui.training.title}">Your training</h1>
+            <p class="training-launch__intro" th:text="#{ui.training.intro}">Pick up your next workout. Keep your plan, saved sets and personal logs connected.</p>
         </div>
+        <a class="training-launch__action" href="/calendar" th:text="#{ui.02309}">Open planner</a>
+    </header>
+    <nav class="training-launch__navigation" th:attr="aria-label=#{ui.training.navigation}">
+        <a href="#training-today" th:text="#{ui.00495}">Today</a>
+        <a href="#training-upcoming" th:text="#{ui.02315}">Upcoming</a>
+        <a href="#training-history" th:text="#{ui.02320}">Session history</a>
+        <a href="#training-logs" th:text="#{ui.00858}">Exercise logs</a>
+    </nav>
+    <section id="training-today" class="training-launch__today" aria-labelledby="training-today-title">
+        <div class="training-launch__section-heading">
+            <h2 id="training-today-title" th:text="#{ui.training.next}">Your next workout</h2>
+            <time th:datetime="${today}" th:text="${#temporals.format(today, 'EEEE d MMMM')}">Today</time>
+        </div>
+        <article th:if="${nextWorkout != null}" class="training-launch__featured" th:attr="data-launch-title=${nextWorkout.title},data-started=${nextWorkout.started}">
+            <div class="training-launch__featured-copy">
+                <p class="training-launch__state" th:text="${#messages.msg(nextWorkout.started ? 'ui.history.active' : 'ui.training.ready')}">Ready to start</p>
+                <h3 th:text="${nextWorkout.title}">Workout</h3>
+                <a class="training-launch__source" th:href="@{${nextWorkout.sourceUrl}}" th:text="${#messages.msg(nextWorkout.sourceKey)}">Calendar plan</a>
+                <p class="training-launch__meta" th:text="#{ui.training.exercises(${nextWorkout.summary.exerciseCount})}">Planned exercises: 0</p>
+                <a class="training-launch__action training-launch__action--primary" th:href="@{${nextWorkout.launchUrl}}"
+                   th:with="action=${#messages.msg(nextWorkout.started ? 'ui.training.resume' : 'ui.training.start')}"
+                   th:attr="aria-label=#{ui.training.actionFor(${action},${nextWorkout.title})}" th:text="${action}">Start workout</a>
+            </div>
+            <div class="training-launch__progress" th:if="${nextWorkout.summary.totalSets > 0}">
+                <p th:text="#{ui.02336}">Session progress</p>
+                <strong th:text="${nextWorkout.summary.completionPercent + '%'}">0%</strong>
+                <progress max="100" th:value="${nextWorkout.summary.completionPercent}" th:attr="aria-label=#{ui.02336},aria-valuenow=${nextWorkout.summary.completionPercent}" th:text="${nextWorkout.summary.completionPercent + '%'}">0%</progress>
+                <p th:text="#{ui.training.sets(${nextWorkout.summary.completedSets},${nextWorkout.summary.totalSets})}">0 of 0 sets complete</p>
+            </div>
+            <p class="training-launch__not-started" th:if="${nextWorkout.summary.totalSets == 0}"
+               th:text="${#messages.msg(nextWorkout.started ? 'ui.training.noSets' : 'ui.training.beforeStart')}">Sets are created when you open this workout.</p>
+        </article>
+        <p th:if="${nextWorkout == null}" class="training-launch__empty" th:text="#{ui.training.emptyToday}">Nothing planned for today. Check your upcoming workouts or open the planner.</p>
+        <details th:if="${!#lists.isEmpty(otherWorkouts)}" class="training-launch__more">
+            <summary th:text="#{ui.training.more(${#lists.size(otherWorkouts)})}">More workouts today: 0</summary>
+            <ul class="training-launch__list">
+                <li th:each="item : ${otherWorkouts}">
+                    <div class="training-launch__row-copy">
+                        <h3 th:text="${item.title}">Workout</h3>
+                        <a class="training-launch__source" th:href="@{${item.sourceUrl}}" th:text="${#messages.msg(item.sourceKey)}">Calendar plan</a>
+                        <p class="training-launch__meta" th:if="${item.summary.totalSets > 0}" th:text="#{ui.training.sets(${item.summary.completedSets},${item.summary.totalSets})}">Sets complete</p>
+                        <p class="training-launch__meta" th:if="${item.summary.totalSets == 0}" th:text="#{ui.training.exercises(${item.summary.exerciseCount})}">Planned exercises</p>
+                    </div>
+                    <a class="training-launch__action" th:href="@{${item.launchUrl}}"
+                       th:with="action=${#messages.msg(item.started ? 'ui.training.resume' : 'ui.training.start')}"
+                       th:attr="aria-label=#{ui.training.actionFor(${action},${item.title})}" th:text="${action}">Start workout</a>
+                </li>
+            </ul>
+        </details>
+    </section>
+    <div class="training-launch__columns">
+        <section id="training-upcoming" class="training-launch__section" aria-labelledby="training-upcoming-title">
+            <div class="training-launch__section-heading">
+                <h2 id="training-upcoming-title" th:text="#{ui.02315}">Upcoming</h2>
+                <span class="training-launch__count" th:text="${#lists.size(upcomingWorkouts)}">0</span>
+            </div>
+            <p class="training-launch__section-copy" th:text="#{ui.02316}">Scheduled workouts over the next 3 weeks</p>
+            <ul class="training-launch__list" th:if="${!#lists.isEmpty(upcomingWorkouts)}">
+                <li th:each="item : ${upcomingWorkouts}">
+                    <div class="training-launch__row-copy">
+                        <time th:datetime="${item.date}" th:text="${#temporals.format(item.date, 'EEE d MMM')}">Date</time>
+                        <h3 th:text="${item.title}">Workout</h3>
+                        <a class="training-launch__source" th:href="@{${item.sourceUrl}}" th:text="${#messages.msg(item.sourceKey)}">Calendar plan</a>
+                        <p class="training-launch__meta" th:text="#{ui.training.exercises(${item.summary.exerciseCount})}">Planned exercises</p>
+                    </div>
+                    <a class="training-launch__action" th:href="@{${item.launchUrl}}"
+                       th:with="action=${#messages.msg(item.started ? 'ui.training.resume' : 'ui.02313')}"
+                       th:attr="aria-label=#{ui.training.actionFor(${action},${item.title})}" th:text="${action}">Open workout</a>
+                </li>
+            </ul>
+            <p class="training-launch__empty" th:if="${#lists.isEmpty(upcomingWorkouts)}" th:text="#{ui.02319}">No future scheduled workouts were found for the next 3 weeks.</p>
+        </section>
+        <section id="training-history" class="training-launch__section" aria-labelledby="training-history-title">
+            <div class="training-launch__section-heading">
+                <h2 id="training-history-title" th:text="#{ui.02320}">Session history</h2>
+                <span class="training-launch__count" th:text="${#lists.size(completedSessions)}">0</span>
+            </div>
+            <p class="training-launch__section-copy" th:text="#{ui.training.historyHelp}">Review saved sets from your completed sessions.</p>
+            <ul class="training-launch__list" th:if="${!#lists.isEmpty(completedSessions)}">
+                <li th:each="item : ${completedSessions}">
+                    <div class="training-launch__row-copy">
+                        <time th:datetime="${item.date}" th:text="${#temporals.format(item.date, 'EEE d MMM yyyy')}">Date</time>
+                        <h3 th:text="${item.title}">Workout</h3>
+                        <p class="training-launch__meta" th:text="${item.summary.totalSets > 0 ? #messages.msg('ui.training.sets', item.summary.completedSets, item.summary.totalSets) : #messages.msg('ui.training.noSets')}">No sets saved yet.</p>
+                    </div>
+                    <a class="training-launch__action" th:href="@{${item.href}}" th:attr="aria-label=#{ui.training.actionFor(#{ui.00933},${item.title})}" th:text="#{ui.00933}">Review</a>
+                </li>
+            </ul>
+            <p class="training-launch__empty" th:if="${#lists.isEmpty(completedSessions)}" th:text="#{ui.training.emptyHistory}">Completed workouts will appear here. Open a workout to start saving your sets.</p>
+        </section>
     </div>
+    <section id="training-logs" class="training-launch__section training-launch__logs" aria-labelledby="training-logs-title">
+        <div class="training-launch__section-heading">
+            <h2 id="training-logs-title" th:text="#{ui.00858}">Exercise logs</h2>
+            <a class="training-launch__action" href="/exercise-log/list" th:text="#{ui.02324}">Full log history</a>
+        </div>
+        <p class="training-launch__section-copy" th:text="#{ui.training.logsHelp}">Personal entries can be edited separately from your workout sets.</p>
+        <ul class="training-launch__list" th:if="${!#lists.isEmpty(exerciseLogs)}">
+            <li th:each="log : ${exerciseLogs}">
+                <div class="training-launch__row-copy">
+                    <h3><time th:datetime="${log.date}" th:text="${#temporals.format(log.date, 'EEE d MMM yyyy')}">Log date</time></h3>
+                    <p class="training-launch__meta" th:text="${log.durationMinutes != null ? #messages.msg('ui.training.minutes', log.durationMinutes) : #messages.msg('ui.training.noDuration')}">Duration not recorded</p>
+                    <p class="training-launch__comment" th:text="${log.comments != null and !#strings.isEmpty(log.comments) ? log.comments : #messages.msg('ui.training.noComments')}">No comments recorded.</p>
+                </div>
+                <div class="training-launch__row-actions">
+                    <a class="training-launch__action" th:href="@{'/exercise-log/view/' + ${log.id}}" th:attr="aria-label=#{ui.training.actionFor(#{ui.00664},${#temporals.format(log.date, 'd MMM yyyy')})}" th:text="#{ui.00664}">View</a>
+                    <a class="training-launch__action" th:href="@{'/exercise-log/edit/' + ${log.id}}" th:attr="aria-label=#{ui.training.actionFor(#{ui.00138},${#temporals.format(log.date, 'd MMM yyyy')})}" th:text="#{ui.00138}">Edit</a>
+                </div>
+            </li>
+        </ul>
+        <p class="training-launch__empty" th:if="${#lists.isEmpty(exerciseLogs)}" th:text="#{ui.02325}">Personal workout logs will appear here after you add them.</p>
+    </section>
 </div>
-
 </th:block>

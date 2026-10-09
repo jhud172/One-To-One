@@ -20,6 +20,9 @@ public interface BloodPressureReadingRepository extends JpaRepository<BloodPress
 
     Optional<BloodPressureReading> findByUserAndReadingDateAndReadingTimeIsNull(User user, LocalDate date);
 
-    @Query("SELECT r FROM BloodPressureReading r WHERE r.user = :user AND r.readingDate BETWEEN :from AND :to ORDER BY r.readingDate ASC, r.readingTime ASC")
+    @Query("SELECT r FROM BloodPressureReading r WHERE r.user = :user AND r.readingDate BETWEEN :from AND :to ORDER BY r.readingDate ASC, r.readingTime ASC, r.id ASC")
     List<BloodPressureReading> findForRange(@Param("user") User user, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("SELECT r FROM BloodPressureReading r WHERE r.user = :user ORDER BY r.readingDate DESC, CASE WHEN r.readingTime IS NULL THEN 1 ELSE 0 END, r.readingTime DESC, r.id DESC")
+    org.springframework.data.domain.Page<BloodPressureReading> findHistory(@Param("user") User user, org.springframework.data.domain.Pageable pageable);
 }

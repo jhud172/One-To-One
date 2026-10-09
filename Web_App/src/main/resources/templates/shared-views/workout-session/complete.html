@@ -1,80 +1,73 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${view.workoutName + #messages.msg('ui.02335')}, null, ~{::content}, null)}">
-
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.result.pageTitle(${view.workoutName})}, null, ~{::content}, null)}">
 <div th:fragment="content">
-    <div class="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        <section class="rounded-3xl border border-emerald-200 bg-white p-8 shadow-sm dark:border-emerald-800/40 dark:bg-slate-950">
-            <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                <div class="space-y-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300" th:text="#{ui.02327}">Workout complete</p>
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100"
-                            th:text="${view.workoutName}">Workout</h1>
-                        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300"
-                           th:text="${'Completed on ' + #temporals.format(view.date, 'EEEE d MMMM yyyy')}">Completed today</p>
-                    </div>
-                    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-100" th:text="#{ui.02328}">
-                        The session is stored and the linked schedule entry has been updated. Every calendar and dashboard entry point now resolves back to this same workout record.
-                    </div>
-                </div>
-
-                <div class="grid w-full gap-3 sm:grid-cols-3 lg:max-w-md">
-                    <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-800 dark:bg-slate-900">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02329}">Exercises</p>
-                        <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100"
-                           th:text="${view.summary.completedExercises + ' / ' + view.summary.exerciseCount}">0 / 0</p>
-                    </article>
-                    <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-800 dark:bg-slate-900">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02330}">Sets</p>
-                        <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100"
-                           th:text="${view.summary.completedSets + ' / ' + view.summary.totalSets}">0 / 0</p>
-                    </article>
-                    <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-800 dark:bg-slate-900">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02331}">Volume</p>
-                        <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100"
-                           th:text="${#numbers.formatDecimal(view.summary.totalVolume, 1, 1)} + ' kg'">0.0 kg</p>
-                    </article>
-                </div>
+    <div class="session-player session-result" th:with="allDone=${view.summary.totalSets > 0 and view.summary.completedSets == view.summary.totalSets}" th:classappend="${allDone} ? 'session-result--complete'">
+        <header class="session-result__header">
+            <div>
+                <p class="session-result__eyebrow" th:text="${#messages.msg(allDone ? 'ui.result.titleFull' : 'ui.result.titleSaved')}">Session saved</p>
+                <h1 th:text="${view.workoutName}">Workout</h1>
+                <p class="session-result__date" th:text="#{ui.player.scheduled(${#temporals.format(view.date, 'EEEE d MMMM yyyy')})}">Scheduled date</p>
             </div>
-
-            <div class="mt-6 flex flex-wrap gap-3">
-                <a href="/workout-management"
-                   class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700" th:text="#{ui.02332}">Open workout management</a>
-                <a th:href="@{'/calendar/day/' + ${view.date}}"
-                   class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900" th:text="#{ui.01829}">Back to day</a>
+            <nav class="session-result__returns" th:attr="aria-label=#{ui.training.navigation}">
+                <a class="training-launch__action training-launch__action--primary" href="/workout-management" th:text="#{ui.result.return}">Back to training</a>
+                <a class="training-launch__action" th:href="@{'/calendar/day/' + ${view.date}}" th:text="#{ui.01829}">Back to day</a>
+            </nav>
+        </header>
+        <div class="session-result__outcome">
+            <p th:if="${allDone}" th:text="#{ui.result.full}">Every set is marked complete.</p>
+            <p th:unless="${allDone}" th:text="${view.summary.totalSets == 0 ? #messages.msg('ui.result.empty') : #messages.msg('ui.result.partial', view.summary.completedSets, view.summary.totalSets)}">Your saved entries remain in history.</p>
+            <div class="session-result__progress">
+                <span th:text="#{ui.result.progress}">Completed sets</span>
+                <strong th:text="${view.summary.completionPercent + '%'}">0%</strong>
+                <progress max="100" th:value="${view.summary.completionPercent}" th:attr="aria-label=#{ui.result.progress},aria-valuenow=${view.summary.completionPercent}" th:text="${view.summary.completionPercent + '%'}">0%</progress>
+            </div>
+        </div>
+        <dl class="session-result__metrics">
+            <div><dt th:text="#{ui.02329}">Exercises</dt><dd th:text="${view.summary.completedExercises + ' / ' + view.summary.exerciseCount}">0 / 0</dd></div>
+            <div><dt th:text="#{ui.result.progress}">Completed sets</dt><dd th:text="${view.summary.completedSets + ' / ' + view.summary.totalSets}">0 / 0</dd></div>
+            <div><dt th:text="#{ui.result.volume}">Recorded volume</dt><dd th:text="${#numbers.formatDecimal(view.summary.totalVolume, 1, 1)} + ' kg'">0.0 kg</dd></div>
+        </dl>
+        <p class="session-result__volume-help" th:text="#{ui.result.volumeHelp}">Volume uses saved weight and repetitions.</p>
+        <section class="session-result__next" th:attr="aria-label=#{ui.result.next}">
+            <div>
+                <p class="session-result__eyebrow" th:text="#{ui.result.next}">Up next</p>
+                <th:block th:if="${nextWorkout != null}">
+                    <h2 th:text="${nextWorkout.title}">Next workout</h2>
+                    <p><time th:datetime="${nextWorkout.date}" th:text="${#temporals.format(nextWorkout.date, 'EEE d MMM')}">Date</time><span class="session-result__source" th:text="${#messages.msg(nextWorkout.sourceKey)}">Calendar plan</span></p>
+                    <a class="training-launch__action" th:href="${nextWorkout.sourceUrl}" th:attr="aria-label=#{ui.training.actionFor(#{ui.result.day},${nextWorkout.title})}" th:text="#{ui.result.day}">View day</a>
+                </th:block>
+                <p th:if="${nextWorkout == null}" th:text="#{ui.result.noNext}">No other workout is planned in the next three weeks.</p>
+            </div>
+            <div th:if="${canCoachFeedback}" class="session-result__coach" th:with="feedbackLabel=${#messages.msg(canCheckIn ? 'ui.result.checkIn' : 'ui.result.message')}">
+                <h2 th:text="${feedbackLabel}">Message your coach</h2>
+                <p th:text="${#messages.msg(canCheckIn ? 'ui.result.checkInHelp' : 'ui.result.messageHelp')}">Share how training felt in your coaching inbox.</p>
+                <a th:if="${canCheckIn}" class="training-launch__action" href="/checkins/client-submit" th:text="${feedbackLabel}">Check in with your coach</a>
+                <form th:unless="${canCheckIn}" th:action="@{/inbox/start/{coachId}(coachId=${coachId})}" method="post">
+                    <button class="training-launch__action" type="submit" th:text="${feedbackLabel}">Message your coach</button>
+                </form>
             </div>
         </section>
-
-        <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400" th:text="#{ui.02333}">Exercise summary</p>
-                    <h2 class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02334}">What was logged in this session</h2>
-                </div>
-                <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-200"
-                      th:text="${view.summary.completionPercent} + '% complete'">0% complete</span>
-            </div>
-
-            <div class="mt-5 space-y-3">
-                <article th:each="exercise : ${view.exercises}"
-                         class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100"
-                                th:text="${exercise.displayName}">Exercise</h3>
-                            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                               th:text="${exercise.category != null && !#strings.isEmpty(exercise.category) ? exercise.category : exercise.status}">Category</p>
-                        </div>
-                        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
-                              th:classappend="${exercise.completed} ? ' border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-200' : ' border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-200'}"
-                              th:text="${exercise.status}">Completed</span>
+        <section class="session-result__log" aria-labelledby="session-result-log-title">
+            <h2 id="session-result-log-title" th:text="#{ui.02334}">What was logged in this session</h2>
+            <p class="session-result__empty" th:if="${#lists.isEmpty(view.exercises)}" th:text="#{ui.result.noExercises}">No exercise or set entries were recorded.</p>
+            <details th:each="exercise, exerciseStat : ${view.exercises}" class="session-result__exercise" th:attr="open=${exerciseStat.first} ? 'open' : null">
+                <summary>
+                    <span class="session-result__exercise-name"><strong th:text="${exercise.displayName}">Exercise</strong><span th:if="${exercise.category != null and !#strings.isEmpty(exercise.category)}" th:text="${exercise.category}">Category</span></span>
+                    <span class="session-result__exercise-state" th:text="${#messages.msg(exercise.completed ? 'ui.history.complete' : 'ui.result.open')}">Not marked complete</span>
+                </summary>
+                <p class="session-result__entries" th:text="#{ui.result.entries(${#lists.size(exercise.sets)})}">Set entries: 0</p>
+                <dl class="session-summary__sets">
+                    <div th:each="set : ${exercise.sets}" class="session-summary__set">
+                        <dt><span th:text="#{ui.player.setTitle(${set.setNumber})}">Set 1</span><span class="session-summary__status" th:classappend="${!set.completed} ? 'session-summary__status--open'" th:text="${#messages.msg(set.completed ? 'ui.history.complete' : 'ui.result.open')}">Not marked complete</span></dt>
+                        <dd>
+                            <span th:if="${set.weight != null}" th:text="${#numbers.formatDecimal(set.weight, 1, 1)} + ' kg'">0.0 kg</span>
+                            <span th:if="${set.reps != null}" th:text="${set.reps} + ' × ' + #{ui.02339}">0 × Reps</span>
+                            <p th:if="${set.notes != null and !#strings.isEmpty(set.notes)}"><bdi th:text="${set.notes}">Notes</bdi></p>
+                            <p th:if="${set.weight == null and set.reps == null and (set.notes == null or #strings.isEmpty(set.notes))}" th:text="#{ui.result.noValues}">No values or notes saved.</p>
+                        </dd>
                     </div>
-                    <p class="mt-3 text-sm text-slate-600 dark:text-slate-300"
-                       th:text="${#lists.size(exercise.sets)} + ' sets recorded'">0 sets recorded</p>
-                </article>
-            </div>
+                </dl>
+            </details>
         </section>
     </div>
 </div>
-
 </th:block>

@@ -35,6 +35,7 @@ public class WorkoutBuilderController {
     private final GoalLinkService goalLinkService;
     private final WorkoutPerformanceService workoutPerformanceService;
     private final UserSettingsService userSettingsService;
+    private final WorkoutFormFeedbackService recordingService;
 
     public WorkoutBuilderController(WorkoutBuilderService workoutBuilderService,
                                     ExerciseService exerciseService,
@@ -43,7 +44,7 @@ public class WorkoutBuilderController {
                                     GoalService goalService,
                                     GoalLinkService goalLinkService,
                                     WorkoutPerformanceService workoutPerformanceService,
-                                    UserSettingsService userSettingsService) {
+                                    UserSettingsService userSettingsService, WorkoutFormFeedbackService recordingService) {
         this.workoutBuilderService = workoutBuilderService;
         this.exerciseService = exerciseService;
         this.customExerciseService = customExerciseService;
@@ -52,35 +53,57 @@ public class WorkoutBuilderController {
         this.goalLinkService = goalLinkService;
         this.workoutPerformanceService = workoutPerformanceService;
         this.userSettingsService = userSettingsService;
+        this.recordingService = recordingService;
+    }
+
+    @InitBinder("form")
+    public void bindWorkout(org.springframework.web.bind.WebDataBinder binder) {
+        binder.setAllowedFields("name", "description", "exercises[*].id", "exercises[*].exerciseRef", "exercises[*].exerciseName",
+                "exercises[*].sets", "exercises[*].reps", "exercises[*].restSeconds", "exercises[*].notes");
     }
 
     @GetMapping
-    public String index(Model model) {
+    public String index(@RequestParam(defaultValue = "my-workouts") String mode,
+                        @RequestParam(required = false) String exerciseRef, Model model) {
         User user = authHelper.getAuthenticatedUser();
-        if (user == null) {
-            return "redirect:/login";
-        }
-        model.addAttribute("templates", workoutBuilderService.listTemplates(user));
-        
-        // Add exercises and custom exercises for the builder mode
-        model.addAttribute("exercises", exerciseService.getAllExercises());
-        model.addAttribute("customExercises", customExerciseService.getCustomExercisesByUser(user.getId()));
-        
+        if (user == null) return "redirect:/login";
+        WorkoutTemplateForm form = new WorkoutTemplateForm();
+        WorkoutExerciseForm row = new WorkoutExerciseForm();
+        row.setExerciseRef(exerciseRef);
+        form.getExercises().add(row);
+        model.addAttribute("form", form);
+        prepareStudio(model, user, exerciseRef == null ? mode : "builder");
         return "trainer-views/workouts/index";
     }
 
     @PostMapping
-    public String create(@RequestParam String name,
-                         @RequestParam(required = false) String description) {
+    public String create(@ModelAttribute("form") WorkoutTemplateForm form,
+                         org.springframework.validation.BindingResult binding,
+                         @RequestParam(defaultValue = "save") String editAction, Model model,
+                         org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
         User user = authHelper.getAuthenticatedUser();
-        if (user == null) {
-            return "redirect:/login";
+        if (user == null) return "redirect:/login";
+        try {
+            if (binding.hasErrors()) throw new IllegalArgumentException("ui.studio.invalid");
+            if (editDraft(form, editAction, model)) {
+                prepareStudio(model, user, "builder");
+                return "trainer-views/workouts/index";
+            }
+            WorkoutTemplate created = workoutBuilderService.createTemplate(user, form);
+            redirect.addFlashAttribute("studioSaved", true);
+            return "redirect:/workouts/" + created.getId() + "/edit";
+        } catch (IllegalArgumentException exception) {
+            model.addAttribute("studioError", exception.getMessage());
+            prepareStudio(model, user, "builder");
+            return "trainer-views/workouts/index";
         }
-        WorkoutTemplateForm form = new WorkoutTemplateForm();
-        form.setName(name);
-        form.setDescription(description);
-        WorkoutTemplate created = workoutBuilderService.createTemplate(user, form);
-        return "redirect:/workouts/" + created.getId() + "/edit";
+    }
+
+    private void prepareStudio(Model model, User user, String mode) {
+        model.addAttribute("templates", workoutBuilderService.listTemplates(user));
+        model.addAttribute("studioMode", List.of("my-workouts", "library", "builder").contains(mode) ? mode : "my-workouts");
+        hydrateExerciseOptions(model, user);
+        applySmartDefaults(model, user);
     }
 
     @GetMapping("/{id}/edit")
@@ -99,55 +122,123 @@ public class WorkoutBuilderController {
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id, @ModelAttribute("form") WorkoutTemplateForm form, Model model) {
+    public String update(@PathVariable Long id, @ModelAttribute("form") WorkoutTemplateForm form,
+                         org.springframework.validation.BindingResult binding,
+                         @RequestParam(defaultValue = "save") String editAction, Model model,
+                         org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
         User user = authHelper.getAuthenticatedUser();
-        if (user == null) {
-            return "redirect:/login";
+        if (user == null) return "redirect:/login";
+        WorkoutTemplate template = workoutBuilderService.getTemplate(user, id);
+        try {
+            if (binding.hasErrors()) throw new IllegalArgumentException("ui.studio.invalid");
+            if (editDraft(form, editAction, model)) {
+                model.addAttribute("template", template);
+                hydrateExerciseOptions(model, user);
+                applySmartDefaults(model, user);
+                return "trainer-views/workouts/edit";
+            }
+            workoutBuilderService.updateTemplate(user, id, form);
+            redirect.addFlashAttribute("studioSaved", true);
+            return "redirect:/workouts/" + id + "/edit";
+        } catch (IllegalArgumentException exception) {
+            model.addAttribute("template", template);
+            model.addAttribute("studioError", exception.getMessage());
+            hydrateExerciseOptions(model, user);
+            applySmartDefaults(model, user);
+            return "trainer-views/workouts/edit";
         }
-        Map<Long, String> exerciseNames = exerciseNameMap();
-        Map<Long, String> customExerciseNames = customExerciseNameMap(user);
-        resolveExercises(form, exerciseNames, customExerciseNames);
+    }
 
-        workoutBuilderService.updateTemplate(user, id, form);
-        return "redirect:/workouts/" + id + "/edit";
+    /** Native row controls return the submitted draft without persisting a template. */
+    private boolean editDraft(WorkoutTemplateForm form, String action, Model model) {
+        if ("save".equals(action)) return false;
+        List<WorkoutExerciseForm> rows = form.getExercises();
+        if (rows == null || rows.size() > 50) throw new IllegalArgumentException("ui.studio.limits");
+        int focus;
+        if ("add".equals(action)) {
+            if (rows.size() == 50) throw new IllegalArgumentException("ui.studio.limits");
+            rows.add(new WorkoutExerciseForm());
+            focus = rows.size() - 1;
+        } else {
+            if (action == null || !action.matches("(remove|up|down):[0-9]{1,2}")) throw new IllegalArgumentException("ui.studio.invalid");
+            int index = Integer.parseInt(action.substring(action.indexOf(':') + 1));
+            if (index >= rows.size()) throw new IllegalArgumentException("ui.studio.invalid");
+            if (action.startsWith("remove:")) {
+                rows.remove(index);
+                focus = Math.min(index, rows.size() - 1);
+            } else {
+                int destination = index + (action.startsWith("up:") ? -1 : 1);
+                if (destination < 0 || destination >= rows.size()) throw new IllegalArgumentException("ui.studio.invalid");
+                java.util.Collections.swap(rows, index, destination);
+                focus = destination;
+            }
+        }
+        model.addAttribute("studioDraftChanged", true);
+        model.addAttribute("rowFocusIndex", focus);
+        return true;
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id) {
+    public String delete(@PathVariable Long id, org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
         User user = authHelper.getAuthenticatedUser();
-        if (user == null) {
-            return "redirect:/login";
-        }
-        workoutBuilderService.deleteTemplate(user, id);
+        if (user == null) return "redirect:/login";
+        try { workoutBuilderService.deleteTemplate(user, id); }
+        catch (IllegalArgumentException exception) { redirect.addFlashAttribute("studioError", exception.getMessage()); }
         return "redirect:/workouts";
     }
 
     @GetMapping("/{id}/start")
-    public String start(@PathVariable Long id, Model model) {
+    public String confirmStart(@PathVariable Long id, Model model, org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
         User user = authHelper.getAuthenticatedUser();
-        if (user == null) {
-            return "redirect:/login";
+        if (user == null) return "redirect:/login";
+        var open = workoutBuilderService.findOpenSession(user, id);
+        if (open.isPresent()) return "redirect:/workouts/studio/" + open.get().getId();
+        var template = workoutBuilderService.getTemplate(user, id);
+        if (template.getExercises().isEmpty()) {
+            redirect.addFlashAttribute("studioError", "ui.studio.emptyExercise");
+            return "redirect:/workouts";
         }
-        WorkoutSession session = workoutBuilderService.startSession(user, id);
-        model.addAttribute("session", session);
-        model.addAttribute("exerciseViews", buildPlayerViews(session));
-        model.addAttribute("goalOptions", goalService.listGoalsForViewer(user, null, GoalStatus.ACTIVE, null, false));
-        model.addAttribute("selectedGoal", goalLinkService.findGoalForWorkoutSession(user, session.getId()));
-        return "trainer-views/workouts/start";
+        model.addAttribute("template", template);
+        return "trainer-views/workouts/confirm-start";
+    }
+
+    @PostMapping("/{id}/start")
+    public String start(@PathVariable Long id, org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
+        User user = authHelper.getAuthenticatedUser();
+        if (user == null) return "redirect:/login";
+        try {
+            var playerSession = workoutBuilderService.startSession(user, id);
+            return "redirect:/workouts/studio/" + playerSession.getId();
+        } catch (IllegalArgumentException exception) {
+            redirect.addFlashAttribute("studioError", exception.getMessage());
+            return "redirect:/workouts";
+        }
     }
 
     @GetMapping("/studio/{sessionId}")
     public String viewSession(@PathVariable Long sessionId, Model model) {
         User user = authHelper.getAuthenticatedUser();
-        if (user == null) {
-            return "redirect:/login";
-        }
-        WorkoutSession session = workoutBuilderService.getSession(user, sessionId);
-        model.addAttribute("session", session);
-        model.addAttribute("exerciseViews", buildPlayerViews(session));
-        model.addAttribute("goalOptions", goalService.listGoalsForViewer(user, null, GoalStatus.ACTIVE, null, false));
-        model.addAttribute("selectedGoal", goalLinkService.findGoalForWorkoutSession(user, session.getId()));
+        if (user == null) return "redirect:/login";
+        preparePlayer(model, user, sessionId);
         return "trainer-views/workouts/start";
+    }
+
+    private void preparePlayer(Model model, User user, Long sessionId) {
+        WorkoutSession playerSession = workoutBuilderService.getSession(user, sessionId);
+        model.addAttribute("playerSession", playerSession);
+        model.addAttribute("exerciseViews", buildPlayerViews(playerSession));
+        model.addAttribute("playerSummary", playerSummary(playerSession));
+        model.addAttribute("goalOptions", goalService.listGoalsForViewer(user, null, GoalStatus.ACTIVE, null, false));
+        model.addAttribute("selectedGoal", goalLinkService.findGoalForWorkoutSession(user, sessionId));
+        model.addAttribute("recordings", recordingService.listLatestVideos(user, sessionId));
+    }
+
+    private Map<String, Object> playerSummary(WorkoutSession playerSession) {
+        int total = playerSession.getSetLogs().size();
+        int done = (int) playerSession.getSetLogs().stream().filter(WorkoutSetLog::isCompleted).count();
+        return Map.of("totalSets", total, "completedSets", done, "percent", total == 0 ? 0 : done * 100 / total,
+                "totalVolume", playerSession.getTotalVolume() == null ? 0.0 : playerSession.getTotalVolume(),
+                "completed", playerSession.isCompleted());
     }
 
     @PostMapping("/studio/{sessionId}/goal")
@@ -162,7 +253,7 @@ public class WorkoutBuilderController {
         return "redirect:/workouts/studio/" + sessionId;
     }
 
-    @PostMapping("/studio/{sessionId}/sets/{setId}")
+    @PostMapping(value = "/studio/{sessionId}/sets/{setId}", consumes = "application/json")
     @ResponseBody
     public ResponseEntity<?> updateSet(@PathVariable Long sessionId,
                                        @PathVariable Long setId,
@@ -171,13 +262,70 @@ public class WorkoutBuilderController {
         if (user == null) {
             return ResponseEntity.status(401).build();
         }
-        workoutBuilderService.updateSet(user, sessionId, setId, request);
-        WorkoutSession session = workoutBuilderService.getSession(user, sessionId);
-        return ResponseEntity.ok(Map.of(
-                "setId", setId,
-                "totalVolume", session.getTotalVolume(),
-                "completed", session.isCompleted()
-        ));
+        try {
+            workoutBuilderService.updateSet(user, sessionId, setId, request);
+            var summary = new HashMap<String, Object>(playerSummary(workoutBuilderService.getSession(user, sessionId)));
+            summary.put("setId", setId);
+            return ResponseEntity.ok(summary);
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().body(Map.of("messageKey", "ui.personal.invalid"));
+        }
+    }
+
+    @PostMapping(value = "/studio/{sessionId}/sets/{setId}", consumes = "application/x-www-form-urlencoded")
+    public String saveSet(@PathVariable Long sessionId, @PathVariable Long setId,
+                          @RequestParam(defaultValue = "") String weight,
+                          @RequestParam(defaultValue = "") String reps,
+                          @RequestParam(defaultValue = "") String notes,
+                          @RequestParam(defaultValue = "false") boolean completed, Model model,
+                          org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
+        User user = authHelper.getAuthenticatedUser();
+        if (user == null) return "redirect:/login";
+        // Ownership must be resolved before an invalid draft is returned.
+        workoutBuilderService.updateSet(user, sessionId, setId, null);
+        try {
+            var request = new WorkoutSetUpdateRequest();
+            request.setReplaceValues(true);
+            request.setWeight(weight.isBlank() ? null : Double.valueOf(weight.trim()));
+            request.setReps(reps.isBlank() ? null : Integer.valueOf(reps.trim()));
+            request.setNotes(notes); request.setCompleted(completed);
+            workoutBuilderService.updateSet(user, sessionId, setId, request);
+            redirect.addFlashAttribute("playerSaved", true);
+            return "redirect:/workouts/studio/" + sessionId + "#set-" + setId;
+        } catch (IllegalArgumentException exception) {
+            model.addAttribute("playerError", "ui.personal.invalid");
+            model.addAttribute("failedSetId", setId);
+            model.addAttribute("setDraft", Map.of("weight", weight, "reps", reps, "notes", notes, "completed", completed));
+            preparePlayer(model, user, sessionId);
+            return "trainer-views/workouts/start";
+        }
+    }
+
+    @PostMapping("/studio/{sessionId}/sets/{setId}/recording")
+    public String uploadRecording(@PathVariable Long sessionId, @PathVariable Long setId,
+                                  @RequestParam("video") org.springframework.web.multipart.MultipartFile video,
+                                  org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
+        User user = authHelper.getAuthenticatedUser();
+        if (user == null) return "redirect:/login";
+        workoutBuilderService.getSession(user, sessionId);
+        try {
+            recordingService.storeVideo(user, sessionId, setId, video);
+            redirect.addFlashAttribute("recordingSaved", true);
+        } catch (IllegalArgumentException | java.io.IOException exception) {
+            redirect.addFlashAttribute("playerError", "ui.personal.videoFailed");
+        }
+        return "redirect:/workouts/studio/" + sessionId + "#recording-" + setId;
+    }
+
+    @PostMapping("/studio/{sessionId}/sets/{setId}/recording/{videoId}/delete")
+    public String deleteRecording(@PathVariable Long sessionId, @PathVariable Long setId, @PathVariable Long videoId,
+                                  org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
+        User user = authHelper.getAuthenticatedUser();
+        if (user == null) return "redirect:/login";
+        workoutBuilderService.getSession(user, sessionId);
+        try { recordingService.deleteVideo(user, sessionId, setId, videoId); }
+        catch (IllegalArgumentException | java.io.IOException exception) { redirect.addFlashAttribute("playerError", "ui.personal.videoFailed"); }
+        return "redirect:/workouts/studio/" + sessionId + "#recording-" + setId;
     }
 
     private void hydrateExerciseOptions(Model model, User user) {
@@ -185,6 +333,9 @@ public class WorkoutBuilderController {
         List<CustomExercise> customExercises = customExerciseService.getCustomExercisesByUser(user.getId());
         model.addAttribute("exercises", exercises);
         model.addAttribute("customExercises", customExercises);
+        model.addAttribute("categories", java.util.stream.Stream.concat(
+                exercises.stream().map(Exercise::getCategory), customExercises.stream().map(CustomExercise::getCategory))
+                .filter(value -> value != null && !value.isBlank()).distinct().sorted().toList());
     }
 
     private void applySmartDefaults(Model model, User user) {
@@ -206,6 +357,7 @@ public class WorkoutBuilderController {
         ordered.sort(Comparator.comparingInt(WorkoutExercise::getOrderIndex));
         for (WorkoutExercise exercise : ordered) {
             WorkoutExerciseForm row = new WorkoutExerciseForm();
+            row.setId(exercise.getId());
             row.setExerciseName(exercise.getExerciseName());
             row.setExerciseId(exercise.getExerciseId());
             row.setCustomExerciseId(exercise.getCustomExerciseId());
@@ -221,55 +373,6 @@ public class WorkoutBuilderController {
             form.getExercises().add(row);
         }
         return form;
-    }
-
-    private void resolveExercises(WorkoutTemplateForm form,
-                                  Map<Long, String> exerciseNames,
-                                  Map<Long, String> customExerciseNames) {
-        if (form.getExercises() == null) {
-            return;
-        }
-        for (WorkoutExerciseForm row : form.getExercises()) {
-            ParsedExerciseRef parsed = ParsedExerciseRef.parse(row.getExerciseRef());
-            if (parsed == null) {
-                row.setExerciseId(null);
-                row.setCustomExerciseId(null);
-                continue;
-            }
-
-            if (parsed.type == ExerciseType.EXERCISE) {
-                row.setExerciseId(parsed.id);
-                row.setCustomExerciseId(null);
-                String name = exerciseNames.get(parsed.id);
-                if (name != null) {
-                    row.setExerciseName(name);
-                }
-            }
-            if (parsed.type == ExerciseType.CUSTOM) {
-                row.setCustomExerciseId(parsed.id);
-                row.setExerciseId(null);
-                String name = customExerciseNames.get(parsed.id);
-                if (name != null) {
-                    row.setExerciseName(name);
-                }
-            }
-        }
-    }
-
-    private Map<Long, String> exerciseNameMap() {
-        Map<Long, String> map = new HashMap<>();
-        for (Exercise exercise : exerciseService.getAllExercises()) {
-            map.put(exercise.getId(), exercise.getName());
-        }
-        return map;
-    }
-
-    private Map<Long, String> customExerciseNameMap(User user) {
-        Map<Long, String> map = new HashMap<>();
-        for (CustomExercise exercise : customExerciseService.getCustomExercisesByUser(user.getId())) {
-            map.put(exercise.getId(), exercise.getName());
-        }
-        return map;
     }
 
     private List<WorkoutPlayerExerciseView> buildPlayerViews(WorkoutSession session) {
@@ -300,40 +403,4 @@ public class WorkoutBuilderController {
         return list;
     }
 
-    enum ExerciseType {
-        EXERCISE,
-        CUSTOM
-    }
-
-    static class ParsedExerciseRef {
-        private final ExerciseType type;
-        private final Long id;
-
-        private ParsedExerciseRef(ExerciseType type, Long id) {
-            this.type = type;
-            this.id = id;
-        }
-
-        static ParsedExerciseRef parse(String ref) {
-            if (ref == null || ref.isBlank() || !ref.contains(":")) {
-                return null;
-            }
-            String[] parts = ref.split(":", 2);
-            if (parts.length != 2) {
-                return null;
-            }
-            try {
-                long id = Long.parseLong(parts[1]);
-                if ("e".equalsIgnoreCase(parts[0])) {
-                    return new ParsedExerciseRef(ExerciseType.EXERCISE, id);
-                }
-                if ("c".equalsIgnoreCase(parts[0])) {
-                    return new ParsedExerciseRef(ExerciseType.CUSTOM, id);
-                }
-            } catch (NumberFormatException ignored) {
-                return null;
-            }
-            return null;
-        }
-    }
 }

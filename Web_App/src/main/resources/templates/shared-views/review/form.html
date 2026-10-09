@@ -1,112 +1,39 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
-          th:replace="~{base :: layout(#{ui.02225}, null, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-            <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02225}">Leave a Review</h1>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" 
-               th:text="'Review ' + ${trainer.firstName} + ' ' + ${trainer.lastName}">Review Trainer</p>
-
-            <form th:action="@{/trainers/{id}/review(id=${trainer.id})}" method="post" class="mt-6 space-y-6">
-                <!-- Star Rating -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02226}">Rating *</label>
-                    <div class="mt-2 flex items-center gap-2">
-                        <div class="flex gap-1" id="starRating">
-                            <button type="button" class="star-btn" data-rating="1">
-                                <svg class="h-8 w-8 text-slate-300 hover:text-yellow-400 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                            </button>
-                            <button type="button" class="star-btn" data-rating="2">
-                                <svg class="h-8 w-8 text-slate-300 hover:text-yellow-400 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                            </button>
-                            <button type="button" class="star-btn" data-rating="3">
-                                <svg class="h-8 w-8 text-slate-300 hover:text-yellow-400 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                            </button>
-                            <button type="button" class="star-btn" data-rating="4">
-                                <svg class="h-8 w-8 text-slate-300 hover:text-yellow-400 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                            </button>
-                            <button type="button" class="star-btn" data-rating="5">
-                                <svg class="h-8 w-8 text-slate-300 hover:text-yellow-400 transition-colors" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <span id="ratingText" class="text-sm text-slate-600 dark:text-slate-300"></span>
-                    </div>
-                    <input type="hidden" name="stars" id="starsInput" required/>
-                </div>
-
-                <!-- Tags -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02227}">Tags (optional)</label>
-                    <p class="mt-1 text-xs text-slate-500" th:text="#{ui.02228}">Select qualities that describe this trainer</p>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" name="tag" value="Professional" 
-                                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"/>
-                            <span class="ml-2 text-sm text-slate-700 dark:text-slate-300" th:text="#{ui.02229}">Professional</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" name="tag" value="Responsive" 
-                                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"/>
-                            <span class="ml-2 text-sm text-slate-700 dark:text-slate-300" th:text="#{ui.02230}">Responsive</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" name="tag" value="Knowledgeable" 
-                                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"/>
-                            <span class="ml-2 text-sm text-slate-700 dark:text-slate-300" th:text="#{ui.02231}">Knowledgeable</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" name="tag" value="Motivating" 
-                                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"/>
-                            <span class="ml-2 text-sm text-slate-700 dark:text-slate-300" th:text="#{ui.02232}">Motivating</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" name="tag" value="Supportive" 
-                                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"/>
-                            <span class="ml-2 text-sm text-slate-700 dark:text-slate-300" th:text="#{ui.02233}">Supportive</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="checkbox" name="tag" value="Patient" 
-                                   class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"/>
-                            <span class="ml-2 text-sm text-slate-700 dark:text-slate-300" th:text="#{ui.02234}">Patient</span>
-                        </label>
-                    </div>
-                    <input type="hidden" name="tags" id="tagsInput"/>
-                </div>
-
-                <!-- Comment -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02235}">Your Review (optional)</label>
-                    <textarea name="comment" rows="4"
-                             class="mt-1 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                             placeholder="Share your experience with this trainer..." th:placeholder="#{ui.02236}"></textarea>
-                </div>
-
-                <!-- Submit -->
-                <div class="flex justify-end gap-3">
-                    <a th:href="@{/trainers/{id}/profile(id=${trainer.id})}"
-                       class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2" th:text="#{ui.00125}">
-                        Cancel
-                    </a>
-                    <button type="submit"
-                           class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30" th:text="#{ui.02237}">
-                        Submit Review
-                    </button>
-                </div>
-            </form>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02225}, null, ~{::content}, ~{::pageScripts})}">
+    <div th:fragment="content" class="client-workspace-v2 review-workspace-v2">
+        <header class="detail-header"><p class="detail-label" th:text="#{ui.02225}">Leave a review</p><h1 class="detail-title" th:text="${trainer.fullName}"></h1><p class="detail-subtitle" th:text="#{ui.review.publicHint}">Your review is public. Share your coaching experience without private health or contact details.</p></header>
+        <div th:if="${reviewBlocked != null}" class="checkin-review-error" role="alert">
+            <p th:if="${reviewBlocked == 'already_reviewed'}" th:text="#{ui.02726}">You have already reviewed this coaching relationship.</p>
+            <p th:if="${reviewBlocked != 'already_reviewed'}" th:text="#{ui.02727}">You must have an active or past coaching relationship.</p>
+            <a class="detail-btn-secondary" th:href="@{/trainers/{id}/profile(id=${trainer.id})}" th:text="#{ui.00567}">View profile</a>
         </div>
-
-    <th:block th:fragment="pageScripts">
-        <script th:src="@{/js/health/review-form-page.js}"></script>
-    </th:block>
+        <div th:if="${reviewError == true}" id="reviewError" class="checkin-review-error" role="alert">
+            <p th:text="#{ui.review.invalid}">Choose a rating from 1 to 5. Your review must be no more than 10,000 characters.</p>
+            <ul th:if="${reviewFieldErrors != null}">
+                <li th:if="${reviewFieldErrors.contains('stars')}"><a href="#reviewRating1" th:text="#{ui.02226}">Rating *</a></li>
+                <li th:if="${reviewFieldErrors.contains('tags')}"><a href="#reviewTags" th:text="#{ui.review.tagInvalid}">Choose tags from the options below.</a></li>
+                <li th:if="${reviewFieldErrors.contains('comment')}"><a href="#reviewComment" th:text="#{ui.02235}">Your review</a></li>
+            </ul>
+        </div>
+        <form th:action="@{/trainers/{id}/review(id=${trainer.id})}" method="post" class="detail-section client-checkin-form" data-review-form th:attr="data-retained=${reviewDraft != null},data-unsaved=#{ui.review.unsaved}">
+            <fieldset th:attr="aria-invalid=${reviewFieldErrors != null and reviewFieldErrors.contains('stars')},aria-describedby=${reviewFieldErrors != null and reviewFieldErrors.contains('stars') ? 'reviewError' : null}"><legend th:text="#{ui.02226}">Rating *</legend>
+                <div class="review-rating-options">
+                    <label th:each="rating : ${#numbers.sequence(1,5)}"><input type="radio" name="stars" required th:id="${'reviewRating' + rating}" th:value="${rating}" th:checked="${reviewDraft != null and reviewDraft.stars == rating}"/><span aria-hidden="true">★</span><span dir="ltr" th:text="${rating} + ' / 5'"></span></label>
+                </div>
+            </fieldset>
+            <fieldset id="reviewTags" tabindex="-1" th:attr="aria-invalid=${reviewFieldErrors != null and reviewFieldErrors.contains('tags')},aria-describedby=${reviewFieldErrors != null and reviewFieldErrors.contains('tags') ? 'reviewError' : null}"><legend th:text="#{ui.02227}">Tags (optional)</legend><p class="detail-subtitle" th:text="#{ui.02228}">Select qualities that describe this trainer</p>
+                <div class="review-tag-options">
+                    <label><input type="checkbox" name="tags" value="Professional" th:checked="${reviewDraft != null and reviewDraft.tags.contains('Professional')}"/><span th:text="#{ui.02229}">Professional</span></label>
+                    <label><input type="checkbox" name="tags" value="Responsive" th:checked="${reviewDraft != null and reviewDraft.tags.contains('Responsive')}"/><span th:text="#{ui.02230}">Responsive</span></label>
+                    <label><input type="checkbox" name="tags" value="Knowledgeable" th:checked="${reviewDraft != null and reviewDraft.tags.contains('Knowledgeable')}"/><span th:text="#{ui.02231}">Knowledgeable</span></label>
+                    <label><input type="checkbox" name="tags" value="Motivating" th:checked="${reviewDraft != null and reviewDraft.tags.contains('Motivating')}"/><span th:text="#{ui.02232}">Motivating</span></label>
+                    <label><input type="checkbox" name="tags" value="Supportive" th:checked="${reviewDraft != null and reviewDraft.tags.contains('Supportive')}"/><span th:text="#{ui.02233}">Supportive</span></label>
+                    <label><input type="checkbox" name="tags" value="Patient" th:checked="${reviewDraft != null and reviewDraft.tags.contains('Patient')}"/><span th:text="#{ui.02234}">Patient</span></label>
+                </div>
+            </fieldset>
+            <div><label for="reviewComment" th:text="#{ui.02235}">Your review (optional)</label><textarea id="reviewComment" name="comment" dir="auto" rows="7" maxlength="10000" th:text="${reviewDraft?.comment}" th:placeholder="#{ui.02236}" th:attr="aria-invalid=${reviewFieldErrors != null and reviewFieldErrors.contains('comment')},aria-describedby=${reviewFieldErrors != null and reviewFieldErrors.contains('comment') ? 'reviewError' : null}"></textarea></div>
+            <p class="review-draft-status" role="status" th:text="${reviewDraft != null ? #messages.msg('ui.review.unsaved') : ''}"></p>
+            <div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/trainers/{id}/profile(id=${trainer.id})}" th:text="#{ui.00125}">Cancel</a><button class="detail-btn-primary" type="submit" th:disabled="${reviewBlocked != null}" th:text="#{ui.02237}">Submit review</button></div>
+        </form>
+    </div>
+    <th:block th:fragment="pageScripts"><script th:src="@{/js/health/review-form-page.js(v=${assetVersion})}"></script></th:block>
 </th:block>

@@ -68,6 +68,9 @@ public class MobileAuthService {
 
     @Transactional
     public MobileSession signup(MobileSignupRequest request, Role role) {
+        if (role == Role.GYM_ADMIN) {
+            throw new MobileApiException(403, "Gym accounts require review. Apply through the website gym application form.");
+        }
         if (request == null) {
             throw new MobileApiException(400, "Signup details are required.");
         }
@@ -116,7 +119,7 @@ public class MobileAuthService {
                     Long.class,
                     hash
             );
-            return userId == null ? Optional.empty() : userRepository.findById(userId);
+            return userId == null ? Optional.empty() : userRepository.findById(userId).filter(User::isEnabled);
         } catch (Exception ignored) {
             return Optional.empty();
         }

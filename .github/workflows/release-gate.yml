@@ -50,8 +50,8 @@ jobs:
         working-directory: Web_App/tools/playwright-local
         run: npx playwright install --with-deps chromium
 
-      - name: Build production CSS
-        run: npm run build:css
+      - name: Build frontend assets and check the 3D clock
+        run: npm run build:frontend && npm run test:3d
 
       - name: Run Java tests and build the release artefact
         run: |

@@ -17,7 +17,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -80,8 +84,7 @@ class GymAdminTrainerControllerTest {
                 .with(user(admin.getUsername()).roles("GYM_ADMIN"))
                 .with(csrf())
                 .param("notes", "updated"))
-            .andExpect(status().isOk())
-            .andExpect(view().name("system-views/error/403"));
+            .andExpect(status().isNotFound());
     }
 
     @Test
@@ -121,5 +124,65 @@ class GymAdminTrainerControllerTest {
         assertEquals(VerificationStatus.PENDING, updated.getStatus());
         assertEquals("Updated notes", updated.getNotes());
         assertNull(updated.getReviewedAt());
+    }
+
+    private User newAdmin() {
+        String unique = UUID.randomUUID().toString().replace("-", "");
+        User admin = new User(unique + "@example.com", "Gym", "Admin", "gym_" + unique, "password123");
+        admin.setRole(Role.GYM_ADMIN);
+        admin = userRepository.save(admin);
+        admin.setGymId(createGym(admin, "Operations gym"));
+        return userRepository.save(admin);
+    }
+
+    @Test
+    void nativeNotesEditorRetainsDraftAndDoesNotExposeOtherGymReview() throws Exception {
+        User admin = newAdmin();
+        String unique = UUID.randomUUID().toString().replace("-", "");
+        User trainer = new User(unique + "@example.com", "Trainer", "Example", "trainer_" + unique, "password123");
+        trainer.setRole(Role.TRAINER);
+        trainer.setGymId(admin.getGymId());
+        trainer = userRepository.save(trainer);
+        TrainerVerificationRequest own = new TrainerVerificationRequest();
+        own.setTrainerUserId(trainer.getId()); own.setGymId(admin.getGymId()); own.setStatus(VerificationStatus.NEEDS_INFO);
+        own.setSubmittedAt(Instant.now().minusSeconds(5)); own.setNotes("Own review notes");
+        own = requestRepository.save(own);
+        User other = newAdmin();
+        TrainerVerificationRequest foreign = new TrainerVerificationRequest();
+        foreign.setTrainerUserId(trainer.getId()); foreign.setGymId(other.getGymId()); foreign.setStatus(VerificationStatus.PENDING);
+        foreign.setSubmittedAt(Instant.now()); foreign.setNotes("FOREIGN PRIVATE REVIEW");
+        requestRepository.save(foreign);
+        String action = "/gym/admin/trainers/" + own.getId() + "/update-notes";
+        mockMvc.perform(get("/gym/admin/trainers").with(user(admin.getUsername()).roles("GYM_ADMIN")))
+            .andExpect(status().isOk()).andExpect(content().string(containsString("action=\"" + action + "\"")))
+            .andExpect(content().string(not(containsString("FOREIGN PRIVATE REVIEW"))));
+        mockMvc.perform(post(action).with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf()).param("notes", "x".repeat(1001)))
+            .andExpect(status().isBadRequest()).andExpect(content().string(containsString("x".repeat(1001))));
+        assertEquals("Own review notes", requestRepository.findById(own.getId()).orElseThrow().getNotes());
+        mockMvc.perform(get("/gym/dashboard").with(user(admin.getUsername()).roles("GYM_ADMIN")))
+            .andExpect(status().isOk()).andExpect(result -> assertEquals(1L, ((uk.ac.cf._5.group14.One_To_One.GymProfile.GymOperationsService.Snapshot) result.getModelAndView().getModel().get("gymOperations")).needsInfo()))
+            .andExpect(content().string(containsString("gym-operations-metrics")));
+    }
+
+    @Test
+    void creatingTrainerPersistsAccountAndReviewButNeverEchoesPassword() throws Exception {
+        User admin = newAdmin();
+        String unique = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        String password = "LocalExample!42";
+        mockMvc.perform(post("/gym/admin/trainers/create").with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
+                .param("email", unique + "@example.com").param("username", "trainer_" + unique).param("firstName", "")
+                .param("lastName", "Example").param("temporaryPassword", password))
+            .andExpect(status().isBadRequest()).andExpect(content().string(not(containsString(password))));
+        assertFalse(userRepository.existsByEmailIgnoreCase(unique + "@example.com"));
+        mockMvc.perform(post("/gym/admin/trainers/create").with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
+                .param("email", unique + "@example.com").param("username", "trainer_" + unique).param("firstName", "Trainer")
+                .param("lastName", "Example").param("temporaryPassword", password).param("notes", "Private review details").param("trainerVerified", "true").param("role", "SUPER_ADMIN"))
+            .andExpect(status().is3xxRedirection());
+        User created = userRepository.findByEmailIgnoreCase(unique + "@example.com").orElseThrow();
+        assertEquals(Role.TRAINER, created.getRole());
+        assertFalse(created.isTrainerVerified());
+        assertNotEquals(password, created.getPassword());
+        assertEquals(admin.getGymId(), created.getGymId());
+        assertEquals(VerificationStatus.PENDING, requestRepository.findTopByTrainerUserIdOrderBySubmittedAtDesc(created.getId()).orElseThrow().getStatus());
     }
 }

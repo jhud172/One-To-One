@@ -226,8 +226,8 @@ public class ChatRuleBasedResponder {
     private static String buildSupplementAdvice(String lower) {
         if (lower.contains("creatine")) {
             return "ðŸ’Š Creatine:\n" +
-                   "- Loading phase: 20g/day for 5â€“7 days (split into 4 x 5g doses)\n" +
-                   "- Maintenance: 3â€“5g/day\n" +
+                   "- Loading phase: 20g/day for 5–7 days (split into 4 x 5g doses)\n" +
+                   "- Maintenance: 3–5g/day\n" +
                    "- Timing: anytime; consistency matters more than timing\n" +
                    "- Evidence: well-researched for strength and power output\n" +
                    "- Take with carbs post-workout for slightly better uptake";
@@ -235,30 +235,30 @@ public class ChatRuleBasedResponder {
         if (lower.contains("bcaa")) {
             return "ðŸ’Š BCAAs (Leucine, Isoleucine, Valine):\n" +
                    "- Most useful if training fasted or have low protein intake\n" +
-                   "- Dose: 5â€“10g around training\n" +
+                   "- Dose: 5–10g around training\n" +
                    "- Leucine (key for muscle protein synthesis): aim for â‰¥2.5g per dose\n" +
-                   "- If you hit your daily protein target (~1.6â€“2.2g/kg), BCAAs add little benefit";
+                   "- If you hit your daily protein target (~1.6–2.2g/kg), BCAAs add little benefit";
         }
         if (lower.contains("protein")) {
             return "ðŸ¥© Protein:\n" +
-                   "- Daily target: 1.6â€“2.2g per kg bodyweight for muscle gain\n" +
-                   "- Post-workout window: 20â€“40g within 2 hours\n" +
-                   "- Distribute across 3â€“4 meals for optimal muscle protein synthesis";
+                   "- Daily target: 1.6–2.2g per kg bodyweight for muscle gain\n" +
+                   "- Post-workout window: 20–40g within 2 hours\n" +
+                   "- Distribute across 3–4 meals for optimal muscle protein synthesis";
         }
         if (lower.contains("pre-workout") || lower.contains("pre workout") || lower.contains("caffeine")) {
             return "âš¡ Pre-workout / Caffeine:\n" +
-                   "- Effective dose: 3â€“6mg caffeine per kg bodyweight\n" +
-                   "- Take 30â€“45 minutes before training\n" +
+                   "- Effective dose: 3–6mg caffeine per kg bodyweight\n" +
+                   "- Take 30–45 minutes before training\n" +
                    "- Avoid within 6 hours of sleep\n" +
-                   "- Cycle off for 2 weeks every 8â€“12 weeks to maintain sensitivity";
+                   "- Cycle off for 2 weeks every 8–12 weeks to maintain sensitivity";
         }
         return "ðŸ’Š Common supplements:\n" +
-               "- Creatine: proven for strength/power, 3â€“5g/day maintenance\n" +
+               "- Creatine: proven for strength/power, 3–5g/day maintenance\n" +
                "- Protein powder: to hit daily protein targets\n" +
                "- BCAAs: useful if training fasted\n" +
-               "- Caffeine: 3â€“6mg/kg pre-workout\n" +
-               "- Omega-3: anti-inflammatory, 1â€“3g EPA+DHA/day\n" +
-               "- Vitamin D: 1000â€“2000 IU/day, especially in low-sun climates\n" +
+               "- Caffeine: 3–6mg/kg pre-workout\n" +
+               "- Omega-3: anti-inflammatory, 1–3g EPA+DHA/day\n" +
+               "- Vitamin D: 1000–2000 IU/day, especially in low-sun climates\n" +
                "Ask me about a specific supplement for more detail!";
     }
 
@@ -266,62 +266,62 @@ public class ChatRuleBasedResponder {
         StringBuilder sb = new StringBuilder();
         if (lower.contains("chest")) {
             sb.append("ðŸ‹ Chest exercises:\n");
-            sb.append("- Barbell bench press (intermediate) â€“ compound push\n");
-            sb.append("- Dumbbell flyes (beginner) â€“ isolation stretch\n");
-            sb.append("- Push-ups (beginner) â€“ bodyweight compound\n");
-            sb.append("- Incline dumbbell press (intermediate) â€“ upper chest\n");
-            sb.append("- Cable crossover (intermediate) â€“ chest squeeze\n");
+            sb.append("- Barbell bench press (intermediate) – compound push\n");
+            sb.append("- Dumbbell flyes (beginner) – isolation stretch\n");
+            sb.append("- Push-ups (beginner) – bodyweight compound\n");
+            sb.append("- Incline dumbbell press (intermediate) – upper chest\n");
+            sb.append("- Cable crossover (intermediate) – chest squeeze\n");
             sb.append("ðŸ“º Demo: search 'chest workout tutorial' on YouTube for form guides");
         } else if (lower.contains("back")) {
             sb.append("ðŸ‹ Back exercises:\n");
-            sb.append("- Pull-ups / chin-ups (intermediate) â€“ lat width\n");
-            sb.append("- Barbell rows (intermediate) â€“ thickness\n");
-            sb.append("- Lat pulldown (beginner) â€“ lat width\n");
-            sb.append("- Seated cable row (beginner) â€“ mid-back\n");
-            sb.append("- Deadlift (advanced) â€“ full posterior chain\n");
+            sb.append("- Pull-ups / chin-ups (intermediate) – lat width\n");
+            sb.append("- Barbell rows (intermediate) – thickness\n");
+            sb.append("- Lat pulldown (beginner) – lat width\n");
+            sb.append("- Seated cable row (beginner) – mid-back\n");
+            sb.append("- Deadlift (advanced) – full posterior chain\n");
             sb.append("ðŸ“º Demo: search 'back workout tutorial' on YouTube for form guides");
         } else if (lower.contains("shoulder")) {
             sb.append("ðŸ‹ Shoulder exercises:\n");
-            sb.append("- Overhead press (intermediate) â€“ all deltoid heads\n");
-            sb.append("- Lateral raises (beginner) â€“ medial delts\n");
-            sb.append("- Face pulls (beginner) â€“ rear delts & rotator cuff\n");
-            sb.append("- Arnold press (intermediate) â€“ full range\n");
+            sb.append("- Overhead press (intermediate) – all deltoid heads\n");
+            sb.append("- Lateral raises (beginner) – medial delts\n");
+            sb.append("- Face pulls (beginner) – rear delts & rotator cuff\n");
+            sb.append("- Arnold press (intermediate) – full range\n");
             sb.append("ðŸ“º Demo: search 'shoulder workout tutorial' on YouTube for form guides");
         } else if (lower.contains("leg")) {
             sb.append("ðŸ‹ Leg exercises:\n");
-            sb.append("- Back squat (intermediate) â€“ quads, glutes\n");
-            sb.append("- Romanian deadlift (intermediate) â€“ hamstrings, glutes\n");
-            sb.append("- Leg press (beginner) â€“ quads\n");
-            sb.append("- Walking lunges (beginner) â€“ unilateral legs\n");
-            sb.append("- Leg curl (beginner) â€“ hamstrings isolation\n");
+            sb.append("- Back squat (intermediate) – quads, glutes\n");
+            sb.append("- Romanian deadlift (intermediate) – hamstrings, glutes\n");
+            sb.append("- Leg press (beginner) – quads\n");
+            sb.append("- Walking lunges (beginner) – unilateral legs\n");
+            sb.append("- Leg curl (beginner) – hamstrings isolation\n");
             sb.append("ðŸ“º Demo: search 'leg workout tutorial' on YouTube for form guides");
         } else if (lower.contains("core")) {
             sb.append("ðŸ‹ Core exercises:\n");
-            sb.append("- Plank (beginner) â€“ anti-extension\n");
-            sb.append("- Dead bug (beginner) â€“ core stability\n");
-            sb.append("- Hanging leg raise (intermediate) â€“ lower abs\n");
-            sb.append("- Cable woodchop (intermediate) â€“ rotational core\n");
+            sb.append("- Plank (beginner) – anti-extension\n");
+            sb.append("- Dead bug (beginner) – core stability\n");
+            sb.append("- Hanging leg raise (intermediate) – lower abs\n");
+            sb.append("- Cable woodchop (intermediate) – rotational core\n");
             sb.append("ðŸ“º Demo: search 'core workout tutorial' on YouTube for form guides");
         } else if (lower.contains("glute")) {
             sb.append("ðŸ‹ Glute exercises:\n");
-            sb.append("- Hip thrust (intermediate) â€“ glute max\n");
-            sb.append("- Glute bridge (beginner) â€“ beginner hip thrust\n");
-            sb.append("- Bulgarian split squat (intermediate) â€“ glutes + quads\n");
-            sb.append("- Cable kickbacks (beginner) â€“ glute isolation\n");
+            sb.append("- Hip thrust (intermediate) – glute max\n");
+            sb.append("- Glute bridge (beginner) – beginner hip thrust\n");
+            sb.append("- Bulgarian split squat (intermediate) – glutes + quads\n");
+            sb.append("- Cable kickbacks (beginner) – glute isolation\n");
             sb.append("ðŸ“º Demo: search 'glute workout tutorial' on YouTube for form guides");
         } else if (lower.contains("bicep") || lower.contains("arm")) {
             sb.append("ðŸ‹ Bicep / arm exercises:\n");
-            sb.append("- Barbell curl (beginner) â€“ peak bicep\n");
-            sb.append("- Incline dumbbell curl (intermediate) â€“ long head stretch\n");
-            sb.append("- Hammer curl (beginner) â€“ brachialis\n");
-            sb.append("- Preacher curl (beginner) â€“ short head\n");
+            sb.append("- Barbell curl (beginner) – peak bicep\n");
+            sb.append("- Incline dumbbell curl (intermediate) – long head stretch\n");
+            sb.append("- Hammer curl (beginner) – brachialis\n");
+            sb.append("- Preacher curl (beginner) – short head\n");
             sb.append("ðŸ“º Demo: search 'bicep curl tutorial' on YouTube for form guides");
         } else if (lower.contains("tricep")) {
             sb.append("ðŸ‹ Tricep exercises:\n");
-            sb.append("- Close-grip bench press (intermediate) â€“ mass builder\n");
-            sb.append("- Skull crushers (intermediate) â€“ long head\n");
-            sb.append("- Cable pushdown (beginner) â€“ lateral head\n");
-            sb.append("- Overhead cable extension (beginner) â€“ long head stretch\n");
+            sb.append("- Close-grip bench press (intermediate) – mass builder\n");
+            sb.append("- Skull crushers (intermediate) – long head\n");
+            sb.append("- Cable pushdown (beginner) – lateral head\n");
+            sb.append("- Overhead cable extension (beginner) – long head stretch\n");
             sb.append("ðŸ“º Demo: search 'tricep workout tutorial' on YouTube for form guides");
         } else {
             sb.append("ðŸ’¡ Specify a muscle group for targeted suggestions:\n");

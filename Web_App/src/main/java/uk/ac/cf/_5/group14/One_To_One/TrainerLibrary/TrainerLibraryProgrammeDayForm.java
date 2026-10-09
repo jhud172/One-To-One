@@ -14,7 +14,6 @@ public class TrainerLibraryProgrammeDayForm {
     @NotNull
     private Long workoutId;
 
-    @NotNull
     @Min(0)
     private Integer orderIndex;
 

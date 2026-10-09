@@ -11,6 +11,7 @@ public interface WorkoutBuilderService {
     WorkoutTemplate getTemplate(User user, Long templateId);
     void deleteTemplate(User user, Long templateId);
 
+    java.util.Optional<WorkoutSession> findOpenSession(User user, Long templateId);
     WorkoutSession startSession(User user, Long templateId);
     WorkoutSession getSession(User user, Long sessionId);
     WorkoutSetLog updateSet(User user, Long sessionId, Long setId, WorkoutSetUpdateRequest request);

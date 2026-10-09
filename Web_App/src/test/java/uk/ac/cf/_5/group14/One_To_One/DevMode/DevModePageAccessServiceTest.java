@@ -52,6 +52,21 @@ class DevModePageAccessServiceTest {
     }
 
     @Test
+    void signedInWrongRoleDoesNotGetAClientOnlyRouteAsAnAvailableDestination() {
+        when(settingRepository.findAll()).thenReturn(Collections.emptyList());
+        var admin = new org.springframework.security.authentication.TestingAuthenticationToken("demo_admin", "unused", "ROLE_PLATFORM_ADMIN");
+        var card = service.buildHubView(admin).loginRequiredPages().stream()
+                .filter(page -> page.key().equals("client-trainers")).findFirst().orElseThrow();
+        assertThat(card.href()).isEqualTo("/dashboard");
+        assertThat(card.availabilityCopy()).isEqualTo("Client account required");
+        var client = new org.springframework.security.authentication.TestingAuthenticationToken("demo_client", "unused", "ROLE_CLIENT");
+        assertThat(service.buildHubView(client).loginRequiredPages().stream()
+                .filter(page -> page.key().equals("client-trainers")).findFirst().orElseThrow().href()).isEqualTo("/client/trainers");
+        assertThat(service.buildHubView(null).loginRequiredPages().stream()
+                .filter(page -> page.key().equals("client-trainers")).findFirst().orElseThrow().href()).startsWith("/login?next=");
+    }
+
+    @Test
     void surfacesFriendlyErrorWhenUpdatingModeWithoutBackingTable() {
         when(settingRepository.findByPageKey("home"))
             .thenThrow(new InvalidDataAccessResourceUsageException("relation does not exist"));

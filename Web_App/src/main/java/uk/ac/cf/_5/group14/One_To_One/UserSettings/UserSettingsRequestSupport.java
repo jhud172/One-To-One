@@ -10,6 +10,7 @@ public final class UserSettingsRequestSupport {
             "/css/",
             "/js/",
             "/img/",
+            "/models/one-to-one/",
             "/webjars/",
             "/uploads/"
     );

@@ -1,0 +1,6 @@
+@import "../components/calendar/detail-view.css";
+@import "../components/admin/operations-v2.css";
+
+@import "../components/training/verification-evidence.css";
+
+@tailwind components;

@@ -99,9 +99,9 @@ public class ChatContextService {
             int total7 = t7Total + w7Total;
             int done7 = t7Done + w7Done;
             int pct7 = total7 > 0 ? (done7 * 100) / total7 : 0;
-            String trend = pct7 >= 80 ? "Great week â€“ " + pct7 + "% completion."
-                    : pct7 >= 50 ? "Solid week â€“ " + pct7 + "% done."
-                    : "Challenging week â€“ only " + pct7 + "% completion.";
+            String trend = pct7 >= 80 ? "Great week – " + pct7 + "% completion."
+                    : pct7 >= 50 ? "Solid week – " + pct7 + "% done."
+                    : "Challenging week – only " + pct7 + "% completion.";
             multiDayInsights = new ChatContext.MultiDayInsights(7, t7Done, t7Total, w7Done, w7Total, w7Missed, trend);
         } catch (Exception e) {
             log.warn("Could not compute multi-day insights for chat context", e);

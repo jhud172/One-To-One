@@ -1,18 +1,14 @@
 package uk.ac.cf._5.group14.One_To_One.Chat;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import uk.ac.cf._5.group14.One_To_One.ScheduleData.Schedule;
-import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleApplied;
-import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleAppliedRepository;
-import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleOccurrenceService;
+import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleApplicationService;
 import uk.ac.cf._5.group14.One_To_One.ScheduleData.ScheduleRepository;
 import uk.ac.cf._5.group14.One_To_One.TrainerClient.TrainerClientLink;
 import uk.ac.cf._5.group14.One_To_One.TrainerClient.TrainerClientLinkRepository;
 import uk.ac.cf._5.group14.One_To_One.TrainerClient.TrainerClientLinkStatus;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,17 +22,14 @@ public class ApplyScheduleActionHandler implements CoachActionHandler<ApplySched
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("d MMM uuuu", Locale.UK);
 
     private final ScheduleRepository scheduleRepository;
-    private final ScheduleOccurrenceService scheduleOccurrenceService;
-    private final ScheduleAppliedRepository scheduleAppliedRepository;
+    private final ScheduleApplicationService scheduleApplicationService;
     private final TrainerClientLinkRepository trainerClientLinkRepository;
 
     public ApplyScheduleActionHandler(ScheduleRepository scheduleRepository,
-                                      ScheduleOccurrenceService scheduleOccurrenceService,
-                                      ScheduleAppliedRepository scheduleAppliedRepository,
+                                      ScheduleApplicationService scheduleApplicationService,
                                       TrainerClientLinkRepository trainerClientLinkRepository) {
         this.scheduleRepository = scheduleRepository;
-        this.scheduleOccurrenceService = scheduleOccurrenceService;
-        this.scheduleAppliedRepository = scheduleAppliedRepository;
+        this.scheduleApplicationService = scheduleApplicationService;
         this.trainerClientLinkRepository = trainerClientLinkRepository;
     }
 
@@ -68,30 +61,38 @@ public class ApplyScheduleActionHandler implements CoachActionHandler<ApplySched
     }
 
     @Override
-    @Transactional
     public CoachActionExecution execute(ApplyScheduleActionPayload payload, User user) {
+        List<String> errors = validate(payload, user);
+        if (!errors.isEmpty()) {
+            return new CoachActionExecution(false, "", String.join(" ", errors));
+        }
         String name = payload.scheduleName().trim();
         Schedule schedule = findAccessibleSchedule(user, name);
         if (schedule == null) {
             return new CoachActionExecution(false, "", "Schedule not found or not accessible.");
         }
 
-        LocalDate start = payload.startDate();
-        LocalDate end = start.plusWeeks(payload.durationWeeks()).minusDays(1);
-
-        ScheduleApplied applied = new ScheduleApplied();
-        applied.setSchedule(schedule);
-        applied.setUser(user);
-        applied.setDateApplied(start);
-        applied.setDurationWeeks(payload.durationWeeks());
-        applied.setShownOnCalendar(true);
-        applied.setRequiresLogging(false);
-        scheduleAppliedRepository.save(applied);
-
-        scheduleOccurrenceService.generateOccurrencesForSchedule(schedule, user, start, end, 1);
-
-        String reply = "Schedule applied starting " + start.format(DATE_FMT) + " for " + payload.durationWeeks() + " week" + (payload.durationWeeks() == 1 ? "" : "s") + ". Want to adjust anything?";
-        return new CoachActionExecution(true, reply, null);
+        // Let the shared service own its transaction so a rejected plan can return useful feedback.
+        try {
+            int added = scheduleApplicationService.apply(schedule, user, payload.startDate().toString(),
+                    Integer.toString(payload.durationWeeks()));
+            if (added == 0) {
+                return new CoachActionExecution(true,
+                        "Matching movements are already scheduled. Your existing calendar settings are retained.", null);
+            }
+            String reply = "Added " + added + " movement" + (added == 1 ? "" : "s")
+                    + " to your calendar starting " + payload.startDate().format(DATE_FMT) + " for "
+                    + payload.durationWeeks() + " week" + (payload.durationWeeks() == 1 ? "" : "s") + ".";
+            return new CoachActionExecution(true, reply, null);
+        } catch (IllegalArgumentException exception) {
+            String error = switch (exception.getMessage() == null ? "" : exception.getMessage()) {
+                case "empty" -> "This schedule has no movements in the selected date range. Review it before applying.";
+                case "plan" -> "This schedule contains invalid movements. Review it before applying.";
+                case "window" -> "The selected date range is invalid.";
+                default -> "Schedule not found or not accessible.";
+            };
+            return new CoachActionExecution(false, "", error);
+        }
     }
 
     private Schedule findAccessibleSchedule(User user, String name) {

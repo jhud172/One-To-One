@@ -1,55 +1,12 @@
-<th:block th:replace="~{base :: layout(#{ui.01984}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="detail-container">
-
-
-        <!-- Header with key metadata at top -->
-        <div class="detail-header">
-            <div class="detail-header-content">
-                <div class="detail-header-meta">
-                    <p class="detail-label" th:text="#{ui.01984}">Exercise Log</p>
-                    <h1 class="detail-title" th:text="#{ui.01996}">Exercise Log Details</h1>
-                    <p class="detail-subtitle" th:text="#{ui.01997}">A full view of the selected log entry.</p>
-                </div>
-                <!-- Primary actions - sticky on larger screens -->
-                <div class="detail-actions-sticky">
-                    <a href="/exercise-log/list" class="detail-btn-secondary" th:text="#{ui.00668}">Back to list</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Structured content sections -->
-        <div class="detail-sections">
-            <section class="detail-section">
-                <h2 class="detail-section-title" th:text="#{ui.01998}">Log details</h2>
-                <div class="detail-section-content">
-                    <div class="detail-metadata">
-                        <div class="detail-metadata-item">
-                            <p class="detail-metadata-label" th:text="#{ui.00660}">Date</p>
-                            <p class="detail-metadata-value" th:text="${log.date}"></p>
-                        </div>
-                        <div class="detail-metadata-item">
-                            <p class="detail-metadata-label" th:text="#{ui.01999}">Mood before</p>
-                            <p class="detail-metadata-value" th:text="${log.moodBefore}"></p>
-                        </div>
-                        <div class="detail-metadata-item">
-                            <p class="detail-metadata-label" th:text="#{ui.02000}">Mood after</p>
-                            <p class="detail-metadata-value" th:text="${log.moodAfter}"></p>
-                        </div>
-                        <div class="detail-metadata-item">
-                            <p class="detail-metadata-label" th:text="#{ui.02001}">Confidence after</p>
-                            <p class="detail-metadata-value" th:text="${log.confidence}"></p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="detail-section" th:if="${log.comments != null && !log.comments.isEmpty()}">
-                <h2 class="detail-section-title" th:text="#{ui.01976}">Comments</h2>
-                <div class="detail-section-content">
-                    <p class="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300" th:text="${log.comments}"></p>
-                </div>
-            </section>
-        </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.01996}, null, ~{::content}, null)}">
+<div th:fragment="content" class="client-workspace-v2 personal-records-v2">
+    <header class="detail-header"><div class="detail-header-content"><div><p class="detail-label" th:text="#{ui.log.personalReflection}"></p><h1 class="detail-title" th:text="#{ui.01996}"></h1><p class="detail-subtitle"><time dir="ltr" th:datetime="${log.date}" th:text="${log.date}"></time></p></div><div class="connection-actions"><a class="detail-btn-primary" th:href="@{/exercise-log/edit/{id}(id=${log.id})}" th:text="#{ui.00138}"></a><a class="detail-btn-secondary" th:href="@{/exercise-log/list}" th:text="#{ui.00668}"></a></div></div></header>
+    <p th:if="${exerciseLogSaved}" class="checkin-feedback" role="status" th:text="#{preferences.saved}"></p>
+    <th:block th:replace="~{shared-views/exercise-log/fragments/log-origin :: logOrigin}"></th:block>
+    <div class="personal-record-layout">
+        <section class="detail-section"><h2 class="detail-section-title" th:text="#{ui.01998}"></h2><p th:text="#{ui.log.scaleHint}"></p>
+            <dl class="library-exercise-facts"><div><dt th:text="#{ui.00660}"></dt><dd><time dir="ltr" th:text="${log.date}"></time></dd></div><div th:if="${log.durationMinutes != null}"><dt th:text="#{ui.01974}"></dt><dd th:text="${log.durationMinutes}"></dd></div><div><dt th:text="#{ui.01979}"></dt><dd><bdi dir="ltr"><span th:text="${log.moodBefore ?: '—'}"></span><span th:if="${log.moodBefore != null}"> / 4</span></bdi></dd></div><div><dt th:text="#{ui.01980}"></dt><dd><bdi dir="ltr"><span th:text="${log.moodAfter ?: '—'}"></span><span th:if="${log.moodAfter != null}"> / 4</span></bdi></dd></div><div><dt th:text="#{ui.01981}"></dt><dd><bdi dir="ltr"><span th:text="${log.confidence ?: '—'}"></span><span th:if="${log.confidence != null}"> / 4</span></bdi></dd></div></dl>
+        </section>
+        <section class="detail-section"><h2 class="detail-section-title" th:text="#{ui.01976}"></h2><p class="plan-coaching-note" dir="auto" th:text="${#strings.isEmpty(log.comments)} ? #{ui.01983} : ${log.comments}"></p></section>
     </div>
-</th:block>
+</div></th:block>

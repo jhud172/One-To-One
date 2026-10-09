@@ -1,0 +1,50 @@
+.schedule-workshop { max-width:1200px; margin-inline:auto; padding:1.5rem clamp(1rem,3vw,2rem) 3rem; color:var(--v2-ink); }
+.schedule-workshop :is(h1,h2,h3) { color:var(--v2-ink); font-weight:650; overflow-wrap:anywhere; }
+.schedule-workshop h1 { font-size:clamp(1.8rem,3vw,2.5rem); line-height:1.2; margin-block:.5rem; }
+.schedule-workshop h2 { font-size:1.125rem; } .schedule-workshop h3 { font-size:1rem; }
+.schedule-workshop__header,.schedule-workshop__section-heading,.schedule-movement__heading { display:flex; align-items:start; justify-content:space-between; gap:1rem; }
+.schedule-workshop__header { margin-bottom:1.5rem; } .schedule-workshop__header > div { max-width:44rem; }
+.schedule-workshop__header p,.schedule-workshop__hint,.schedule-search__status,.schedule-workshop__empty { color:var(--v2-muted); font-size:.875rem; line-height:1.65; }
+.schedule-workshop__grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:1.25rem; align-items:start; }
+.schedule-workshop__library { display:grid; gap:1.25rem; min-width:0; }
+.schedule-workshop__panel { min-width:0; padding:clamp(1rem,2vw,1.5rem); background:var(--v2-surface); border:1px solid var(--v2-border); border-radius:var(--v2-radius-panel); box-shadow:0 8px 32px rgba(10,17,35,.04); }
+.schedule-workshop__panel:first-child { border-top:2px solid var(--v2-accent); }
+.schedule-workshop__saved { margin-top:1.5rem; }
+.schedule-workshop label { display:block; margin-block:1rem .375rem; color:var(--v2-muted); font-size:.8125rem; font-weight:650; }
+.schedule-workshop :is(input:not([type="hidden"]),select,textarea) { width:100%; min-width:0; min-height:52px; padding:.75rem; border:1px solid var(--v2-control-border); border-radius:var(--v2-radius-control); background:var(--v2-raised); color:var(--v2-ink); font:inherit; font-size:1rem; }
+.schedule-workshop textarea { resize:vertical; }
+.schedule-workshop :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible { outline:3px solid var(--v2-focus); outline-offset:3px; }
+.schedule-workshop .training-launch__action { min-height:48px; flex-shrink:0; }
+.schedule-workshop button:disabled { opacity:.55; cursor:default; }
+.schedule-workshop :is(.schedule-workshop__catalogue,.schedule-workshop__selected) { list-style:none; padding:0; margin-block:1rem; display:grid; gap:.75rem; }
+.schedule-workshop__catalogue { max-block-size:30rem; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; padding-inline-end:.25rem!important; }
+.schedule-workshop__saved .schedule-workshop__catalogue { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.schedule-workshop__catalogue > li,.schedule-movement { padding:1rem; min-width:0; background:var(--v2-raised); border:1px solid var(--v2-border); border-radius:var(--v2-radius-control); }
+.schedule-workshop li[data-color="#2563eb"] { border-inline-start:3px solid #2563eb; }
+.schedule-workshop li[data-color="#10b981"] { border-inline-start:3px solid #10b981; }
+.schedule-workshop li[data-color="#f59e0b"] { border-inline-start:3px solid #f59e0b; }
+.schedule-workshop li[data-color="#ef4444"] { border-inline-start:3px solid #ef4444; }
+.schedule-workshop li[data-color="#8b5cf6"] { border-inline-start:3px solid #8b5cf6; }
+.schedule-workshop li[data-color="#0ea5e9"] { border-inline-start:3px solid #0ea5e9; }
+.schedule-workshop__catalogue p,.schedule-movement details p { font-size:.875rem; color:var(--v2-muted); white-space:pre-wrap; overflow-wrap:anywhere; margin-block:.5rem; }
+.schedule-workshop__catalogue > li > p { max-height:8rem; overflow:auto; }
+.schedule-workshop__section-heading { margin-top:1.5rem; align-items:center; } .schedule-workshop__section-heading:first-child { margin-top:0; }
+.schedule-workshop__section-heading span,.schedule-movement__type { font-size:.8125rem; color:var(--v2-muted); }
+.schedule-movement__type { margin-block:.25rem; }
+.schedule-workshop__actions,.schedule-workshop__save { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin-top:.75rem; }
+.schedule-workshop__save { padding-block:1rem .25rem; border-top:1px solid var(--v2-border); margin-top:1.5rem; }
+.schedule-workshop__delete { color:var(--v2-danger); }
+.schedule-workshop summary { min-height:48px; padding-block:.75rem; color:var(--v2-accent); cursor:pointer; font-size:.875rem; }
+.schedule-workshop__notice { padding:1rem; margin-block:1rem; border:1px solid var(--v2-control-border); border-radius:var(--v2-radius-control); background:var(--v2-raised); font-size:.875rem; overflow-wrap:anywhere; }
+.schedule-workshop__notice--error { color:var(--v2-danger); }
+.schedule-search { display:none; margin-block:1rem; } .schedule-workshop.is-enhanced .schedule-search { display:block; }
+.schedule-workshop #ai-suggestions-btn { display:none; } .schedule-workshop.is-enhanced #ai-suggestions-btn { display:inline-flex; }
+.schedule-search__control { display:flex; gap:.5rem; align-items:center; }
+.schedule-search__control input { flex:1; } .schedule-search__control button { min-height:48px; padding:.5rem .75rem; border-radius:var(--v2-radius-control); border:1px solid var(--v2-control-border); color:var(--v2-ink); background:var(--v2-surface); font-size:.8125rem; }
+.schedule-search__status { min-height:1.5rem; margin-top:.375rem; }
+.schedule-workshop [hidden] { display:none!important; }
+.schedule-workshop.is-enhanced .schedule-movement { animation:workshop-add 160ms ease-out; }
+@keyframes workshop-add { from { opacity:.5; transform:translateY(4px); } to { opacity:1; transform:none; } }
+@media(max-width:850px) { .schedule-workshop__grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:520px) { .schedule-workshop__header,.schedule-workshop__section-heading { flex-direction:column; align-items:stretch; } .schedule-workshop__save > * { flex:1; } .schedule-workshop__actions { gap:.375rem; } .schedule-workshop__saved .schedule-workshop__catalogue { grid-template-columns:minmax(0,1fr); } }
+@media(prefers-reduced-motion:reduce) { .schedule-workshop.is-enhanced .schedule-movement { animation:none; } }

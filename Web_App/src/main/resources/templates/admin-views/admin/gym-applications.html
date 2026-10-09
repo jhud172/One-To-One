@@ -1,7 +1,7 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(#{ui.00044}, null, ~{::content}, null)}">
 
-    <div th:fragment="content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div th:fragment="content" class="application-operations-v2 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div class="flex items-center justify-between gap-4" data-site-tour="admin-gym-applications">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100" th:text="#{ui.00044}">Gym Applications</h1>
@@ -13,13 +13,19 @@
         <div th:if="${gymApplicationSuccess}" class="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" th:text="${gymApplicationSuccess}">Saved.</div>
         <div th:if="${gymApplicationError}" class="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800" th:text="${gymApplicationError}">Error.</div>
 
+        <form th:action="@{/admin/gym-applications}" method="get" class="operations-filters-v2">
+            <div><label for="application-search" th:text="#{ui.02062}"></label><input id="application-search" name="search" type="search" maxlength="120" th:value="${search}"></div>
+            <div><label for="application-status" th:text="#{ui.00006}"></label><select id="application-status" name="status"><option value="" th:text="#{ui.00485}"></option><option th:each="status : ${statuses}" th:value="${status.name()}" th:text="${status.name()}" th:selected="${selectedStatus == status.name()}"></option></select></div>
+            <button type="submit" class="btn btn--primary" th:text="#{ui.00554}"></button><a th:href="@{/admin/gym-applications}" class="btn btn--secondary" th:text="#{ui.00563}"></a>
+        </form>
+        <p><span th:text="${#lists.size(applications)}"></span> / <span th:text="${totalApplications}"></span></p>
         <div class="space-y-4" th:if="${applications != null and !#lists.isEmpty(applications)}">
-            <article th:each="gymApplication : ${applications}" class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/40">
+            <article th:each="gymApplication : ${applications}" class="support-case-v2">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="${gymApplication.gymName}">Gym name</h2>
                         <p class="mt-1 text-xs text-slate-500" th:text="${gymApplication.adminEmail + ' • ' + gymApplication.gymUsername}">Meta</p>
-                        <p class="mt-1 text-xs text-slate-500" th:text="${#temporals.format(gymApplication.submittedAt, 'yyyy-MM-dd HH:mm')}">Submitted</p>
+                        <p class="mt-1 text-xs text-slate-500" th:text="${#temporals.format(gymApplication.submittedAt.atZone(T(java.time.ZoneId).of('Europe/London')), 'dd MMM yyyy HH:mm')}">Submitted</p>
                     </div>
                     <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700" th:text="${gymApplication.status}">PENDING</span>
                 </div>

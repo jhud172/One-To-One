@@ -37,7 +37,7 @@ public class PublicProfileController {
     }
 
     @GetMapping("/{username}")
-    public ModelAndView publicProfile(@PathVariable String username) {
+    public ModelAndView publicProfile(@PathVariable String username, Authentication authentication) {
         User user = userLookupService.findByUsernameOrNull(username);
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -46,7 +46,7 @@ public class PublicProfileController {
         if (user.getRole() != Role.TRAINER) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        if (!user.isTrainerVerified()) {
+        if (!user.isTrainerVerified() || !user.isEnabled()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
 
@@ -61,6 +61,11 @@ public class PublicProfileController {
         mav.addObject("trainer", user);
         mav.addObject("trainerProfile", trainerProfile);
         mav.addObject("reviews", reviews);
+        User viewer = authentication != null && authentication.isAuthenticated()
+                ? userLookupService.findByUsernameOrNull(authentication.getName()) : null;
+        mav.addObject("signedInClient", viewer != null && viewer.getRole() == Role.CLIENT);
+        mav.addObject("canReview", viewer != null && viewer.getRole() == Role.CLIENT
+                && trainerReviewService.canClientReviewTrainer(viewer.getId(), user.getId()));
         mav.addObject("averageRating", trainerReviewService.getAverageRating(user.getId()));
         mav.addObject("reviewCount", trainerReviewService.getReviewCount(user.getId()));
         String gymAffiliation = trainerProfile != null ? trimToNull(trainerProfile.getPrimaryGym()) : null;

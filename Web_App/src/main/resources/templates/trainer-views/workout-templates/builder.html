@@ -1,154 +1,25 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02816}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="styles"></div>
-
-    <div th:fragment="content">
-        <main class="mx-auto w-full max-w-screen-xl px-4 py-6 sm:px-6" role="main" aria-label="Template Builder" th:attr="aria-label=#{ui.02816}">
-
-            <div class="mb-4 flex items-center gap-3">
-                <a href="/workout-templates"
-                   class="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900" th:text="#{ui.02817}">
-                    ← Templates
-                </a>
-                <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100"
-                    th:text="${isEdit ? 'Edit Template' : 'New Template'}">Template Builder</h1>
-            </div>
-
-            <div class="builder-layout">
-
-                <!-- ── LEFT: Component Palette ───────────────────────────── -->
-                <aside class="builder-panel" aria-label="Component palette" th:attr="aria-label=#{ui.02818}">
-                    <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.02819}">Components</h2>
-                    <div id="palette" class="flex flex-col gap-2">
-                        <div class="palette-item" draggable="true" data-component="progress">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-width="2" d="M12 6v6l4 2"/></svg>
-                            <th:block th:text="#{ui.01656}">Progress</th:block>
-                        </div>
-                        <div class="palette-item" draggable="true" data-component="timer">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <th:block th:text="#{ui.02820}">Timer</th:block>
-                        </div>
-                        <div class="palette-item" draggable="true" data-component="exerciseCard">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                            <th:block th:text="#{ui.02821}">Exercise Card</th:block>
-                        </div>
-                        <div class="palette-item" draggable="true" data-component="notes">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            <th:block th:text="#{ui.00175}">Notes</th:block>
-                        </div>
-                        <div class="palette-item" draggable="true" data-component="setEntry">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
-                            <th:block th:text="#{ui.02822}">Set Entry</th:block>
-                        </div>
-                        <div class="palette-item" draggable="true" data-component="summary">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                            <th:block th:text="#{ui.02189}">Summary</th:block>
-                        </div>
-                        <div class="palette-item" draggable="true" data-component="restTimer">
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <th:block th:text="#{ui.02823}">Rest Timer</th:block>
-                        </div>
-                    </div>
-                </aside>
-
-                <!-- ── CENTRE: Live Canvas Preview ───────────────────────── -->
-                <section class="builder-panel flex flex-col" aria-label="Canvas preview" th:attr="aria-label=#{ui.02824}">
-                    <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.02825}">Canvas</h2>
-                    <div id="canvas-drop-zone"
-                         class="canvas-drop-zone flex-1"
-                         aria-label="Drop components here" th:attr="aria-label=#{ui.02826}">
-                        <p id="canvas-empty" class="text-center text-sm text-slate-400 py-6" th:text="#{ui.02827}">Drag components here to build your template</p>
-                    </div>
-                </section>
-
-                <!-- ── RIGHT: Properties Editor ──────────────────────────── -->
-                <aside class="builder-panel" aria-label="Properties editor" th:attr="aria-label=#{ui.02828}">
-                    <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.02829}">Properties</h2>
-
-                    <div class="prop-row">
-                        <label class="prop-label" for="prop-name" th:text="#{ui.02830}">Template Name</label>
-                        <input id="prop-name" class="prop-input" type="text" placeholder="My Template"
-                               th:value="${editTemplate.name}" th:placeholder="#{ui.02831}"/>
-                    </div>
-
-                    <div class="prop-row">
-                        <label class="prop-label" for="prop-layout" th:text="#{ui.02832}">Layout</label>
-                        <select id="prop-layout" class="prop-select">
-                            <option value="FLOW" th:selected="${editTemplate.layoutType == null || editTemplate.layoutType.name() == 'FLOW'}" th:text="#{ui.02833}">Flow</option>
-                            <option value="FUTURISTIC_FLOW" th:selected="${editTemplate.layoutType != null && editTemplate.layoutType.name() == 'FUTURISTIC_FLOW'}" th:text="#{ui.02834}">Futuristic Flow</option>
-                            <option value="PROFESSIONAL" th:selected="${editTemplate.layoutType != null && editTemplate.layoutType.name() == 'PROFESSIONAL'}" th:text="#{ui.02229}">Professional</option>
-                            <option value="PLAIN" th:selected="${editTemplate.layoutType != null && editTemplate.layoutType.name() == 'PLAIN'}" th:text="#{ui.02835}">Plain</option>
-                            <option value="CUSTOM" th:selected="${editTemplate.layoutType != null && editTemplate.layoutType.name() == 'CUSTOM'}" th:text="#{ui.01730}">Custom</option>
-                        </select>
-                    </div>
-
-                    <div class="prop-row">
-                        <label class="prop-label" for="prop-theme" th:text="#{ui.00316}">Theme</label>
-                        <select id="prop-theme" class="prop-select">
-                            <option value="default" th:text="#{ui.00833}">Default</option>
-                            <option value="dark-pro" th:text="#{ui.02836}">Dark Pro</option>
-                            <option value="light-clean" th:text="#{ui.02837}">Light Clean</option>
-                            <option value="futuristic" th:text="#{ui.02838}">Futuristic</option>
-                        </select>
-                    </div>
-
-                    <div class="prop-row">
-                        <label class="prop-label" for="prop-transition" th:text="#{ui.02839}">Transition</label>
-                        <select id="prop-transition" class="prop-select">
-                            <option value="none" th:text="#{ui.01640}">None</option>
-                            <option value="slide" th:text="#{ui.02840}">Slide</option>
-                            <option value="fade" th:text="#{ui.02841}">Fade</option>
-                        </select>
-                    </div>
-
-                    <div class="prop-row">
-                        <label class="prop-label" for="prop-density" th:text="#{ui.02842}">Density</label>
-                        <select id="prop-density" class="prop-select">
-                            <option value="comfortable" th:text="#{ui.02843}">Comfortable</option>
-                            <option value="compact" th:text="#{ui.02844}">Compact</option>
-                            <option value="spacious" th:text="#{ui.02845}">Spacious</option>
-                        </select>
-                    </div>
-
-                    <div class="prop-row prop-toggle">
-                        <span class="prop-label mb-0" th:text="#{ui.02846}">Show Progress</span>
-                        <input id="prop-progress" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"/>
-                    </div>
-
-                    <div class="prop-row prop-toggle">
-                        <span class="prop-label mb-0" th:text="#{ui.02823}">Rest Timer</span>
-                        <input id="prop-rest-timer" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"/>
-                    </div>
-
-                    <div class="mt-6 flex flex-col gap-2">
-                        <button type="button" id="save-template-btn"
-                                class="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" th:text="#{ui.02847}">
-                            Save Template
-                        </button>
-                        <a href="/workout-templates"
-                           class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300" th:text="#{ui.00125}">
-                            Cancel
-                        </a>
-                    </div>
-                </aside>
-            </div>
-
-            <!-- Hidden form for submission -->
-            <form id="template-save-form" method="post"
-                  th:action="${isEdit ? '/workout-templates/' + editTemplate.id : '/workout-templates'}"
-                  class="builder-hidden">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <input type="hidden" id="form-name" name="name"/>
-                <input type="hidden" id="form-layout-type" name="layoutType"/>
-                <input type="hidden" id="form-config-json" name="configJson"/>
-            </form>
-            <textarea id="builder-initial-config" class="builder-hidden" th:text="${editTemplate.configJson}"></textarea>
-        </main>
-    </div>
-
-    <div th:fragment="pageScripts">
-        <script th:src="@{/js/workouts/workout-templates-builder-page.js}"></script>
-    </div>
-
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02816}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content" class="display-studio display-builder" th:attr="data-leave=#{ui.scheduleWorkout.leave},data-draft-changed=${draftChanged == true},data-up=#{ui.studio.moveUp},data-down=#{ui.studio.moveDown},data-remove=#{ui.00801},data-action-for=#{ui.training.actionFor('{0}','{1}')}">
+    <header class="display-studio__header"><div><a class="training-launch__action" href="/workout-templates" th:text="#{ui.02817}">Templates</a><h1 th:text="#{ui.02816}">New template</h1><p th:text="#{ui.display.context}">Choose the appearance of your workout player.</p><p class="display-builder__help" th:text="#{ui.display.blueprint}">The canvas stores a preview blueprint. Player appearance uses layout, theme and density; core logging stays available.</p></div></header>
+    <p th:if="${displayError != null}" class="display-studio__notice display-studio__notice--error" role="alert" th:text="${#messages.msg(displayError)}"></p>
+    <form id="display-template-form" method="post" th:action="${isEdit ? '/workout-templates/' + editTemplate.id : '/workout-templates'}">
+        <button type="submit" name="editAction" value="save" class="sr-only" tabindex="-1" aria-hidden="true" th:text="#{ui.02847}">Save template</button><input type="hidden" name="displayForm" value="true">
+        <div class="display-builder__settings">
+            <label for="prop-name"><span th:text="#{ui.02830}">Template name</span><input id="prop-name" type="text" dir="auto" name="name" required maxlength="200" th:value="${editTemplate.name}" autocomplete="off"></label>
+            <label for="prop-layout"><span th:text="#{ui.02832}">Layout</span><select id="prop-layout" name="layoutType"><option value="FLOW" th:selected="${displayConfig.layout == 'flow'}" th:text="#{ui.02833}">Flow</option><option value="FUTURISTIC_FLOW" th:selected="${displayConfig.layout == 'futuristic_flow'}" th:text="#{ui.02834}">Futuristic flow</option><option value="PROFESSIONAL" th:selected="${displayConfig.layout == 'professional'}" th:text="#{ui.02229}">Professional</option><option value="PLAIN" th:selected="${displayConfig.layout == 'plain'}" th:text="#{ui.02835}">Plain</option><option value="CUSTOM" th:selected="${displayConfig.layout == 'custom'}" th:text="#{ui.01730}">Custom</option></select></label>
+            <label for="prop-theme"><span th:text="#{ui.00316}">Theme</span><select id="prop-theme" name="theme"><option value="default" th:selected="${displayConfig.theme == 'default'}" th:text="#{ui.00833}">Default</option><option value="dark-pro" th:selected="${displayConfig.theme == 'dark-pro'}" th:text="#{ui.02836}">Dark pro</option><option value="light-clean" th:selected="${displayConfig.theme == 'light-clean'}" th:text="#{ui.02837}">Light clean</option><option value="futuristic" th:selected="${displayConfig.theme == 'futuristic'}" th:text="#{ui.02838}">Futuristic</option></select></label>
+            <label for="prop-density"><span th:text="#{ui.02842}">Density</span><select id="prop-density" name="density"><option value="comfortable" th:selected="${displayConfig.density == 'comfortable'}" th:text="#{ui.02843}">Comfortable</option><option value="compact" th:selected="${displayConfig.density == 'compact'}" th:text="#{ui.02844}">Compact</option><option value="spacious" th:selected="${displayConfig.density == 'spacious'}" th:text="#{ui.02845}">Spacious</option></select></label>
+            <label for="prop-transition"><span th:text="#{ui.02839}">Transition</span><select id="prop-transition" name="transition"><option value="none" th:selected="${displayConfig.transition == 'none'}" th:text="#{ui.01640}">None</option><option value="slide" th:selected="${displayConfig.transition == 'slide'}" th:text="#{ui.02840}">Slide</option><option value="fade" th:selected="${displayConfig.transition == 'fade'}" th:text="#{ui.02841}">Fade</option></select></label>
+            <label class="display-builder__toggle" for="prop-progress"><input id="prop-progress" name="progress" type="checkbox" th:checked="${displayConfig.progress}"><span th:text="#{ui.02846}">Show progress</span></label><label class="display-builder__toggle" for="prop-rest-timer"><input id="prop-rest-timer" name="restTimer" type="checkbox" th:checked="${displayConfig.restTimer}"><span th:text="#{ui.02823}">Rest timer</span></label>
+        </div>
+        <div class="display-builder__workspace"><aside class="display-studio__panel" aria-labelledby="palette-title"><h2 id="palette-title" th:text="#{ui.02819}">Components</h2><p class="display-builder__help" th:text="#{ui.display.componentHelp}">Use Add, Move up and Move down to arrange the preview.</p><div class="display-builder__palette"><button th:each="component : ${displayComponents}" class="training-launch__action" type="submit" name="editAction" th:value="${'add:' + component}" formnovalidate th:disabled="${#lists.contains(displayConfig.components,component)}" th:attr="data-add-component=${component},aria-label=#{ui.training.actionFor(#{ui.display.add},${#messages.msg(componentLabels.get(component))})}"><span th:text="#{ui.display.add}">Add</span> <span th:text="${#messages.msg(componentLabels.get(component))}">Component</span></button></div></aside>
+            <section class="display-studio__panel" aria-labelledby="canvas-title"><div class="display-studio__card-heading"><h2 id="canvas-title" th:text="#{ui.02824}">Canvas preview</h2><div class="display-studio__actions" data-enhanced-controls hidden><button class="training-launch__action" type="button" data-undo disabled th:text="#{ui.display.undo}">Undo</button><button class="training-launch__action" type="button" data-reset th:attr="data-confirm=#{ui.02120}" th:text="#{ui.display.reset}">Reset to saved</button></div></div><p class="display-preview__sample" th:text="#{ui.display.sample}">Sample preview</p>
+                <div id="display-canvas" class="display-preview" th:attr="data-display-layout=${displayConfig.layout},data-display-theme=${displayConfig.theme},data-display-density=${displayConfig.density},data-display-transition=${displayConfig.transition},data-display-progress=${displayConfig.progress},data-display-rest=${displayConfig.restTimer}">
+                    <article th:each="component,position : ${displayConfig.components}" class="display-builder__module display-preview__module" th:attr="data-component=${component}"><input type="hidden" name="components" th:value="${component}"><h3 th:text="${#messages.msg(componentLabels.get(component))}">Component</h3><th:block th:replace="~{fragments/workout-display-preview :: module(${component})}"></th:block><div class="display-studio__actions"><button class="training-launch__action" type="submit" name="editAction" th:value="${'up:' + component}" formnovalidate th:disabled="${position.first}" th:attr="aria-label=#{ui.training.actionFor(#{ui.studio.moveUp},${#messages.msg(componentLabels.get(component))})}" th:text="#{ui.studio.moveUp}">Move up</button><button class="training-launch__action" type="submit" name="editAction" th:value="${'down:' + component}" formnovalidate th:disabled="${position.last}" th:attr="aria-label=#{ui.training.actionFor(#{ui.studio.moveDown},${#messages.msg(componentLabels.get(component))})}" th:text="#{ui.studio.moveDown}">Move down</button><button class="training-launch__action" type="submit" name="editAction" th:value="${'remove:' + component}" formnovalidate th:attr="aria-label=#{ui.training.actionFor(#{ui.00801},${#messages.msg(componentLabels.get(component))})}" th:text="#{ui.00801}">Remove</button></div></article>
+                </div><p data-canvas-empty class="display-studio__empty" th:attr="hidden=${!#lists.isEmpty(displayConfig.components)} ? 'hidden' : null" th:text="#{ui.display.componentHelp}">Add components</p>
+                <template th:each="component : ${displayComponents}" th:attr="data-preview-prototype=${component},data-label=${#messages.msg(componentLabels.get(component))}"><article class="display-builder__module display-preview__module" th:attr="data-component=${component}"><input type="hidden" name="components" th:value="${component}"><h3 th:text="${#messages.msg(componentLabels.get(component))}">Component</h3><th:block th:replace="~{fragments/workout-display-preview :: module(${component})}"></th:block><div class="display-studio__actions" data-module-actions></div></article></template>
+            </section></div>
+        <div class="display-builder__save"><button id="save-template-btn" class="training-launch__action training-launch__action--primary" type="submit" name="editAction" value="save" th:text="#{ui.02847}">Save template</button><a class="training-launch__action" href="/workout-templates" th:text="#{ui.00125}">Cancel</a></div>
+    </form>
+</div><th:block th:fragment="pageScripts"><script th:src="@{/js/workouts/workout-templates-builder-page.js(v=${uiCssVersion})}" defer></script></th:block>
 </th:block>

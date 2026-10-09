@@ -32,6 +32,11 @@ class SavedPaymentMethodOwnershipTest {
     @InjectMocks
     private SavedPaymentMethodServiceImpl service;
 
+    @org.mockito.Spy
+    private uk.ac.cf._5.group14.One_To_One.PaymentCards.PaymentCardExpiryValidator expiry =
+            new uk.ac.cf._5.group14.One_To_One.PaymentCards.PaymentCardExpiryValidator(
+                    java.time.Clock.fixed(java.time.Instant.parse("2026-10-04T12:00:00Z"), java.time.ZoneOffset.UTC));
+
     private User user(long id) {
         User u = new User();
         u.setId(id);

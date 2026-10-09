@@ -8,4 +8,13 @@ public interface TrainerLibraryProgrammeDayRepository extends JpaRepository<Trai
     List<TrainerLibraryProgrammeDay> findByProgrammeIdOrderByOrderIndexAsc(Long programmeId);
 
     void deleteByProgrammeId(Long programmeId);
+    boolean existsByWorkoutId(Long workoutId);
+    boolean existsByProgrammeIdAndOrderIndex(Long programmeId, Integer orderIndex);
+
+    @org.springframework.data.jpa.repository.Query("select day.programmeId, count(day) from TrainerLibraryProgrammeDay day where day.programmeId in (select programme.id from TrainerLibraryProgrammeTemplate programme where programme.trainerId = :trainerId) group by day.programmeId")
+    List<Object[]> countOwnedProgrammeDays(@org.springframework.data.repository.query.Param("trainerId") Long trainerId);
+
+    @org.springframework.data.jpa.repository.Query("select day.programmeId, count(day) from TrainerLibraryProgrammeDay day where day.programmeId in :programmeIds and day.programmeId in (select programme.id from TrainerLibraryProgrammeTemplate programme where programme.trainerId = :trainerId) group by day.programmeId")
+    List<Object[]> countOwnedProgrammeDaysOnPage(@org.springframework.data.repository.query.Param("trainerId") Long trainerId,
+                                               @org.springframework.data.repository.query.Param("programmeIds") List<Long> programmeIds);
 }

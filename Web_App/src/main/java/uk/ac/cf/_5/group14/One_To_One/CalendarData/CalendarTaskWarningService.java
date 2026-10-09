@@ -58,6 +58,9 @@ public class CalendarTaskWarningService {
             return null;
         }
 
+        for (CalendarTaskWarning existing : listWarningsForTask(task.getId())) {
+            if (existing.getTriggerType() == CalendarTaskWarningTriggerType.TIME && triggerTime.equals(existing.getTriggerTime())) return existing;
+        }
         CalendarTaskWarning warning = new CalendarTaskWarning();
         warning.setTask(task);
         warning.setTriggerType(CalendarTaskWarningTriggerType.TIME);
@@ -80,11 +83,24 @@ public class CalendarTaskWarningService {
             return null;
         }
 
+        for (CalendarTaskWarning existing : listWarningsForTask(task.getId())) {
+            if (existing.getTriggerType() == CalendarTaskWarningTriggerType.ON_TASK_COMPLETE
+                    && existing.getTriggerTask() != null && triggerTask.getId().equals(existing.getTriggerTask().getId())) return existing;
+        }
         CalendarTaskWarning warning = new CalendarTaskWarning();
         warning.setTask(task);
         warning.setTriggerType(CalendarTaskWarningTriggerType.ON_TASK_COMPLETE);
         warning.setTriggerTask(triggerTask);
         return warningRepository.save(warning);
+    }
+
+    @Transactional
+    public boolean deleteWarningForTask(Long warningId, CalendarTask task) {
+        if (warningId == null || task == null || task.getId() == null) return false;
+        CalendarTaskWarning warning = warningRepository.findById(warningId).orElse(null);
+        if (warning == null || warning.getTask() == null || !task.getId().equals(warning.getTask().getId())) return false;
+        warningRepository.delete(warning);
+        return true;
     }
 
     @Transactional
@@ -137,11 +153,6 @@ public class CalendarTaskWarningService {
                 continue;
             }
 
-            Integer graceMins = task.getGracePeriodMinutes();
-            if (graceMins == null || graceMins <= 0) {
-                continue;
-            }
-
             List<CalendarTaskWarning> tw = warningsByTask.getOrDefault(task.getId(), List.of());
             Instant earliest = null;
 
@@ -162,12 +173,13 @@ public class CalendarTaskWarningService {
                     }
                 }
 
-                if (trigger != null && (earliest == null || trigger.isBefore(earliest))) {
+                if (trigger != null && !now.isBefore(trigger) && (earliest == null || trigger.isBefore(earliest))) {
                     earliest = trigger;
                 }
             }
 
-            if (earliest == null) {
+            Integer graceMins = task.getGracePeriodMinutes();
+            if (earliest == null || graceMins == null || graceMins <= 0) {
                 continue;
             }
 

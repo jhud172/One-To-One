@@ -1,0 +1,125 @@
+/* Loaded only when scripting is unavailable. Native links and forms stay usable. */
+body.version-two :is(#chatWidget, #quickActionsRoot, #platformPanelRoot,
+    .navheader__toggle-slot, .floating-profile-card__toggle, [data-premium-toggle],
+    #siteNavMenu) {
+    display: none !important;
+}
+
+body.version-two.has-platform-panel {
+    --shell-platform-panel-height: 0px;
+    padding-bottom: calc(var(--shell-local-dock-height) + var(--shell-safe-area-bottom));
+}
+
+body.version-two .navheader {
+    position: relative;
+}
+
+.nav-fallback {
+    max-width: 86rem;
+    margin: 0 auto;
+    padding: 0.5rem 1rem 1rem;
+    color: var(--v2-ink);
+}
+
+.nav-fallback summary {
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--v2-control-border);
+    border-radius: var(--v2-radius-control);
+    background: var(--v2-raised);
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.nav-fallback__links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: 0.5rem;
+    padding: 1rem 0;
+}
+
+.nav-fallback :is(.navlink, .nav-fallback__account a, button, .nav-fallback__login) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--v2-control-border);
+    border-radius: var(--v2-radius-control);
+    background: var(--v2-surface);
+    color: var(--v2-ink);
+    text-decoration: none;
+    white-space: normal;
+}
+
+.nav-fallback .navicon {
+    flex: 0 0 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.nav-fallback__account {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    border-top: 1px solid var(--v2-border);
+    padding-top: 1rem;
+}
+
+.nav-fallback__account form { margin: 0; }
+.nav-fallback__login { margin-top: 0.75rem; }
+.nav-fallback :is(summary, a, button):hover { background: var(--v2-accent-soft); }
+
+/* Public previews become readable examples rather than inactive interactive controls. */
+body.version-two .home-experience :is([data-logo-canvas], #logo-hint,
+    .logo-inspector-reveal, .logo-modes, .logo-launch, .logo-close, [data-logo-status],
+    .product-tabs, .product-rail, .product-demo-reset, .session-demo-controls,
+    .session-demo-feedback, .standard-principles, .workspace-tabs) {
+    display: none !important;
+}
+
+body.version-two .home-experience :is(.product-panel, .standard-proof__panel) {
+    display: block !important;
+    animation: none;
+}
+
+body.version-two .home-experience .workspace-panel {
+    display: grid !important;
+    animation: none;
+}
+
+body.version-two .home-experience :is(.product-panel, .standard-proof__panel,
+    .workspace-panel) + :is(.product-panel, .standard-proof__panel, .workspace-panel) {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--v2-border);
+}
+
+body.version-two .home-experience .product-stage__body { grid-template-columns: minmax(0, 1fr); }
+
+body.version-two .auth-container--login :is(.role-slider, .code-input-group, .password-toggle) {
+    display: none !important;
+}
+
+.auth-native-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.auth-native-roles a {
+    flex: 1 1 5rem;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--v2-control-border);
+    border-radius: var(--v2-radius-control);
+    color: var(--v2-ink);
+    background: var(--v2-surface);
+    text-align: center;
+}
+
+.auth-native-roles a[aria-current="page"] {
+    background: var(--v2-accent-soft);
+    color: var(--v2-accent);
+}

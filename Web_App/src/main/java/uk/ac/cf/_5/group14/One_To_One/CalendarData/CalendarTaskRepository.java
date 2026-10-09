@@ -25,6 +25,13 @@ public interface CalendarTaskRepository extends CrudRepository<CalendarTask, Lon
 
     CalendarTask findByIdAndUser(Long id, User user);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select task from CalendarTask task where task.id = :id and task.user.id = :userId")
+    java.util.Optional<CalendarTask> findOwnedForLogUpdate(@org.springframework.data.repository.query.Param("id") Long id,
+                                                         @org.springframework.data.repository.query.Param("userId") Long userId);
+
+    java.util.Optional<CalendarTask> findFirstByExerciseLogIdAndUserId(Long exerciseLogId, Long userId);
+
     List<CalendarTask> findByUserAndDateBetween(User user, LocalDate start, LocalDate end);
 
     Optional<CalendarTask> findFirstByUserAndDateAndCompletedFalseOrderByTimeAsc(User user, LocalDate date);

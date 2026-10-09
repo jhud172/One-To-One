@@ -1,0 +1,42 @@
+<section xmlns:th="http://www.thymeleaf.org" th:fragment="preferences" id="account-preferences" class="profile-section owner-preferences">
+    <div class="profile-section-header">
+        <h2 class="profile-section-title" th:text="#{ui.owner.preferences}">Display and accessibility</h2>
+    </div>
+    <div th:if="${settingsUpdated}" role="status" class="owner-settings-feedback" th:text="#{ui.owner.settingsSaved}">Settings saved.</div>
+    <p th:if="${settingsError}" role="alert" class="owner-settings-error" th:text="${settingsError}"></p>
+    <form th:action="@{/profile/settings/theme}" method="post" class="owner-preference-form">
+        <fieldset>
+            <legend th:text="#{ui.00811}">Appearance</legend>
+            <div class="owner-settings-options">
+                <label><input type="radio" name="theme" value="LIGHT" required th:checked="${userSettings != null and userSettings.theme != null and userSettings.theme.name() == 'LIGHT'}"/><span th:text="#{ui.00318}">Light</span></label>
+                <label><input type="radio" name="theme" value="SYSTEM" required th:checked="${userSettings == null or userSettings.theme == null or userSettings.theme.name() == 'SYSTEM'}"/><span th:text="#{ui.00317}">System default</span></label>
+                <label><input type="radio" name="theme" value="DARK" required th:checked="${userSettings != null and userSettings.theme != null and userSettings.theme.name() == 'DARK'}"/><span th:text="#{ui.00319}">Dark</span></label>
+            </div>
+        </fieldset>
+        <button type="submit" class="profile-btn-primary" th:text="#{ui.00109}">Save</button>
+    </form>
+    <form th:action="@{/profile/settings/calendar-display}" method="post" class="owner-preference-form">
+        <fieldset>
+            <legend th:text="#{ui.00817}">Calendar display</legend>
+            <p class="profile-section-subtitle" th:text="#{ui.00818}">Control how tasks and workouts appear on the calendar.</p>
+            <div class="owner-settings-options">
+                <label><input type="radio" name="layout" value="COMBINED_LIST" required th:checked="${userSettings == null or userSettings.calendarTaskLayout == null or userSettings.calendarTaskLayout.name() == 'COMBINED_LIST'}"/><span><strong th:text="#{ui.00819}">Detailed</strong><small th:text="#{ui.00820}">All tasks and workouts in a single combined list.</small></span></label>
+                <label><input type="radio" name="layout" value="SEPARATED_BY_CATEGORY" required th:checked="${userSettings != null and userSettings.calendarTaskLayout != null and userSettings.calendarTaskLayout.name() == 'SEPARATED_BY_CATEGORY'}"/><span><strong th:text="#{ui.00821}">Grouped</strong><small th:text="#{ui.00822}">Tasks and workouts organised into separate categories.</small></span></label>
+            </div>
+        </fieldset>
+        <button type="submit" class="profile-btn-primary" th:text="#{ui.00109}">Save</button>
+    </form>
+    <form th:action="@{/profile/settings/accessibility}" method="post" class="owner-preference-form">
+        <fieldset>
+            <legend th:text="#{ui.00862}">Accessibility</legend>
+            <p class="profile-section-subtitle" th:text="#{ui.00863}">Colour blind mode and disability support toggles.</p>
+            <div class="owner-settings-options">
+                <label><input type="checkbox" name="colorBlindMode" th:checked="${userSettings != null and userSettings.colorBlindMode}"/><span th:text="#{ui.00331}">Colour blind mode</span></label>
+                <label><input type="checkbox" name="disabilityHearing" th:checked="${userSettings != null and userSettings.disabilityHearing}"/><span th:text="#{ui.00864}">Hearing support</span></label>
+                <label><input type="checkbox" name="disabilityMobility" th:checked="${userSettings != null and userSettings.disabilityMobility}"/><span th:text="#{ui.00865}">Mobility support</span></label>
+                <label><input type="checkbox" name="disabilityVision" th:checked="${userSettings != null and userSettings.disabilityVision}"/><span th:text="#{ui.00866}">Vision support</span></label>
+            </div>
+        </fieldset>
+        <button type="submit" class="profile-btn-primary" th:text="#{ui.00868}">Save accessibility</button>
+    </form>
+</section>

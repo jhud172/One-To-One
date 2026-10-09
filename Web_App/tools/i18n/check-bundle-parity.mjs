@@ -6,7 +6,7 @@ const resourcesRoot = path.join(projectRoot, 'src/main/resources');
 const bundleNames = ['messages', 'messages-home', 'messages-ui'];
 const localeCodes = ['cy', 'es', 'fr', 'de', 'it', 'pt', 'pl', 'nl', 'zh', 'ja', 'ko', 'ar', 'hi'];
 const propertyPattern = /^([^#!\s][^=]*?)\s*=\s*(.*)$/;
-const placeholderPattern = /\{\d+}|\$\{[^}]+}|%\d*\$?[a-zA-Z]/g;
+const placeholderPattern = /\$\{[^}]+}|\{(?:\d+|[a-zA-Z_][a-zA-Z0-9_]*)}|%\d*\$?[a-zA-Z]/g;
 
 const readBundle = (filePath) => {
     const values = new Map();

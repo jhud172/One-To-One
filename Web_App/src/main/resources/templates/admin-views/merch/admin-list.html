@@ -1,7 +1,7 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(#{ui.00141}, null, ~{::content}, null)}">
 
-    <div th:fragment="content" class="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+    <div th:fragment="content" class="merch-workspace-v2 merch-admin-v2 mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
 
         <div class="mb-6 flex flex-wrap items-center justify-between gap-4" data-site-tour="admin-merch">
             <h1 class="text-2xl font-bold gradient-text" th:text="#{ui.00127}">Merch Products</h1>
@@ -16,13 +16,19 @@
              class="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-400"
              th:text="${errorMessage}"></div>
 
+        <form method="get" th:action="@{/admin/merch}" class="merch-native-filters">
+            <div><label for="admin-merch-search" th:text="#{ui.02062}"></label><input id="admin-merch-search" name="search" type="search" maxlength="120" th:value="${search}"></div>
+            <div><label for="admin-merch-state" th:text="#{ui.00134}"></label><select id="admin-merch-state" name="state"><option value="" th:text="#{ui.00485}"></option><option value="active" th:selected="${selectedState == 'active'}" th:text="#{ui.00134}"></option><option value="inactive" th:selected="${selectedState == 'inactive'}" th:text="#{ui.00137}"></option></select></div>
+            <button type="submit" class="btn btn--primary" th:text="#{ui.00554}"></button><a th:href="@{/admin/merch}" class="btn btn--secondary" th:text="#{ui.00563}"></a>
+        </form>
+        <p><span th:text="#{ui.00982}"></span> <span th:text="${#lists.size(products)}"></span> <span th:text="#{ui.00983}"></span> <span th:text="${totalProducts}"></span></p>
         <!-- Products table -->
         <div th:if="${#lists.isEmpty(products)}"
-             class="card-neon card--cyan p-8 text-center text-slate-400" th:text="#{ui.00129}">
+             class="card-neon card--cyan p-8 text-center text-slate-400" th:text="${totalProducts > 0} ? #{ui.02068} : #{ui.00129}">
             No products yet. Click "Add Product" to get started.
         </div>
 
-        <div th:if="${!#lists.isEmpty(products)}" class="card-neon card--cyan overflow-hidden">
+        <div th:if="${!#lists.isEmpty(products)}" class="card-neon card--cyan overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="border-b border-slate-700/50">
                     <tr class="text-xs uppercase tracking-wide text-slate-500">
@@ -72,8 +78,8 @@
                                    class="btn btn--secondary text-xs px-3 py-1" th:text="#{ui.00138}">Edit</a>
                                 <form th:action="@{/admin/merch/{id}/delete(id=${product.id})}"
                                       method="post"
-                                      data-confirm="Delete this product? Any confirmed orders will be marked for refund.">
-                                    <button type="submit" class="btn text-xs px-3 py-1 bg-red-900/40 border border-red-700/50 text-red-400 hover:bg-red-800/60" th:text="#{ui.00139}">Delete</button>
+                                      th:attr="data-confirm=#{ui.merch.retireConfirm}">
+                                    <button type="submit" class="btn text-xs px-3 py-1 bg-red-900/40 border border-red-700/50 text-red-400 hover:bg-red-800/60" th:text="#{ui.merch.retire}">Delete</button>
                                 </form>
                             </div>
                         </td>

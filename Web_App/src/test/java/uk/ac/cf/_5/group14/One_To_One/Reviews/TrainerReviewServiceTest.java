@@ -47,6 +47,7 @@ class TrainerReviewServiceTest {
         trainer.setUsername("trainer123");
         trainer.setPassword("password123");
         trainer.setRole(Role.TRAINER);
+        trainer.setTrainerVerified(true);
         trainer = userRepository.save(trainer);
 
         // Create client
@@ -61,6 +62,7 @@ class TrainerReviewServiceTest {
 
         // Create active link
         activeLink = new TrainerClientLink(client.getId(), trainer.getId(), TrainerClientLinkStatus.ACTIVE);
+        activeLink.setActivatedAt(java.time.Instant.now());
         activeLink = linkRepository.save(activeLink);
     }
 
@@ -147,6 +149,16 @@ class TrainerReviewServiceTest {
 
         // THEN: Client cannot review requested relationship
         assertThat(canReview).isFalse();
+    }
+
+    @Test
+    void withdrawnRequestCannotBeReviewedAsPastCoaching() {
+        activeLink.setStatus(TrainerClientLinkStatus.ENDED);
+        activeLink.setActivatedAt(null);
+        linkRepository.saveAndFlush(activeLink);
+        assertThat(reviewService.canClientReviewTrainer(client.getId(), trainer.getId())).isFalse();
+        assertThatThrownBy(() -> reviewService.createReview(client.getId(), trainer.getId(), 5, null, "Never coached"))
+                .isInstanceOf(TrainerReviewException.class);
     }
 
     @Test

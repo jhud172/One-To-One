@@ -56,6 +56,25 @@ class MessagingControllerTest {
         );
 
         assertThat(view).isEqualTo("redirect:/inbox/12");
-        assertThat(redirectAttributes.getFlashAttributes().get("offPlatformBlocked")).isEqualTo(Boolean.TRUE);
+        assertThat(redirectAttributes.getFlashAttributes().get("inboxSendError")).isEqualTo("OFF_PLATFORM_PAYMENT");
+        assertThat(redirectAttributes.getFlashAttributes().get("inboxDraftBody")).isEqualTo("Pay me off platform");
+    }
+
+    @Test
+    void invalidCheckinRatingsRetainTheirDraftWithoutSending() {
+        MessagingController controller = new MessagingController(authHelper, userService, messagingService, accessGuard);
+        User sender = new User(); sender.setId(9L);
+        when(authHelper.getAuthenticatedUser()).thenReturn(sender);
+        when(messagingService.getThreadForUser(12L, 9L))
+                .thenReturn(new MessageThread(9L, 33L, 21L, MessageThreadStatus.OPEN));
+        var redirect = new RedirectAttributesModelMap();
+        assertThat(controller.send(12L, MessageType.CHECKIN, null, "bad-rating", "9", "Keep draft", redirect))
+                .isEqualTo("redirect:/inbox/12");
+        assertThat(redirect.getFlashAttributes().get("inboxCheckinMood")).isEqualTo("bad-rating");
+        assertThat(redirect.getFlashAttributes().get("inboxCheckinNotes")).isEqualTo("Keep draft");
+        assertThat(redirect.getFlashAttributes().get("inboxSendError")).isEqualTo("INVALID_MESSAGE");
+        org.mockito.Mockito.verify(messagingService, org.mockito.Mockito.never())
+                .sendMessage(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong(),
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 }

@@ -1,22 +1,35 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(${pageTitle} ?: #{ui.02403}, null, ~{::content}, null)}">
 
-    <div th:fragment="content" class="detail-container">
+    <div th:fragment="content" class="detail-container client-workspace-v2 checkin-review-v2">
         <!-- Header with key metadata at top -->
         <div class="detail-header">
             <div class="detail-header-content">
                 <div class="detail-header-meta">
                     <p class="detail-label" th:text="#{ui.02394}">Trainer review</p>
                     <h1 class="detail-title" th:text="#{ui.00214}">Weekly check-in</h1>
-                    <p class="detail-subtitle" th:text="${'Week of ' + checkIn.weekStartDate}"></p>
+                    <p class="detail-subtitle" th:if="${client != null}" th:text="${client.fullName}"></p>
+                    <p class="detail-subtitle"><span th:text="#{ui.checkin.weekOf}">Week of</span>
+                        <time th:attr="datetime=${checkIn.weekStartDate}" th:text="${#temporals.format(checkIn.weekStartDate, 'dd MMM yyyy')}"></time></p>
+                    <p class="detail-subtitle" th:if="${checkIn.respondedAt != null}"><span th:text="#{ui.checkin.savedAt}"></span>
+                        <time th:datetime="${checkIn.respondedAt}" th:text="${#temporals.format(checkIn.respondedAt, 'dd MMM yyyy HH:mm', #locale)}"></time></p>
                 </div>
                 <!-- Status badge in header -->
                 <div class="detail-actions-sticky">
                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ring-white/10"
                           th:classappend="${checkIn.status.name() == 'RESPONDED'} ? ' bg-emerald-400/10 text-emerald-300' : ' bg-slate-400/10 text-slate-300'"
-                          th:text="${checkIn.status}"></span>
+                          th:text="${checkIn.status.name() == 'RESPONDED'} ? #{ui.checkin.responded} : #{ui.00151}"></span>
+                    <a class="detail-btn-secondary" th:href="@{/trainer/clients/{id}(id=${checkIn.clientId})}" th:text="#{ui.02638}">Client overview</a>
                 </div>
             </div>
+        </div>
+
+        <p class="client-workspace-feedback" role="status" th:if="${reviewSaved == true}" th:text="#{ui.checkin.reviewSaved}"></p>
+
+        <div th:if="${checkInError != null}" class="checkin-review-error" role="alert" th:switch="${checkInError}">
+            <p th:case="'empty-response'" th:text="#{ui.checkin.errorEmpty}">Add a response or next-week focus before saving.</p>
+            <p th:case="'focus-length'" th:text="#{ui.checkin.errorFocusLength}">Keep next-week focus within 600 characters.</p>
+            <p th:case="*" th:text="#{ui.00302}">Please correct the highlighted fields before saving your changes.</p>
         </div>
 
         <!-- Structured content sections -->
@@ -26,12 +39,17 @@
                 <section class="detail-section">
                     <h2 class="detail-section-title" th:text="#{ui.02395}">Responses</h2>
                     <div class="detail-section-content">
-                        <div th:if="${#lists.isEmpty(responses)}" class="detail-empty" th:text="#{ui.02396}">No responses captured.</div>
+                        <p role="alert" class="checkin-review-error" th:if="${answersUnavailable}" th:text="#{ui.checkin.answersUnavailable}"></p>
+                        <div th:if="${#lists.isEmpty(responses) and !answersUnavailable}" class="detail-empty" th:text="#{ui.02396}">No responses captured.</div>
                         <div th:if="${!#lists.isEmpty(responses)}" class="space-y-3">
-                            <div th:each="resp : ${responses}" class="rounded-xl border border-white/10 bg-white/5 p-4">
+                            <div th:each="resp : ${responses}" class="detail-card">
                                 <div class="text-xs uppercase text-slate-500" th:text="${resp.prompt}"></div>
-                                <div class="mt-2 text-sm text-slate-900 dark:text-slate-100" th:text="${resp.answer}"></div>
+                                <div class="checkin-answer mt-2 text-sm text-slate-900 dark:text-slate-100" th:text="${resp.answer}"></div>
                             </div>
+                        </div>
+                        <div class="detail-card checkin-client-notes" th:if="${checkIn.clientNotes != null and !#strings.isEmpty(checkIn.clientNotes)}">
+                            <h3 class="detail-metadata-label" th:text="#{ui.01063}">Submitted Notes</h3>
+                            <p class="checkin-answer" th:text="${checkIn.clientNotes}"></p>
                         </div>
                     </div>
                 </section>
@@ -41,22 +59,24 @@
                     <h2 class="detail-section-title" th:text="#{ui.02397}">Coach response</h2>
                     <div class="detail-section-content">
                         <form class="space-y-3" th:action="@{/checkins/trainer-review/{id}(id=${checkIn.id})}" method="post">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <p class="detail-list-item-meta" th:text="#{ui.checkin.reviewShareHint}"></p>
                             <div>
-                                <label class="detail-metadata-label" th:text="#{ui.02398}">Response</label>
-                                <textarea name="trainerResponse" rows="3" placeholder="Response" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
-                                          th:text="${checkIn.trainerResponse}" th:placeholder="#{ui.02398}"></textarea>
+                                <label for="coachCheckinResponse" class="detail-metadata-label" th:text="#{ui.02398}">Response</label>
+                                <textarea id="coachCheckinResponse" name="trainerResponse" rows="6" aria-describedby="checkinResponseHint" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
+                                          th:text="${checkInError != null ? responseInput : checkIn.trainerResponse}" th:attr="aria-invalid=${checkInError == 'empty-response'}"></textarea>
+                                <p id="checkinResponseHint" class="detail-list-item-meta" th:text="#{ui.checkin.responseHint}">Save a response or next-week focus. Re-saving unchanged text does not notify the client again.</p>
                             </div>
                             <div>
-                                <label class="detail-metadata-label" th:text="#{ui.02399}">Next week focus</label>
-                                <textarea name="nextWeekFocus" rows="2" placeholder="Next week focus" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
-                                          th:text="${checkIn.nextWeekFocus}" th:placeholder="#{ui.02399}"></textarea>
+                                <label for="coachCheckinFocus" class="detail-metadata-label" th:text="#{ui.02399}">Next week focus</label>
+                                <textarea id="coachCheckinFocus" name="nextWeekFocus" rows="3" maxlength="600" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
+                                          th:text="${checkInError != null ? focusInput : checkIn.nextWeekFocus}" th:attr="aria-invalid=${checkInError == 'empty-response' or checkInError == 'focus-length'}"></textarea>
                             </div>
                             <div>
-                                <label class="detail-metadata-label" th:text="#{ui.02400}">Attach to goal</label>
-                                <select name="goalId" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                                <label for="coachCheckinGoal" class="detail-metadata-label" th:text="#{ui.02400}">Attach to goal</label>
+                                <select id="coachCheckinGoal" name="goalId" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
                                     <option value="" th:text="#{ui.02401}">Attach to goal (optional)</option>
-                                    <option th:each="g : ${goals}" th:value="${g.id}" th:selected="${checkIn.goalId != null && checkIn.goalId == g.id}" th:text="${g.title}"></option>
+                                    <option th:if="${goalUnavailable}" th:value="${checkIn.goalId}" th:selected="${checkInError == null or goalInput == checkIn.goalId}" th:text="#{ui.checkin.goalUnavailable}"></option>
+                                    <option th:each="g : ${goals}" th:value="${g.id}" th:selected="${(checkInError != null ? goalInput : checkIn.goalId) == g.id}" th:text="${g.title}"></option>
                                 </select>
                             </div>
                             <button type="submit" class="detail-btn-primary" th:text="#{ui.02402}">Save response</button>

@@ -54,6 +54,14 @@
                 </div>
             </div>
 
+            <noscript>
+                <nav class="auth-native-roles" th:attr="aria-label=#{ui.01169}">
+                    <a th:href="@{/login(role='client')}" th:text="#{auth.role.client}" th:attr="aria-current=${preselectedRole == 'client'} ? 'page' : null">Client</a>
+                    <a th:href="@{/login(role='trainer')}" th:text="#{auth.role.trainer}" th:attr="aria-current=${preselectedRole == 'trainer'} ? 'page' : null">Trainer</a>
+                    <a th:href="@{/login(role='gym')}" th:text="#{auth.role.gym}" th:attr="aria-current=${preselectedRole == 'gym'} ? 'page' : null">Gym</a>
+                </nav>
+            </noscript>
+
             <div class="mb-6">
                 <div class="role-slider" id="roleSlider" role="tablist" aria-label="Login type" th:attr="aria-label=#{ui.01169}">
                     <span class="role-slider__indicator" aria-hidden="true"></span>
@@ -124,6 +132,7 @@
                             <input
                                 type="text"
                                 id="username"
+                                th:disabled="${preselectedRole == 'gym'}"
                                 name="username"
                                 th:attr="name=${preselectedRole != 'gym'} ? 'username' : null"
                                 required
@@ -162,7 +171,12 @@
                                     aria-label="Trainer code segment 3 of 3"
                                     autocomplete="off"  th:attr="aria-label=#{ui.01174}"/>
                             </div>
-                            <input type="hidden" name="trainerCode" id="trainerCodeFull" />
+                            <input type="hidden" name="trainerCode" id="trainerCodeFull" disabled />
+                            <noscript th:if="${preselectedRole == 'trainer'}">
+                                <input type="text" name="trainerCode" class="auth-field__input" required
+                                       minlength="12" maxlength="12" pattern="[A-Za-z0-9]{12}" autocomplete="off"
+                                       aria-describedby="trainerCodeHint" th:attr="aria-label=#{ui.01171}"/>
+                            </noscript>
                             <p id="trainerCodeHint" class="mt-2 text-xs text-gray-500 text-center" th:text="#{ui.01175}">Enter or paste your 12-character trainer authorisation code.</p>
                         </fieldset>
 
@@ -175,6 +189,7 @@
                                 <input
                                 type="password"
                                 id="password"
+                                th:disabled="${preselectedRole == 'gym'}"
                                 name="password"
                                 th:attr="name=${preselectedRole != 'gym'} ? 'password' : null"
                                     required
@@ -196,6 +211,7 @@
                             <input
                                 type="text"
                                 id="gymUsername"
+                                th:disabled="${preselectedRole != 'gym'}"
                                 name="gymUsername"
                                 th:attr="name=${preselectedRole == 'gym'} ? 'username' : null"
                                 required
@@ -247,7 +263,12 @@
                                     aria-label="Gym secret code segment 4 of 4"
                                     autocomplete="off"  th:attr="aria-label=#{ui.01182}"/>
                             </div>
-                            <input type="hidden" name="gymSecretCode" id="gymSecretCodeFull" />
+                            <input type="hidden" name="gymSecretCode" id="gymSecretCodeFull" disabled />
+                            <noscript th:if="${preselectedRole == 'gym'}">
+                                <input type="password" name="gymSecretCode" class="auth-field__input" required
+                                       minlength="16" maxlength="16" pattern="[0-9]{16}" inputmode="numeric" autocomplete="off"
+                                       aria-describedby="gymCodeHint" th:attr="aria-label=#{ui.01178}"/>
+                            </noscript>
                             <p id="gymCodeHint" class="mt-2 text-xs text-gray-500 text-center" th:text="#{ui.01183}">Enter or paste your 16-digit gym secret code.</p>
                         </fieldset>
 
@@ -260,6 +281,7 @@
                                 <input
                                     type="password"
                                     id="gymPassword"
+                                    th:disabled="${preselectedRole != 'gym'}"
                                     name="gymPass"
                                     th:attr="name=${preselectedRole == 'gym'} ? 'password' : null"
                                     required

@@ -1,250 +1,55 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
-          th:replace="~{base :: layout(#{ui.02734}, null, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="content" class="detail-container">
-        <!-- Trainer Code (only visible to the trainer themselves) -->
-        <div th:if="${isOwner and trainerProfile != null and trainerProfile.trainerCode != null}"
-             class="mb-6 rounded-2xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-5">
-            <p class="mb-1 text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400" th:text="#{ui.01231}">Your Trainer Code</p>
-            <div class="flex flex-wrap items-center gap-3">
-                <span id="trainerCodeVal"
-                      class="font-mono text-2xl font-bold tracking-[0.15em] text-emerald-800 dark:text-emerald-200 select-all"
-                      th:text="${#strings.substring(trainerProfile.trainerCode,0,4) + '-' + #strings.substring(trainerProfile.trainerCode,4,8) + '-' + #strings.substring(trainerProfile.trainerCode,8,12)}">XXXX-XXXX-XXXX</span>
-                <button type="button" id="copyTrainerCode"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400 bg-white dark:bg-emerald-900/30 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 transition hover:bg-emerald-50">
-                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    <span id="copyTrainerCodeLabel" th:text="#{ui.01076}">Copy</span>
-                </button>
-            </div>
-            <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400" th:text="#{ui.02709}">Share this code with clients who need to verify you during login.</p>
+<th:block xmlns:th="http://www.thymeleaf.org" xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6" th:replace="~{base :: layout(${trainer.fullName}, null, ~{::content}, ~{::pageScripts})}">
+    <div th:fragment="content" class="client-workspace-v2 trainer-portfolio-v2">
+        <nav class="client-workspace-nav" th:attr="aria-label=#{ui.02734}"><a th:href="@{/explore}" th:text="#{ui.00540}">Verified trainer directory</a><a sec:authorize="hasRole('CLIENT')" th:href="@{/client/trainers}" th:text="#{ui.00245}">My Trainer</a></nav>
+        <p th:if="${reviewSaved == true}" class="checkin-feedback" role="status" th:text="#{ui.review.saved}">Review submitted.</p>
+        <p th:if="${reviewReported == true}" class="checkin-feedback" role="status" th:text="#{ui.profile.reportSaved}">Review reported for moderation.</p>
+        <p th:if="${reportError == true}" class="checkin-review-error" role="alert" th:text="#{ui.profile.reportError}">This report may already exist. Otherwise, give a reason of up to 1,000 characters and try again.</p>
+        <p th:if="${successMessage != null}" class="checkin-feedback" role="status" th:text="${successMessage}"></p>
+        <div th:if="${param.error != null}" class="checkin-review-error" role="alert">
+            <p th:if="${param.error[0] == 'cannot_review'}" th:text="#{ui.02725}"></p><p th:if="${param.error[0] == 'already_reviewed'}" th:text="#{ui.02726}"></p><p th:if="${param.error[0] == 'not_eligible'}" th:text="#{ui.02727}"></p><p th:if="${param.error[0] == 'invalid'}" th:text="#{ui.02728}"></p>
         </div>
-
-        <!-- Success/Error Messages -->
-        <div th:if="${successMessage}" class="detail-success-box mb-4">
-            <p th:text="${successMessage}"></p>
-        </div>
-        <div th:if="${param.error}" class="mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
-            <p class="text-sm text-red-700 dark:text-red-200" th:if="${param.error[0] == 'cannot_review'}" th:text="#{ui.02725}">You cannot review this trainer at this time.</p>
-            <p class="text-sm text-red-700 dark:text-red-200" th:if="${param.error[0] == 'already_reviewed'}" th:text="#{ui.02726}">You have already reviewed this trainer for your current/most recent relationship.</p>
-            <p class="text-sm text-red-700 dark:text-red-200" th:if="${param.error[0] == 'not_eligible'}" th:text="#{ui.02727}">You must have an active or past relationship with this trainer to leave a review.</p>
-            <p class="text-sm text-red-700 dark:text-red-200" th:if="${param.error[0] == 'invalid'}" th:text="#{ui.02728}">An error occurred. Please try again.</p>
-        </div>
-
-        <!-- Header with key metadata at top -->
-        <div class="detail-header">
+        <header class="detail-header">
             <div class="detail-header-content">
-                <div class="detail-header-meta">
-                    <p class="detail-label" th:text="#{ui.02729}">Personal Trainer</p>
-                    <h1 class="detail-title" th:text="${trainer.firstName + ' ' + trainer.lastName}">Trainer Name</h1>
-                    
-                    <!-- Bio -->
-                    <p th:if="${trainerProfile != null && trainerProfile.bio != null && !trainerProfile.bio.isEmpty()}" 
-                       class="detail-subtitle"
-                       th:text="${trainerProfile.bio}">Bio text here</p>
-                    
-                    <!-- Specializations -->
-                    <div th:if="${trainerProfile != null && trainerProfile.specializations != null && !trainerProfile.specializations.isEmpty()}" 
-                         class="mt-3 flex flex-wrap gap-2">
-                        <th:block th:each="specialization : ${trainerProfile.specializations.split(',')}">
-                            <span class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-800 dark:text-slate-200"
-                                  th:text="${specialization.trim()}">Specialization</span>
-                        </th:block>
-                    </div>
-                    
-                    <!-- Social Links -->
-                    <div th:if="${trainerProfile != null}" class="mt-4 flex flex-wrap items-center gap-3">
-                        <!-- Instagram -->
-                        <a th:if="${trainerProfile.showInstagram && trainerProfile.instagramUrl != null && !trainerProfile.instagramUrl.isEmpty()}"
-                           th:href="${trainerProfile.instagramUrl}"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                            </svg>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                        </a>
-                        
-                        <!-- TikTok -->
-                        <a th:if="${trainerProfile.showTikTok && trainerProfile.tiktokUrl != null && !trainerProfile.tiktokUrl.isEmpty()}"
-                           th:href="${trainerProfile.tiktokUrl}"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                            </svg>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                        </a>
-                        
-                        <!-- YouTube -->
-                        <a th:if="${trainerProfile.showYouTube && trainerProfile.youtubeUrl != null && !trainerProfile.youtubeUrl.isEmpty()}"
-                           th:href="${trainerProfile.youtubeUrl}"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                            </svg>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                        </a>
-                        
-                        <!-- LinkedIn -->
-                        <a th:if="${trainerProfile.showLinkedIn && trainerProfile.linkedInUrl != null && !trainerProfile.linkedInUrl.isEmpty()}"
-                           th:href="${trainerProfile.linkedInUrl}"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                            </svg>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                        </a>
-                        
-                        <!-- Website -->
-                        <a th:if="${trainerProfile.showWebsite && trainerProfile.websiteUrl != null && !trainerProfile.websiteUrl.isEmpty()}"
-                           th:href="${trainerProfile.websiteUrl}"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                            </svg>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-                <!-- Primary actions - sticky on larger screens -->
-                <div class="detail-actions-sticky">
-                    <a th:if="${canReview}" th:href="@{/trainers/{id}/review(id=${trainer.id})}"
-                       class="detail-btn-primary" th:text="#{ui.02225}">
-                        Leave a Review
-                    </a>
+                <div class="detail-header-meta"><p class="detail-label" th:text="#{ui.02729}">Personal trainer</p><h1 class="detail-title" th:text="${trainer.fullName}"></h1><span class="connection-status" th:text="#{ui.00564}">Verified</span><p th:if="${trainerProfile?.bio != null}" class="detail-subtitle portfolio-bio" th:text="${trainerProfile.bio}"></p></div>
+                <div class="connection-actions">
+                    <form th:if="${canRequestTrainer}" th:action="@{/client/trainers/{id}/request(id=${trainer.id})}" method="post"><button type="submit" class="detail-btn-primary" th:text="#{ui.00568}">Request trainer</button></form>
+                    <a th:if="${hasPendingRequest}" th:href="@{/client/trainers}" class="detail-btn-secondary" th:text="#{ui.coaching.pending}">Pending requests</a>
+                    <a th:if="${isCurrentTrainer}" th:href="@{/client/plan}" class="detail-btn-secondary" th:text="#{ui.plan.feedback}">Workout feedback</a>
+                    <a th:if="${canReview}" th:href="@{/trainers/{id}/review(id=${trainer.id})}" class="detail-btn-secondary" th:text="#{ui.02225}">Leave a review</a>
+                    <a th:if="${isOwner}" th:href="@{/trainer/profile/edit}" class="detail-btn-secondary" th:text="#{ui.00138}">Edit</a>
+                    <a sec:authorize="isAnonymous()" th:href="@{/signup}" class="detail-btn-primary" th:text="#{ui.01275}">Get started</a>
                 </div>
             </div>
-
-            <!-- Rating Summary -->
-            <div class="mt-6 flex items-center gap-6">
-                <div class="flex flex-col items-center">
-                    <div class="text-5xl font-bold text-slate-900 dark:text-slate-100" 
-                         th:text="${#numbers.formatDecimal(averageRating, 1, 1)}">4.5</div>
-                    <div class="mt-1 flex items-center gap-1">
-                        <!-- Star Display -->
-                        <th:block th:each="i : ${#numbers.sequence(1, 5)}">
-                            <svg th:if="${i <= averageRating}" class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                            <svg th:if="${i > averageRating}" class="h-5 w-5 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                        </th:block>
-                    </div>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" 
-                       th:text="${reviewCount + ' ' + (reviewCount == 1 ? 'review' : 'reviews')}">10 reviews</p>
-                </div>
+            <dl th:if="${trainerProfile != null}" class="portfolio-metadata">
+                <div th:if="${trainerProfile.location != null and !trainerProfile.location.isBlank()}"><dt th:text="#{ui.00546}">Location</dt><dd th:text="${trainerProfile.location}"></dd></div>
+                <div th:if="${trainerProfile.primaryGym != null and !trainerProfile.primaryGym.isBlank()}"><dt th:text="#{ui.02431}">Primary gym</dt><dd th:text="${trainerProfile.primaryGym}"></dd></div>
+                <div th:if="${trainerProfile.pricePerSession != null and trainerProfile.pricePerSession >= 0}"><dt th:text="#{ui.00549}">Price per session</dt><dd th:text="${'£' + trainerProfile.pricePerSession}"></dd></div>
+            </dl>
+            <ul th:if="${trainerProfile?.specializations != null and !trainerProfile.specializations.isBlank()}" class="portfolio-specialities"><li th:each="speciality : ${trainerProfile.specializations.split(',')}" th:text="${speciality.trim()}"></li></ul>
+            <nav th:if="${!#lists.isEmpty(socialLinks)}" class="connection-actions" th:attr="aria-label=#{ui.00431}"><a th:each="link : ${socialLinks}" class="detail-btn-secondary" th:href="${link.url}" target="_blank" rel="noopener noreferrer" th:text="${#messages.msg(link.labelKey)}"></a></nav>
+            <p class="connection-payment-notice" th:text="#{ui.00255}">Keep every payment protected inside One To One.</p>
+        </header>
+        <details th:if="${isOwner and formattedTrainerCode != null}" class="detail-section portfolio-private-code">
+            <summary th:text="#{ui.01231}">Your trainer code</summary><p class="detail-subtitle" th:text="#{ui.02709}">This code is part of your trainer sign-in. Keep it private.</p>
+            <div class="connection-actions"><code id="trainerCodeVal" th:text="${formattedTrainerCode}"></code><button type="button" id="copyTrainerCode" class="detail-btn-secondary" th:attr="data-copied=#{ui.profile.copyDone},data-copy-failed=#{ui.profile.copyFailed}" th:text="#{ui.01076}">Copy</button></div><p id="trainerCodeCopyStatus" role="status" class="detail-subtitle"></p>
+        </details>
+        <section id="trainerReviews" class="detail-section portfolio-reviews">
+            <div class="detail-section-header"><h2 class="detail-section-title" th:text="#{ui.01572}">Reviews</h2><p class="detail-subtitle" th:text="#{ui.profile.reviews(${reviewCount})}"></p></div>
+            <p th:if="${reviewCount > 0}" class="portfolio-rating" dir="ltr"><strong th:text="${#numbers.formatDecimal(averageRating, 1, 1)}"></strong><span> / 5</span></p>
+            <p th:if="${#lists.isEmpty(reviews)}" class="detail-empty" th:text="#{ui.01573}">No reviews yet.</p>
+            <div class="portfolio-review-list">
+                <article th:each="review : ${reviews}" class="detail-card">
+                    <div class="portfolio-review-heading"><h3 dir="auto" th:text="${clientsById[review.clientId] != null ? clientsById[review.clientId].fullName : #messages.msg('ui.profile.reviewer')}"></h3><p dir="ltr" th:text="${review.stars} + ' / 5'"></p></div>
+                    <time dir="ltr" th:attr="datetime=${review.createdAt}" th:text="${#temporals.format(review.createdAt, 'dd MMM yyyy')}"></time>
+                    <ul th:if="${review.tags != null and !review.tags.isEmpty()}" class="portfolio-specialities"><li th:each="tag : ${review.displayTags}" dir="auto" th:text="${tag.labelKey != null ? #messages.msg(tag.labelKey) : tag.value}"></li></ul>
+                    <p class="plan-coaching-note" dir="auto" th:text="${review.comment}"></p>
+                    <details sec:authorize="isAuthenticated()" class="portfolio-report" th:open="${reportDraft != null and reportDraft.reviewId == review.id}">
+                        <summary th:text="#{ui.02730}">Report</summary>
+                        <form th:action="@{/reviews/{id}/report(id=${review.id})}" method="post" class="client-checkin-form"><input type="hidden" name="trainerId" th:value="${trainer.id}"/><div><label th:for="${'report-reason-' + review.id}" th:text="#{ui.02732}">Reason for reporting</label><textarea th:id="${'report-reason-' + review.id}" name="reason" required maxlength="1000" rows="4" th:text="${reportDraft != null and reportDraft.reviewId == review.id ? reportDraft.reason : ''}"></textarea></div><button class="detail-btn-secondary" type="submit" th:text="#{ui.02733}">Submit report</button></form>
+                    </details>
+                </article>
             </div>
-        </div>
-
-        <!-- Structured content sections -->
-        <div class="detail-sections">
-            <section class="detail-section">
-                <h2 class="detail-section-title" th:text="#{ui.01572}">Reviews</h2>
-
-                <div class="detail-section-content">
-                    <div th:if="${#lists.isEmpty(reviews)}" class="detail-empty" th:text="#{ui.01573}">No reviews yet.</div>
-
-                    <div th:if="${!#lists.isEmpty(reviews)}" class="divide-y divide-slate-200 dark:divide-white/10">
-                        <div th:each="review : ${reviews}" class="py-6 first:pt-0 last:pb-0">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
-                                              th:text="${clientsById.get(review.clientId)?.firstName + ' ' + clientsById.get(review.clientId)?.lastName}">Client Name</span>
-                                        <div class="flex items-center gap-1">
-                                            <th:block th:each="i : ${#numbers.sequence(1, 5)}">
-                                                <svg th:if="${i <= review.stars}" class="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                                </svg>
-                                                <svg th:if="${i > review.stars}" class="h-4 w-4 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                                </svg>
-                                            </th:block>
-                                        </div>
-                                    </div>
-                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" 
-                                       th:text="${#temporals.format(review.createdAt, 'MMM dd, yyyy')}">Jan 15, 2026</p>
-
-                                    <!-- Tags -->
-                                    <div th:if="${review.tags != null && !review.tags.isEmpty()}" class="mt-2 flex flex-wrap gap-2">
-                                        <th:block th:each="tag : ${review.tags.split(',')}">
-                                            <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-300"
-                                                  th:text="${tag.trim()}">Professional</span>
-                                        </th:block>
-                                    </div>
-
-                                    <!-- Comment -->
-                                    <p th:if="${review.comment != null && !review.comment.isEmpty()}" 
-                                       class="mt-3 text-sm text-slate-700 dark:text-slate-300"
-                                       th:text="${review.comment}">Great trainer, very professional and knowledgeable!</p>
-                                </div>
-
-                                <!-- Report Button -->
-                                <button type="button"
-                                        data-open-report-modal
-                                        th:attr="data-review-id=${review.id},data-trainer-id=${trainer.id}"
-                                        class="text-sm text-slate-500 hover:text-red-600" th:text="#{ui.02730}">
-                                    Report
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Report Modal -->
-        <div id="reportModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/50">
-            <div class="flex min-h-full items-center justify-center p-4">
-                <div class="w-full max-w-md rounded-xl bg-white dark:bg-slate-800 p-6 shadow-xl">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02731}">Report Review</h3>
-                    <form id="reportForm" method="post">
-                        <input type="hidden" name="trainerId" id="reportTrainerId"/>
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02732}">Reason for reporting</label>
-                            <textarea name="reason" rows="4" required
-                                     class="mt-1 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"></textarea>
-                        </div>
-                        <div class="mt-6 flex justify-end gap-3">
-                            <button type="button" data-close-report-modal
-                                   class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" th:text="#{ui.00125}">
-                                Cancel
-                            </button>
-                            <button type="submit"
-                                   class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700" th:text="#{ui.02733}">
-                                Submit Report
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
+        </section>
     </div>
-
-    <th:block th:fragment="pageScripts">
-        <script th:src="@{/js/trainer/trainer-profile-view-page.js}"></script>
-    </th:block>
+    <th:block th:fragment="pageScripts"><script th:src="@{/js/trainer/trainer-profile-view-page.js(v=${assetVersion})}"></script></th:block>
 </th:block>

@@ -18,9 +18,15 @@ public class DailyNutritionLogServiceImpl implements DailyNutritionLogService {
     private static final int MAX_NOTES_LENGTH = 1000;
 
     private final DailyNutritionLogRepository repository;
+    private final uk.ac.cf._5.group14.One_To_One.Users.UserRepository users;
+    private final jakarta.persistence.EntityManager entityManager;
 
-    public DailyNutritionLogServiceImpl(DailyNutritionLogRepository repository) {
+    public DailyNutritionLogServiceImpl(DailyNutritionLogRepository repository,
+                                       uk.ac.cf._5.group14.One_To_One.Users.UserRepository users,
+                                       jakarta.persistence.EntityManager entityManager) {
         this.repository = repository;
+        this.users = users;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -45,6 +51,16 @@ public class DailyNutritionLogServiceImpl implements DailyNutritionLogService {
     @Override
     @Transactional
     public DailyNutritionLog upsert(User user, LocalDate date, UpsertRequest request) {
+        return saveEntry(user, date, request, null, false);
+    }
+
+    @Override
+    @Transactional
+    public DailyNutritionLog upsert(User user, LocalDate date, UpsertRequest request, String expectedRevision) {
+        return saveEntry(user, date, request, expectedRevision, true);
+    }
+
+    private DailyNutritionLog saveEntry(User user, LocalDate date, UpsertRequest request, String expectedRevision, boolean checkRevision) {
         validateUser(user);
         LocalDate targetDate = validateDate(date);
         if (request == null) {
@@ -58,6 +74,13 @@ public class DailyNutritionLogServiceImpl implements DailyNutritionLogService {
         validateOptional("Fibre grams", request.fibreGrams(), MAX_FIBRE_GRAMS);
         validateOptional("Water ml", request.waterMl(), MAX_WATER_ML);
 
+        String notes = trimToNull(request.notes());
+        if (notes != null && notes.length() > MAX_NOTES_LENGTH) {
+            throw new IllegalArgumentException("Notes must be " + MAX_NOTES_LENGTH + " characters or less");
+        }
+
+        // Lock the owner even when the date has no row yet, so concurrent first entries are serialised.
+        users.findByIdForUpdate(user.getId()).orElseThrow(() -> new SecurityException("Nutrition owner unavailable"));
         DailyNutritionLog log = repository.findByUserAndDate(user, targetDate)
             .orElseGet(() -> {
                 DailyNutritionLog created = new DailyNutritionLog();
@@ -66,19 +89,40 @@ public class DailyNutritionLogServiceImpl implements DailyNutritionLogService {
                 return created;
             });
 
+        if (log.getId() != null) {
+            try { entityManager.refresh(log, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE); }
+            catch (jakarta.persistence.EntityNotFoundException removed) { throw new StaleNutritionLogException(); }
+        }
+        if (checkRevision && !revision(log).equals(expectedRevision)) throw new StaleNutritionLogException();
+
         log.setCalories(request.calories());
         log.setProteinGrams(request.proteinGrams());
         log.setCarbsGrams(request.carbsGrams());
         log.setFatGrams(request.fatGrams());
         log.setFibreGrams(request.fibreGrams());
         log.setWaterMl(request.waterMl());
-        String notes = trimToNull(request.notes());
-        if (notes != null && notes.length() > MAX_NOTES_LENGTH) {
-            throw new IllegalArgumentException("Notes must be " + MAX_NOTES_LENGTH + " characters or less");
-        }
         log.setNotes(notes);
 
         return repository.save(log);
+    }
+
+    @Override
+    public String revision(DailyNutritionLog log) {
+        // Empty dates and recorded zeroes are distinct; include the owner/date to bind the draft to its day.
+        Object[] values = log.getId() == null
+                ? new Object[]{log.getUser().getId(), log.getDate(), null}
+                : new Object[]{log.getUser().getId(), log.getDate(), log.getId(), log.getUpdatedAt(), log.getCalories(),
+                    log.getProteinGrams(), log.getCarbsGrams(), log.getFatGrams(), log.getFibreGrams(), log.getWaterMl(), log.getNotes()};
+        var text = new StringBuilder();
+        for (Object value : values) {
+            String part = value == null ? null : value.toString();
+            text.append(part == null ? -1 : part.length()).append(':');
+            if (part != null) text.append(part);
+        }
+        try {
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(text.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
     }
 
     @Override

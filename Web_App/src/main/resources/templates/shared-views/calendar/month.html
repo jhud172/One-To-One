@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/components/calendar/heatmap.css">
 </div>
 
-<div th:fragment="content">
+<div th:fragment="content"><p th:if="${scheduleApplicationAdded != null}" class="calendar-save-feedback" role="status" th:text="${scheduleApplicationAdded == 0 ? #messages.msg('ui.application.unchanged') : #messages.msg('ui.application.saved',scheduleApplicationAdded)}"></p><p th:if="${exerciseLogSaved}" class="calendar-save-feedback" role="status" th:text="#{preferences.saved}"></p>
     <div class="calendar-month-view mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         <h1 class="sr-only" th:text="#{ui.01790}">Calendar month view</h1>
         <div class="flex flex-col gap-4">
@@ -43,11 +43,13 @@
                         </span>
                     </div>
                     <button type="button" id="scheduleDrawerButton" class="calendar-action-btn calendar-action-btn--primary" th:text="#{ui.00266}">Schedules</button>
+                    <noscript><a href="/schedules" class="calendar-action-btn" th:text="#{ui.01784}">View all schedules</a></noscript>
                     <button type="button" id="motivation-mode-toggle" class="calendar-action-btn" aria-pressed="false" title="Show monthly goal progress and motivation insights" th:title="#{ui.01802}" th:text="#{ui.01803}">Motivation</button>
                 </div>
             </div>
 
-            <div class="calendar-jump-controls" aria-label="Month jump controls" th:attr="aria-label=#{ui.01804}">
+            <details class="calendar-jump-controls calendar-jump-disclosure">
+                <summary class="calendar-jump-disclosure__summary" th:text="#{ui.01804}">Month jump controls</summary>
                 <div class="calendar-jump-toolbar">
                     <button type="button" id="month-jump-today" class="calendar-action-btn calendar-jump-btn" th:text="#{ui.01805}">Jump to today</button>
                     <div class="calendar-jump-field calendar-jump-field--date">
@@ -63,7 +65,7 @@
                     </div>
                 </div>
                 <p id="month-jump-status" class="calendar-jump-status" aria-live="polite"></p>
-            </div>
+            </details>
 
             <div class="calendar-nav-controls">
                 <a id="month-prev" th:href="@{'/calendar?view=month&month=' + ${prevMonth} + '&year=' + ${prevYear}}" class="calendar-nav-btn" th:text="#{ui.01597}">&#8592; Prev</a>
@@ -297,11 +299,11 @@
     <div id="sticker-tooltip" class="sticker-tooltip" role="tooltip" aria-live="polite" aria-hidden="true" hidden></div>
 
     <!-- Schedule Drawer Fragment -->
-    <div th:replace="~{shared-views/calendar/fragments/schedule-drawer-month :: scheduleDrawer}"></div>
+    <div th:replace="~{shared-views/calendar/fragments/schedule-drawer :: scheduleDrawer('month')}"></div>
 
 <div th:fragment="pageScripts">
-    <script th:src="@{/js/calendar/month.js(v=${assetVersion})}"></script>
-    <script th:src="@{/js/calendar/calendar-ux.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/calendar/month.js(v=${assetVersion})}" defer></script>
+    <script th:src="@{/js/calendar/calendar-ux.js(v=${assetVersion})}" defer></script>
 </div>
 
 </th:block>

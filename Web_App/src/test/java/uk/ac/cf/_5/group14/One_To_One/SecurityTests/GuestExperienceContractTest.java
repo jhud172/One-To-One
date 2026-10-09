@@ -14,7 +14,7 @@ class GuestExperienceContractTest {
     private static final List<String> REDESIGNED_TEMPLATES = List.of(
             "client-views/explore/index.html",
             "shared-views/support/index.html",
-            "shared-views/merch/shop.html",
+            // The shop uses its own server-rendered commerce workspace, covered by MerchJourneyIntegrationTest.
             "public-views/public/about.html",
             "public-views/public/faq.html",
             "public-views/public/profile.html",

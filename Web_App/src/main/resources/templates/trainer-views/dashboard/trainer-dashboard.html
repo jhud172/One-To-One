@@ -7,17 +7,85 @@
                 <div>
                     <h1 class="dashboard-page-title">
                         <span class="dashboard-page-title__prefix" th:text="#{ui.00926}">Welcome back,</span>
-                        <span class="dashboard-page-title__accent" th:text="${#authentication.name}">Trainer</span>
+                        <span class="dashboard-page-title__accent" th:text="${trainerDisplayName}">Trainer</span>
                     </h1>
-                    <p class="dashboard-page-subtitle" th:text="#{ui.02404}">Review today’s coaching work, then move directly into your clients and programmes.</p>
+                    <p class="dashboard-page-subtitle" th:text="${trainerReady} ? #{ui.02404} : #{ui.02646}">Review today’s coaching work, then move directly into your clients and programmes.</p>
+                    <div class="trainer-dashboard-tools">
+                        <a class="dashboard-action" th:href="@{/trainer/gyms}" th:text="#{ui.gymLink.title}">Gym connections</a>
+                        <a class="dashboard-action" th:href="@{/trainer/verification}" th:text="#{ui.proReview.title}">Professional verification</a>
+                    </div>
                 </div>
-                <div class="dashboard-status" aria-label="Trainer workspace active" th:attr="aria-label=#{ui.02405}">
+                <div class="dashboard-status" aria-label="Trainer workspace" th:attr="aria-label=#{ui.02406}">
                     <span class="dashboard-status__dot" aria-hidden="true"></span>
                     <span th:text="#{ui.02406}">Trainer workspace</span>
                 </div>
             </header>
 
-            <section class="mb-8 card-neon card--emerald dashboard-surface dashboard-surface--featured">
+            <section th:if="${trainerReady}" class="trainer-client-priorities" aria-label="Clients" th:attr="aria-label=#{ui.02414}">
+                <a class="trainer-priority trainer-priority--requests" th:href="@{/trainer/clients#clientRequests}">
+                    <span class="trainer-priority__label" th:text="#{ui.02639}">Client requests</span>
+                    <strong class="trainer-priority__count" th:text="${pendingClientCount}">0</strong>
+                    <span class="trainer-priority__action" th:text="${pendingClientCount > 0} ? #{ui.00933} : #{ui.02642}">Review</span>
+                </a>
+                <a class="trainer-priority" href="#trainer-reviews">
+                    <span class="trainer-priority__label" th:text="#{ui.trainerHome.awaiting}">Awaiting review</span>
+                    <strong class="trainer-priority__count" th:text="${coaching.awaitingReview}">0</strong>
+                    <span class="trainer-priority__action" th:text="#{ui.trainerHome.submitted}">Submitted client check-ins</span>
+                </a>
+                <a class="trainer-priority trainer-priority--messages" th:href="@{/inbox}">
+                    <span class="trainer-priority__label" th:text="#{ui.trainerHome.unread}">Unread messages</span>
+                    <strong class="trainer-priority__count" th:text="${coaching.unreadMessages}">0</strong>
+                    <span class="trainer-priority__action" th:text="#{ui.02419}">Client conversations</span>
+                </a>
+                <a class="trainer-priority" th:href="@{/trainer/clients#currentClientsList}">
+                    <span class="trainer-priority__label" th:text="#{ui.02597}">Active clients</span>
+                    <strong class="trainer-priority__count" th:text="${activeClientCount}">0</strong>
+                    <span class="trainer-priority__action" th:text="#{ui.02415}">Manage clients</span>
+                </a>
+            </section>
+
+            <section th:if="${!trainerReady}" class="trainer-review-queue dashboard-surface" aria-labelledby="trainer-verification-title">
+                <h2 id="trainer-verification-title" class="dashboard-section-title" th:text="#{ui.proReview.title}">Professional verification</h2>
+                <p class="dashboard-section-meta" th:text="#{ui.02646}">Your trainer account needs verification before you can manage clients.</p>
+                <a class="dashboard-action dashboard-action--primary" th:href="@{/trainer/verification}" th:text="#{ui.proReview.title}">Professional verification</a>
+            </section>
+
+            <section th:if="${trainerReady}" id="trainer-reviews" class="trainer-review-queue dashboard-surface" aria-labelledby="trainer-reviews-title">
+                <div class="dashboard-section-header">
+                    <div>
+                        <p class="trainer-review-queue__eyebrow" th:text="#{ui.trainerHome.coaching}">Coaching priorities</p>
+                        <h2 id="trainer-reviews-title" class="dashboard-section-title" th:text="#{ui.trainerHome.reviewTitle}">Start with your clients</h2>
+                        <p class="dashboard-section-meta" th:text="#{ui.trainerHome.reviewHelp}">Oldest submitted check-ins appear first. Opening this page marks no messages read.</p>
+                    </div>
+                    <a th:if="${!#lists.isEmpty(coaching.reviews)}" class="dashboard-action dashboard-action--primary"
+                       th:href="@{/checkins/trainer-review/{id}(id=${coaching.reviews[0].id})}" th:text="#{ui.trainerHome.nextReview}">Review oldest check-in</a>
+                    <a th:if="${#lists.isEmpty(coaching.reviews) and pendingClientCount > 0}" class="dashboard-action dashboard-action--primary"
+                       th:href="@{/trainer/clients#clientRequests}" th:text="#{ui.trainerHome.nextRequest}">Review client requests</a>
+                    <a th:if="${#lists.isEmpty(coaching.reviews) and pendingClientCount == 0 and coaching.unreadMessages > 0}"
+                       class="dashboard-action dashboard-action--primary" th:href="@{/inbox}" th:text="#{ui.trainerHome.nextMessages}">Open client messages</a>
+                    <a th:if="${#lists.isEmpty(coaching.reviews) and pendingClientCount == 0 and coaching.unreadMessages == 0}"
+                       class="dashboard-action dashboard-action--primary" th:href="@{/trainer/clients}" th:text="#{ui.02412}">Open clients</a>
+                </div>
+                <p th:if="${coaching.waitingSevenDays > 0}" class="trainer-review-queue__waiting"
+                   th:text="#{ui.trainerHome.waitingWeek(${coaching.waitingSevenDays})}">Check-ins waiting seven days or more</p>
+                <ul class="trainer-review-list" th:if="${!#lists.isEmpty(coaching.reviews)}">
+                    <li th:each="review : ${coaching.reviews}" class="trainer-review-list__row">
+                        <div>
+                            <strong th:text="${review.clientName}">Client</strong>
+                            <p th:text="#{ui.trainerHome.weekOf(${#temporals.format(review.weekStart, 'd MMM yyyy')})}">Week of</p>
+                            <p th:text="#{ui.trainerHome.waitingDays(${review.waitingDays})}">Days awaiting reply</p>
+                        </div>
+                        <a class="dashboard-action dashboard-action--secondary" th:href="@{/checkins/trainer-review/{id}(id=${review.id})}"
+                           th:attr="aria-label=#{ui.trainerHome.reviewClient(${review.clientName})}" th:text="#{ui.00933}">Review</a>
+                    </li>
+                </ul>
+                <p th:if="${#lists.isEmpty(coaching.reviews)}" class="dashboard-empty-note" th:text="#{ui.trainerHome.reviewEmpty}">No submitted check-ins awaiting your reply.</p>
+                <p th:if="${coaching.awaitingReview > 5}" class="dashboard-section-meta" th:text="#{ui.trainerHome.showingFive}">Showing the five oldest. Review more check-ins from each client’s workspace.</p>
+            </section>
+
+            <details class="trainer-personal-day">
+                <summary th:text="#{ui.trainerHome.personal}">Your personal schedule and week</summary>
+            <section class="mb-8 card-neon card--emerald dashboard-surface dashboard-surface--featured trainer-personal-schedule">
                 <div class="flex items-center gap-3 mb-6" data-site-tour="trainer-dashboard">
                     <div class="p-3 rounded-xl bg-emerald-400/10 border border-emerald-400/30">
                         <svg class="h-7 w-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -25,12 +93,12 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="dashboard-section-title" th:text="#{ui.02407}">Today’s schedule</h2>
-                        <p class="dashboard-section-meta" th:text="${#temporals.format(summary.today, 'EEEE, MMMM d')}">Tuesday, February 13</p>
+                        <h2 class="dashboard-section-title" th:text="#{v2.trainer.personalSchedule}">Your schedule today</h2>
+                        <p class="dashboard-section-meta" th:text="${#temporals.format(summary.today, 'EEEE, d MMMM')}">Tuesday, 13 February</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="trainer-personal-metrics grid grid-cols-2 gap-4 mb-6">
                     <div class="stat-pulse-card dashboard-metric">
                         <div class="flex items-center justify-between mb-2">
                             <span class="dashboard-metric__label" th:text="#{ui.02408}">Your tasks</span>
@@ -49,7 +117,7 @@
 
                     <div class="stat-pulse-card dashboard-metric">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="dashboard-metric__label" th:text="#{ui.02409}">Sessions planned</span>
+                            <span class="dashboard-metric__label" th:text="#{v2.trainer.personalWorkouts}">Your planned workouts</span>
                             <svg class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
                             </svg>
@@ -94,14 +162,14 @@
                     </a>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+                <div class="trainer-week grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
                     <a th:each="day : ${summary.week}"
                        th:href="@{/calendar/day/{date}(date=${#temporals.format(day.date, 'yyyy-MM-dd')})}"
-                       class="week-day-card dashboard-day group">
+                       class="week-day-card dashboard-day group" th:classappend="${day.today} ? 'trainer-day--today' : ''">
                         <div class="flex flex-col h-full">
                             <div class="flex items-center justify-between mb-3">
                                 <span class="text-xs font-semibold uppercase tracking-wider"
-                                      th:text="${day.label}"
+                                      th:text="${#temporals.dayOfWeekNameShort(day.date)}"
                                       th:classappend="${day.today} ? 'text-emerald-400' : 'text-slate-400'">
                                     Mon
                                 </span>
@@ -120,11 +188,11 @@
                             <div class="mt-auto space-y-2">
                                 <div th:if="${day.tasksCount > 0}" class="flex items-center gap-2 text-xs">
                                     <div class="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
-                                    <span class="text-slate-400" th:text="${day.tasksCount} + ' task' + (${day.tasksCount} > 1 ? 's' : '')">2 tasks</span>
+                                    <span class="text-slate-400" th:text="#{ui.trainerHome.tasks(${day.tasksCount})}">Tasks: 2</span>
                                 </div>
                                 <div th:if="${day.workoutsCount > 0}" class="flex items-center gap-2 text-xs">
                                     <div class="h-1.5 w-1.5 rounded-full bg-blue-400"></div>
-                                    <span class="text-slate-400" th:text="${day.workoutsCount} + ' session' + (${day.workoutsCount} > 1 ? 's' : '')">1 session</span>
+                                    <span class="text-slate-400" th:text="#{ui.trainerHome.sessions(${day.workoutsCount})}">Sessions: 1</span>
                                 </div>
                                 <div th:if="${day.tasksCount == 0 && day.workoutsCount == 0}" class="dashboard-empty-note text-xs" th:text="#{ui.00943}">
                                     No scheduled work
@@ -134,6 +202,7 @@
                     </a>
                 </div>
             </div>
+            </details>
 
             <div>
                 <h2 class="dashboard-section-title mb-4" th:text="#{ui.00944}">Quick actions</h2>

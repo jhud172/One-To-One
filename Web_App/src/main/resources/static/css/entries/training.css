@@ -1,9 +1,19 @@
-@import "../components/training/schedule-designer.css";
 @import "../components/training/schedule-apply.css";
-@import "../components/training/schedule-studio.css";
 @import "../components/training/workout-schedule.css";
 @import "../components/training/workout-studio.css";
+@import "../components/training/schedule-workshop.css";
+@import "../components/training/schedule-composer.css";
 @import "../components/training/training-control-centre.css";
 @import "../components/training/workout-template-builder.css";
+@import "../components/training/session-v2.css";
+@import "../components/training/training-launch.css";
+@import "../components/training/trainer-clients-v2.css";
+@import "../components/training/client-workspace-v2.css";
+
+@import "../components/training/gym-operations-v2.css";
+@import "../components/training/gym-affiliations-v2.css";
+@import "../components/training/professional-review-v2.css";
+
+@import "../components/training/verification-evidence.css";
 
 @tailwind components;

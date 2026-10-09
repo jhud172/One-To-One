@@ -1,0 +1,37 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(${pageTitle} ?: #{ui.00222}, null, ~{::content}, null)}">
+    <div th:fragment="content" class="detail-container client-workspace-v2 checkin-review-v2">
+        <header class="detail-header">
+            <div class="detail-header-content">
+                <div>
+                    <p class="detail-label" th:text="#{ui.00213}">Client check-in</p>
+                    <h1 class="detail-title" th:text="#{ui.00214}">Weekly check-in</h1>
+                    <p class="detail-subtitle"><span th:text="#{ui.checkin.weekOf}"></span> <time th:datetime="${checkIn.weekStartDate}" th:text="${#temporals.format(checkIn.weekStartDate, 'dd MMM yyyy', #locale)}"></time></p>
+                    <p class="detail-subtitle" th:text="${checkIn.status.name() == 'RESPONDED' ? #messages.msg('ui.checkin.responded') : #messages.msg('ui.00151')}"></p>
+                </div>
+                <a class="detail-btn-secondary client-review-back" th:href="@{/checkins/client-submit}" th:text="#{ui.00596}">Check-ins</a>
+            </div>
+        </header>
+        <div class="detail-sections detail-grid-2">
+            <section class="detail-section">
+                <h2 class="detail-section-title" th:text="#{ui.02397}">Coach response</h2>
+                <div class="detail-section-content">
+                    <p th:if="${checkIn.status.name() != 'RESPONDED'}" class="detail-empty" th:text="#{ui.checkin.awaitingResponse}"></p>
+                    <th:block th:if="${checkIn.status.name() == 'RESPONDED'}">
+                        <p class="detail-list-item-meta" th:if="${checkIn.respondedAt != null}"><span th:text="#{ui.checkin.savedAt}"></span> <time th:datetime="${checkIn.respondedAt}" th:text="${#temporals.format(checkIn.respondedAt, 'dd MMM yyyy HH:mm', #locale)}"></time></p>
+                        <div class="detail-card" th:if="${checkIn.trainerResponse != null}"><h3 th:text="#{ui.02398}"></h3><p class="checkin-answer" th:text="${checkIn.trainerResponse}"></p></div>
+                        <div class="detail-card checkin-client-notes" th:if="${checkIn.nextWeekFocus != null}"><h3 th:text="#{ui.02399}"></h3><p class="checkin-answer" th:text="${checkIn.nextWeekFocus}"></p></div>
+                    </th:block>
+                </div>
+            </section>
+            <section class="detail-section">
+                <h2 class="detail-section-title" th:text="#{ui.02395}">Responses</h2>
+                <div class="detail-section-content">
+                    <p class="checkin-review-error" role="alert" th:if="${answersUnavailable}" th:text="#{ui.checkin.answersUnavailable}"></p>
+                    <p class="detail-empty" th:if="${#lists.isEmpty(responses) and !answersUnavailable}" th:text="#{ui.02396}"></p>
+                    <div th:each="response : ${responses}" class="detail-card checkin-client-notes"><h3 th:text="${response.prompt}"></h3><p class="checkin-answer" th:text="${response.answer}"></p></div>
+                    <div class="detail-card checkin-client-notes" th:if="${checkIn.clientNotes != null and !#strings.isEmpty(checkIn.clientNotes)}"><h3 th:text="#{ui.01063}"></h3><p class="checkin-answer" th:text="${checkIn.clientNotes}"></p></div>
+                </div>
+            </section>
+        </div>
+    </div>
+</th:block>

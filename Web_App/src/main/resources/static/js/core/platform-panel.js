@@ -121,6 +121,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 link.className = "platform-panel__action";
                 link.href = action.href;
                 link.dataset.action = action.key;
+                if (action.key === "charlie" || action.key === "actions") {
+                    link.setAttribute("aria-controls", action.key === "charlie" ? "chatPanel" : "quickActionsShelf");
+                    link.setAttribute("aria-expanded", "false");
+                }
                 link.innerHTML = `${renderIcon(action)}<span>${action.label}</span>`;
                 link.addEventListener("click", handleActionClick);
                 track.appendChild(link);
@@ -189,14 +193,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (key === "charlie") {
             event.preventDefault();
             if (typeof window.toggleChatPanel === "function") {
-                window.toggleChatPanel();
+                window.toggleChatPanel(event.currentTarget);
             } else {
                 document.getElementById("chatFab")?.click();
             }
         }
         if (key === "actions") {
             event.preventDefault();
-            document.getElementById("quickActionsToggle")?.click();
+            if (typeof window.toggleQuickActionsShelf === "function") {
+                window.toggleQuickActionsShelf(event.currentTarget);
+            } else {
+                document.getElementById("quickActionsToggle")?.click();
+            }
         }
     }
 

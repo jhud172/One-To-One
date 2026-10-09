@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TrainerClientLinkRepository extends JpaRepository<TrainerClientLink, Long> {
+    Optional<TrainerClientLink> findFirstByTrainerUserIdAndClientUserIdAndStatusAndActivatedAtIsNotNullOrderByUpdatedAtDescIdDesc(
+            Long trainerUserId, Long clientUserId, TrainerClientLinkStatus status);
 
     Optional<TrainerClientLink> findFirstByClientUserIdAndStatusOrderByUpdatedAtDesc(Long clientUserId, TrainerClientLinkStatus status);
 

@@ -1,164 +1,31 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${note != null ? note.title : #messages.msg('ui.02280')}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02280}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
 <div th:fragment="styles"></div>
-
-<div th:fragment="content" class="detail-container">
-
-    <div th:if="${note != null}">
-        <!-- Header -->
-        <div class="detail-header">
-            <div class="detail-header-content">
-                <div class="detail-header-meta">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <!-- Type badge -->
-                        <span class="vault-type-badge"
-                              th:classappend="${note.noteType != null ? note.noteType.name() : 'NOTE'}"
-                              th:text="${note.noteType != null ? #strings.replace(#strings.toLowerCase(note.noteType.name()),'_',' ') : 'note'}">type</span>
-                        <!-- Pinned -->
-                        <span class="vault-pin-badge" th:if="${note.pinned}">
-                            <svg class="h-3 w-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path d="M10 2a1 1 0 011 1v1.268l4.243 4.243A1 1 0 0116 9.5v1a1 1 0 01-1 1h-4v5.5a1 1 0 01-2 0V11.5H5a1 1 0 01-1-1v-1a1 1 0 01.757-.97L9 4.268V3a1 1 0 011-1z"/>
-                            </svg>
-                            <th:block th:text="#{ui.01747}">Pinned</th:block>
-                        </span>
-                        <!-- Mood -->
-                        <span class="vault-mood-badge" th:if="${note.mood != null and !note.mood.isBlank()}"
-                              th:text="${note.mood.toLowerCase()}">mood</span>
-                        <!-- Date -->
-                        <span class="text-xs text-slate-500 dark:text-slate-400" th:if="${note.linkedDate != null}" th:text="${'Linked: ' + note.linkedDate}">Date</span>
-                        <!-- Workout -->
-                        <span class="text-xs text-slate-500 dark:text-slate-400" th:if="${linkedSession != null}">
-                            <th:block th:text="#{ui.02296}">Workout:</th:block> <span th:text="${linkedSession.nameSnapshot != null ? linkedSession.nameSnapshot : (linkedSession.workout != null ? linkedSession.workout.name : 'Session')}">Session</span>
-                        </span>
-                    </div>
-                    <h1 class="detail-title" th:text="${note.title}">Title</h1>
-                    <p class="detail-subtitle" th:if="${note.updatedAt != null}">
-                        <th:block th:text="#{ui.02297}">Updated</th:block> <span th:text="${#temporals.format(note.updatedAt,'dd MMM yyyy HH:mm')}">date</span>
-                    </p>
-                    <!-- Tags -->
-                    <div class="mt-2 flex flex-wrap gap-1" th:if="${note.tags != null and !note.tags.isBlank()}">
-                        <span th:each="tag : ${#strings.arraySplit(note.tags, ',')}"
-                              th:if="${!tag.trim().isBlank()}"
-                              class="vault-tag"
-                              th:text="${'#' + tag.trim().toLowerCase()}">tag</span>
-                    </div>
-                </div>
-
-                <!-- Sticky actions -->
-                <div class="detail-actions-sticky">
-                    <a th:href="@{/vault}" class="detail-btn-secondary" th:text="#{ui.02298}">← Back</a>
-                    <a class="detail-btn-secondary" th:href="@{/vault/{id}/edit(id=${note.id})}" th:text="#{ui.00138}">Edit</a>
-                    <form th:action="@{/vault/{id}/pin(id=${note.id})}" method="post" class="inline">
-                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <input type="hidden" name="returnTo" th:value="@{/vault/{id}(id=${note.id})}">
-                        <button type="submit" class="detail-btn-secondary" th:text="${note.pinned ? 'Unpin' : 'Pin'}">Pin</button>
-                    </form>
-                    <form th:action="@{/vault/{id}/delete(id=${note.id})}" method="post"
-                          data-confirm data-confirm-title="Delete note?" data-confirm-message="This will permanently remove the vault note.">
-                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button class="detail-btn-destructive" type="submit" th:text="#{ui.00139}">Delete</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sections -->
-        <div class="detail-sections">
-
-            <!-- AI Result flash -->
-            <div class="detail-info-box" th:if="${aiResult != null}" data-vault-flash>
-                <div class="detail-info-box-title" th:text="${aiResultTitle ?: 'AI Result'}">AI Result</div>
-                <div class="detail-info-box-content whitespace-pre-wrap" th:text="${aiResult}">Result</div>
-            </div>
-
-            <!-- Saved AI Summary -->
-            <section class="detail-section" th:if="${note.aiSummary != null and !note.aiSummary.isBlank()}">
-                <h2 class="detail-section-title flex items-center gap-2">
-                    <svg class="h-4 w-4 text-violet-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                    </svg>
-                    <th:block th:text="#{ui.02299}">AI Insight</th:block>
-                </h2>
-                <div class="detail-section-content">
-                    <div class="rounded-lg border border-violet-100 dark:border-violet-700/20 bg-violet-50 dark:bg-violet-900/10 p-4">
-                        <p class="text-sm text-violet-800 dark:text-violet-200 whitespace-pre-wrap leading-relaxed" th:text="${note.aiSummary}">Insight</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Note content -->
-            <section class="detail-section">
-                <h2 class="detail-section-title" th:text="#{ui.02300}">Note content</h2>
-                <div class="detail-section-content">
-                    <article class="whitespace-pre-wrap text-sm leading-6 text-slate-800 dark:text-slate-200" th:text="${note.content}">
-                        Content
-                    </article>
-                </div>
-            </section>
-
-            <!-- AI actions -->
-            <section class="detail-section">
-                <h2 class="detail-section-title" th:text="#{ui.02301}">AI actions</h2>
-                <div class="detail-section-content">
-                    <p class="text-sm text-slate-500 dark:text-slate-400" th:text="#{ui.02302}">Use AI to analyse, summarise, or rewrite this note.</p>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        <!-- Generate insight for this note -->
-                        <form th:action="@{/vault/ai/insight/{id}(id=${note.id})}" method="post">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <input type="hidden" name="returnTo" th:value="@{/vault/{id}(id=${note.id})}">
-                            <button type="submit" class="detail-btn-primary">
-                                <svg class="h-4 w-4 mr-1.5 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                                </svg>
-                                <th:block th:text="#{ui.02303}">Generate Insight</th:block>
-                            </button>
-                        </form>
-
-                        <form th:action="@{/vault/ai/summarise-week}" method="post">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <input type="hidden" name="noteIds" th:value="${note.id}">
-                            <input type="hidden" name="returnTo" th:value="@{/vault/{id}(id=${note.id})}">
-                            <button type="submit" class="detail-btn-secondary" th:text="#{ui.02304}">Summarise</button>
-                        </form>
-
-                        <form th:action="@{/vault/ai/rewrite-checkin}" method="post">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <input type="hidden" name="noteIds" th:value="${note.id}">
-                            <input type="hidden" name="returnTo" th:value="@{/vault/{id}(id=${note.id})}">
-                            <button type="submit" class="detail-btn-secondary" th:text="#{ui.02305}">Rewrite as check-in</button>
-                        </form>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </div>
-
-    <!-- Not found -->
-    <div class="detail-empty" th:if="${note == null}">
-        <div class="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/40 p-8 text-center">
-            <p class="text-sm font-medium text-slate-900 dark:text-slate-100" th:text="#{ui.02170}">Note not found.</p>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02171}">It may have been deleted, or you may not have access.</p>
-            <a class="mt-4 detail-btn-secondary" th:href="@{/vault}" th:text="#{ui.02306}">Back to vault</a>
-        </div>
-    </div>
-
-    <!-- Confirm modal (delete) -->
-    <div id="confirmOverlay"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 opacity-0 pointer-events-none transition-opacity [&.show]:opacity-100 [&.show]:pointer-events-auto">
-        <div class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-            <h3 id="confirmTitle" class="text-lg font-semibold text-slate-900" th:text="#{ui.01783}">Confirm</h3>
-            <p id="confirmMessage" class="mt-2 text-sm text-slate-600" th:text="#{ui.02120}">Are you sure?</p>
-            <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button id="confirmCancel" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10" type="button" th:text="#{ui.00125}">Cancel</button>
-                <button id="confirmOk" class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600/20" type="button" th:text="#{ui.00139}">Delete</button>
-            </div>
-        </div>
-    </div>
+<div th:fragment="content" class="vault-workspace-v2 vault-reader-v2">
+<header class="vault-heading"><div><a class="vault-action" th:href="${vaultReturnTo}" th:text="#{ui.02281}"></a><p class="vault-eyebrow" th:text="${#messages.msg(note.noteType.labelKey)}"></p><h1 dir="auto" th:text="${note.title}"></h1>
+<p th:if="${note.updatedAt != null}"><span th:text="#{ui.02297}"></span> <time dir="ltr" th:attr="datetime=${note.updatedAt}" th:text="${#temporals.format(note.updatedAt, 'dd MMM yyyy HH:mm')}"></time></p></div>
+<div class="vault-actions"><a class="vault-action" th:href="@{/vault/{id}/edit(id=${note.id},returnTo=${vaultReturnTo})}" th:text="#{ui.00138}"></a>
+<form method="post" th:action="@{/vault/{id}/pin(id=${note.id})}"><input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><input type="hidden" name="returnTo" th:value="${vaultDetailReturnTo}"><button class="vault-action" type="submit" th:text="${note.pinned ? #messages.msg('ui.vault.unpin') : #messages.msg('ui.vault.pin')}"></button></form>
+<form method="post" th:action="@{/vault/{id}/delete(id=${note.id})}" th:attr="data-confirm=#{ui.notes.deleteNote}"><input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><input type="hidden" name="returnTo" th:value="${vaultReturnTo}"><button class="vault-action vault-delete" type="submit" th:text="#{ui.00139}"></button></form></div></header>
+<p class="vault-feedback" role="alert" th:if="${vaultInvalid}" th:text="#{ui.vault.invalid}"></p>
+<p class="vault-feedback" role="alert" th:if="${vaultAiError}" th:text="${vaultAiError == 'stale' ? #messages.msg('ui.vault.stale') : #messages.msg('ui.vault.aiError')}"></p>
+<p class="vault-feedback" role="status" th:if="${vaultSaved}" th:text="#{ui.vault.saved}"></p>
+<section class="vault-panel vault-generated" th:if="${aiResult != null}" aria-labelledby="vault-result-title">
+<h2 id="vault-result-title" th:text="${aiResultKind == 'rewrite' ? #messages.msg('ui.02305') : (aiResultKind == 'insight' ? #messages.msg('ui.02299') : #messages.msg('ui.02304'))}"></h2>
+<p th:text="#{ui.vault.source}"></p><ul><li th:each="title : ${aiResultTitles}" th:text="${title}"></li></ul>
+<time dir="ltr" th:if="${aiResultGeneratedAt != null}" th:attr="datetime=${aiResultGeneratedAt}" th:text="${#temporals.format(aiResultGeneratedAt, 'dd MMM yyyy HH:mm')}"></time><p class="vault-reflection-text" dir="auto" th:text="${aiResult}"></p></section>
+<article class="vault-panel"><h2 th:text="#{ui.02300}"></h2><p class="vault-reflection-text" dir="auto" th:text="${note.content}"></p>
+<dl class="vault-context"><th:block th:if="${note.linkedDate != null}"><dt th:text="#{ui.02282}"></dt><dd dir="ltr" th:text="${note.linkedDate}"></dd></th:block>
+<th:block th:if="${linkedSession != null}"><dt th:text="#{ui.02291}"></dt><dd><a class="vault-action" th:href="@{/workout-session/{id}(id=${linkedSession.id})}" th:text="${linkedSession.nameSnapshot ?: #messages.msg('ui.02291')}"></a></dd></th:block>
+<th:block th:if="${!#strings.isEmpty(note.mood)}"><dt th:text="#{ui.02289}"></dt><dd th:text="${#messages.msg(note.mood == 'LOW' ? 'ui.01739' : 'ui.vault.mood.' + note.mood)}"></dd></th:block>
+<th:block th:if="${!#strings.isEmpty(note.tags)}"><dt th:text="#{ui.02285}"></dt><dd th:text="${note.tags}"></dd></th:block></dl></article>
+<section class="vault-panel vault-generated" th:if="${!#strings.isEmpty(note.aiSummary)}"><h2 th:text="#{ui.02299}"></h2><p th:text="#{ui.vault.source}"></p><p th:if="${note.aiSourceRevision != null and note.aiSourceRevision == note.revision}" th:text="#{ui.vault.sourceCurrent}"></p><p th:if="${note.aiSourceRevision == null or note.aiGeneratedAt == null}" th:text="#{ui.vault.sourceUnknown}"></p><p th:if="${note.aiGeneratedAt != null}"><span th:text="#{ui.vault.insightSaved}"></span> <time dir="ltr" th:attr="datetime=${note.aiGeneratedAt}" th:text="${#temporals.format(note.aiGeneratedAt, 'dd MMM yyyy HH:mm')}"></time></p><p class="vault-reflection-text" dir="auto" th:text="${note.aiSummary}"></p></section>
+<details class="vault-panel vault-ai-controls"><summary th:text="#{ui.02301}"></summary>
+<p th:text="#{ui.vault.aiInput}"></p>
+<p th:if="${!vaultPremium}" th:text="#{ui.vault.aiPremium}"></p>
+<p th:if="${vaultPremium and !vaultAiAvailable}" th:text="#{ui.vault.aiUnavailable}"></p>
+<form method="post" th:action="@{/vault/ai/insight/{id}(id=${note.id})}"><input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><input type="hidden" name="noteIds" th:value="${note.id}"><input type="hidden" name="returnTo" th:value="${vaultDetailReturnTo}">
+<fieldset th:disabled="${!vaultAiEnabled}"><legend class="sr-only" th:text="#{ui.02301}"></legend><label class="vault-check"><input type="checkbox" name="aiConsent" value="true" required><span th:text="#{ui.vault.aiDisclosure}"></span></label>
+<div class="vault-actions"><button class="vault-action vault-primary" type="submit" th:text="#{ui.02303}"></button><button class="vault-action" type="submit" th:formaction="@{/vault/ai/summarise-week}" th:text="#{ui.02304}"></button><button class="vault-action" type="submit" th:formaction="@{/vault/ai/rewrite-checkin}" th:text="#{ui.02305}"></button></div></fieldset></form></details>
 </div>
-
-<div th:fragment="pageScripts">
-    <script src="/js/notes/vault.js" defer></script>
-</div>
-
+<div th:fragment="pageScripts"><script th:src="@{/js/notes/vault.js(v=${uiCssVersion})}" defer></script></div>
 </th:block>

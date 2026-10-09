@@ -45,6 +45,7 @@
                 </div>
             </div>
             <div class="dashboard-shortcuts">
+                <a th:href="@{/admin/moderation}" class="dashboard-shortcut"><div class="dashboard-shortcut__title" th:text="#{ui.moderation.title}">Review moderation</div><div class="dashboard-shortcut__copy" th:text="#{ui.moderation.summary}">A decision resolves every pending report for that review.</div></a>
                 <a th:href="@{/admin/feedback}" class="dashboard-shortcut dashboard-shortcut--primary">
                     <div class="dashboard-shortcut__title" th:text="#{ui.00002}">Support inbox</div>
                     <div class="dashboard-shortcut__copy" th:text="#{ui.00072}">Triage feedback and keep issues moving.</div>
@@ -96,34 +97,46 @@
                 <h2 class="dashboard-section-title mb-4" th:text="#{ui.00085}">Admin outreach email</h2>
                 <div th:if="${adminOutreachSuccess}" class="mb-3 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs text-emerald-800" th:text="${adminOutreachSuccess}">Sent.</div>
                 <div th:if="${adminOutreachError}" class="mb-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-800" th:text="${adminOutreachError}">Error.</div>
+                <section th:if="${outreachPreview != null}" class="operations-preview-v2" aria-labelledby="outreach-preview-title">
+                    <h3 id="outreach-preview-title" th:text="#{ui.operations.preview}"></h3>
+                    <p><strong th:text="${#lists.size(outreachPreview.recipients)}"></strong> <span th:text="#{ui.operations.recipients}"></span></p>
+                    <details><summary th:text="#{ui.00086}"></summary><ul><li th:each="recipient : ${outreachPreview.recipients}" th:text="${recipient}"></li></ul></details>
+                    <p><strong th:text="${outreachPreview.subject}"></strong></p>
+                    <p class="operations-message-v2" th:text="${outreachPreview.message}"></p>
+                    <p th:text="#{ui.operations.delivery}"></p>
+                    <form th:action="@{/admin/outreach/send}" method="post" th:attr="data-confirm=#{ui.operations.confirm}">
+                        <input type="hidden" name="previewToken" th:value="${outreachPreview.token}">
+                        <button type="submit" class="dashboard-action dashboard-action--primary" th:text="#{ui.00091}"></button>
+                    </form>
+                </section>
                 <form th:action="@{/admin/outreach/send}" method="post" class="space-y-3" id="admin-outreach-form">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
                     <div>
                         <label for="outreach-audience" class="dashboard-metric__label block mb-1" th:text="#{ui.00086}">Audience</label>
                         <select name="audience" id="outreach-audience" class="dashboard-field">
-                            <option value="ALL_USERS" th:text="#{ui.00087}">All platform users</option>
-                            <option value="WAITLIST" th:text="#{ui.00088}">All waitlist signups</option>
-                            <option value="SPECIFIC" th:text="#{ui.00089}">One specific email</option>
+                            <option value="ALL_USERS" th:selected="${outreachAudience == 'ALL_USERS'}" th:text="#{ui.00087}">All platform users</option>
+                            <option value="WAITLIST" th:selected="${outreachAudience == 'WAITLIST'}" th:text="#{ui.00088}">All waitlist signups</option>
+                            <option value="SPECIFIC" th:selected="${outreachAudience == null or outreachAudience == 'SPECIFIC'}" th:text="#{ui.00089}">One specific email</option>
                         </select>
                     </div>
 
-                    <div id="specific-email-wrap" class="hidden">
+                    <div id="specific-email-wrap">
                         <label for="specific-email" class="dashboard-metric__label block mb-1" th:text="#{ui.00090}">Recipient email</label>
-                        <input type="email" name="specificEmail" id="specific-email" class="dashboard-field" />
+                        <input type="email" name="specificEmail" id="specific-email" maxlength="255" th:value="${outreachEmail}" class="dashboard-field" />
                     </div>
 
                     <div>
                         <label for="outreach-subject" class="dashboard-metric__label block mb-1" th:text="#{ui.00026}">Subject</label>
-                        <input type="text" name="subject" id="outreach-subject" maxlength="180" required class="dashboard-field" />
+                        <input type="text" name="subject" id="outreach-subject" th:value="${outreachSubject}" maxlength="180" required class="dashboard-field" />
                     </div>
 
                     <div>
                         <label for="outreach-message" class="dashboard-metric__label block mb-1" th:text="#{ui.00028}">Message</label>
-                        <textarea name="message" id="outreach-message" rows="5" maxlength="5000" required class="dashboard-field"></textarea>
+                        <textarea name="message" id="outreach-message" rows="5" maxlength="5000" required class="dashboard-field" th:text="${outreachMessage}"></textarea>
                     </div>
 
-                    <button type="submit" class="dashboard-action dashboard-action--primary" th:text="#{ui.00091}">Send message</button>
+                    <button type="submit" class="dashboard-action dashboard-action--primary" th:text="#{ui.operations.preview}">Preview message</button>
                 </form>
             </section>
         </div>
@@ -232,7 +245,7 @@
                                             class="dashboard-action dashboard-action--primary disabled:cursor-not-allowed disabled:opacity-50"
                                              data-dev-page-submit
                                              th:attr="aria-label=${'Save access mode for ' + page.title}"
-                                             disabled th:text="#{ui.00109}">
+                                             th:text="#{ui.00109}">
                                         Save
                                     </button>
                                 </form>

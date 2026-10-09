@@ -1,0 +1,115 @@
+<th:block xmlns:th="http://www.thymeleaf.org"
+          th:replace="~{base :: layout(#{ui.02042}, null, ~{::content}, ~{::pageScripts})}">
+
+    <div th:fragment="content" class="merch-workspace-v2 merch-orders-v2 mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+
+        <!-- Header -->
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold gradient-text" th:text="#{ui.02042}">My Orders</h1>
+                <p class="mt-1 text-sm text-slate-400" th:text="#{ui.02043}">All your One To One merch orders.</p>
+            </div>
+            <div class="flex gap-3">
+                <a th:href="@{/merch}" class="btn btn--secondary text-sm">
+                    <svg class="mr-1 h-4 w-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <th:block th:text="#{ui.02044}">Browse Store</th:block>
+                </a>
+                <a th:href="@{/profile}" class="btn btn--secondary text-sm">
+                    <svg class="mr-1 h-4 w-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <th:block th:text="#{ui.00571}">Back</th:block>
+                </a>
+            </div>
+        </div>
+
+        <!-- Flash messages -->
+        <div th:if="${orderSuccess}"
+             class="mb-4 rounded-lg border border-neon-green/40 bg-neon-green/10 p-3 text-sm text-neon-green"
+             th:text="${orderSuccess}"></div>
+
+        <!-- Search -->
+        <div class="mb-4">
+            <div class="relative max-w-md">
+                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input type="text" id="order-search" placeholder="Search by product name or order status…"
+                       class="input-field w-full pl-9"  th:placeholder="#{ui.02045}"/>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div th:if="${#lists.isEmpty(orders)}"
+             class="card-neon card--cyan p-10 text-center text-slate-400">
+            <p><th:block th:text="#{ui.02046}">No orders yet.</th:block> <a th:href="@{/merch}" class="text-neon-cyan hover:underline" th:text="#{ui.02047}">Browse the shop</a> <th:block th:text="#{ui.02048}">to place your first order!</th:block></p>
+        </div>
+
+        <!-- Orders list -->
+        <div th:if="${!#lists.isEmpty(orders)}" class="space-y-4" id="orders-list">
+            <div th:each="order : ${orders}"
+                 class="card-neon card--cyan p-4 order-card"
+                 th:attr="data-search=${order.id + ' ' + order.status}">
+
+                <!-- Order header -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-700/40">
+                    <div>
+                        <span class="text-xs text-slate-500" th:text="#{ui.02049}">Order #</span>
+                        <span class="font-mono font-semibold text-white" th:text="${order.id}">1</span>
+                        <span class="ml-3 text-xs text-slate-400"
+                              th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- Status badge -->
+                        <span class="rounded-full px-2 py-0.5 text-xs font-semibold border order-status-badge"
+                              th:classappend="${order.status.name() == 'CONFIRMED' or order.status.name() == 'DELIVERED'} ? 'bg-neon-green/10 border-neon-green/30 text-neon-green' :
+                                              (${order.status.name() == 'SHIPPED'} ? 'bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan' :
+                                              (${order.status.name().startsWith('CANCEL')} ? 'bg-red-500/10 border-red-500/30 text-red-400' :
+                                               'bg-slate-700/50 border-slate-600 text-slate-400'))"
+                              th:text="${#strings.replace(order.status.name(), '_', ' ')}">CONFIRMED</span>
+                        <span class="text-sm font-bold text-neon-cyan"
+                              th:text="'£' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">£0.00</span>
+                    </div>
+                </div>
+
+                <!-- Order items -->
+                <div class="mt-3 space-y-2">
+                    <div th:each="item : ${order.items}"
+                         class="flex items-center justify-between gap-2 text-sm">
+                        <div class="flex items-center gap-3">
+                            <img th:if="${item.imageUrlSnapshot != null}"
+                                 th:src="${item.imageUrlSnapshot}"
+                                 th:alt="${item.productNameSnapshot}"
+                                 class="h-10 w-10 rounded object-cover" />
+                            <span th:if="${item.imageUrlSnapshot == null}"
+                                  class="inline-flex h-10 w-10 items-center justify-center rounded bg-slate-700 text-slate-500 text-xs" th:text="#{ui.00136}">N/A</span>
+                            <div>
+                                <p class="font-medium text-white" th:text="${item.productNameSnapshot}">Item</p>
+                                <p class="text-xs text-slate-500"
+                                   th:text="'Qty: ' + ${item.quantity} + '  ×  £' + ${#numbers.formatDecimal(item.priceSnapshot, 1, 2)}">Qty: 1</p>
+                            </div>
+                        </div>
+                        <span class="text-slate-300 font-semibold"
+                              th:text="'£' + ${#numbers.formatDecimal(item.lineTotal, 1, 2)}">£0.00</span>
+                    </div>
+                </div>
+
+                <!-- Refund notice -->
+                <div th:if="${order.status.name() == 'CANCELLED_REFUND_PENDING'}"
+                     class="mt-3 rounded border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-400" th:text="#{ui.02050}">
+                    This order was cancelled. A refund is being processed.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:fragment="pageScripts">
+        <script th:src="@{/js/merch/merch-orders-page.js}"></script>
+    </div>
+
+</th:block>

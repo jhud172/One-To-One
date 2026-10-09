@@ -66,6 +66,8 @@ public class MessagingController {
             return "redirect:/inbox/" + threadId;
         } catch (AccessDeniedException ex) {
             return "redirect:/access-denied";
+        } catch (IllegalArgumentException missingThread) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND);
         }
     }
 
@@ -73,44 +75,64 @@ public class MessagingController {
     public String send(@PathVariable Long threadId,
                        @RequestParam("type") MessageType type,
                        @RequestParam(value = "bodyText", required = false) String bodyText,
-                       @RequestParam(value = "checkinMood", required = false) Integer checkinMood,
-                       @RequestParam(value = "checkinEnergy", required = false) Integer checkinEnergy,
+                       @RequestParam(value = "checkinMood", required = false) String checkinMood,
+                       @RequestParam(value = "checkinEnergy", required = false) String checkinEnergy,
                        @RequestParam(value = "checkinNotes", required = false) String checkinNotes,
                        RedirectAttributes redirectAttributes) {
         User sender = currentUserOrThrow();
 
         try {
-            String finalBody;
-            if (type == MessageType.CHECKIN) {
-                String notes = checkinNotes == null ? "" : checkinNotes.trim();
-                finalBody = "Check-in" +
-                        "\nMood: " + (checkinMood == null ? "-" : checkinMood) + "/10" +
-                        "\nEnergy: " + (checkinEnergy == null ? "-" : checkinEnergy) + "/10" +
-                        (notes.isBlank() ? "" : ("\nNotes: " + notes));
-            } else {
-                finalBody = bodyText;
-            }
-
-            // Enforce Active Link Status
             MessageThread thread = messagingService.getThreadForUser(threadId, sender.getId());
             if (sender.getId().equals(thread.getTrainerId())) {
                 accessGuard.requireTrainerAccessClient(sender.getId(), thread.getClientId());
             } else {
                 accessGuard.requireClientAccessTrainer(sender.getId(), thread.getTrainerId());
             }
+            String finalBody = bodyText;
+            if (type == MessageType.CHECKIN) {
+                Integer mood = rating(checkinMood), energy = rating(checkinEnergy);
+                String notes = checkinNotes == null ? "" : checkinNotes.trim();
+                if (notes.length() > 3000 || (mood == null && energy == null && notes.isBlank())) {
+                    throw new IllegalArgumentException("Enter a check-in with ratings from 1 to 10 and notes up to 3,000 characters");
+                }
+                finalBody = "Check-in" + "\nMood: " + (mood == null ? "-" : mood) + "/10"
+                        + "\nEnergy: " + (energy == null ? "-" : energy) + "/10"
+                        + (notes.isBlank() ? "" : "\nNotes: " + notes);
+            }
 
             messagingService.sendMessage(threadId, sender.getId(), type, finalBody);
         } catch (AccessDeniedException ex) {
             return "redirect:/access-denied";
         } catch (MessagingException ex) {
-            if (ex.getReason() == MessagingException.Reason.OFF_PLATFORM_PAYMENT) {
-                redirectAttributes.addFlashAttribute("offPlatformBlocked", true);
-            }
+            retainDraft(redirectAttributes, type, bodyText, checkinMood, checkinEnergy, checkinNotes);
+            redirectAttributes.addFlashAttribute("inboxSendError", ex.getReason().name());
             return "redirect:/inbox/" + threadId;
         } catch (IllegalArgumentException ex) {
+            retainDraft(redirectAttributes, type, bodyText, checkinMood, checkinEnergy, checkinNotes);
+            redirectAttributes.addFlashAttribute("inboxSendError", "INVALID_MESSAGE");
             return "redirect:/inbox/" + threadId;
         }
 
+        redirectAttributes.addFlashAttribute("inboxSent", true);
         return "redirect:/inbox/" + threadId;
+    }
+
+    private static Integer rating(String value) {
+        if (value == null || value.isBlank()) return null;
+        int rating = Integer.parseInt(value);
+        if (rating < 1 || rating > 10) throw new IllegalArgumentException("Check-in rating must be from 1 to 10");
+        return rating;
+    }
+
+    private static void retainDraft(RedirectAttributes redirect, MessageType type, String body,
+                                    String mood, String energy, String notes) {
+        if (type == MessageType.CHECKIN) {
+            redirect.addFlashAttribute("inboxCheckinDraft", true);
+            redirect.addFlashAttribute("inboxCheckinMood", mood);
+            redirect.addFlashAttribute("inboxCheckinEnergy", energy);
+            redirect.addFlashAttribute("inboxCheckinNotes", notes);
+        } else {
+            redirect.addFlashAttribute("inboxDraftBody", body);
+        }
     }
 }

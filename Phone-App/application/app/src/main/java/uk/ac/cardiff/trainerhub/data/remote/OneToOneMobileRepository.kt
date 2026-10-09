@@ -1,5 +1,6 @@
 package uk.ac.cardiff.trainerhub.data.remote
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONArray
@@ -24,9 +25,15 @@ class OneToOneMobileRepository(
             val user = parseUser(apiClient.get("/api/mobile/me").getJSONObject("user"))
             sessionStore.saveSession(token, user)
             _authState.value = AuthState(loading = false, user = user)
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
-            sessionStore.clearSession()
-            _authState.value = AuthState(loading = false, error = exception.message)
+            if (exception is MobileApiClientException && exception.statusCode in listOf(401, 403)) {
+                sessionStore.clearSession()
+                _authState.value = AuthState(loading = false, error = "Your session has ended. Sign in again to continue.")
+            } else {
+                _authState.value = AuthState(loading = false, user = sessionStore.cachedUser(), error = exception.message)
+            }
         }
     }
 
@@ -62,10 +69,13 @@ class OneToOneMobileRepository(
     suspend fun logout() {
         try {
             apiClient.post("/api/mobile/auth/logout")
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (_: Exception) {
+        } finally {
+            sessionStore.clearSession()
+            _authState.value = AuthState(loading = false)
         }
-        sessionStore.clearSession()
-        _authState.value = AuthState(loading = false)
     }
 
     fun useDemoMode() {
@@ -73,6 +83,28 @@ class OneToOneMobileRepository(
             loading = false,
             user = MobileUser(0, "demo@onetone.local", "demo", "Demo User", MobileRole.CLIENT, false),
             demoMode = true,
+        )
+    }
+
+    fun gymApplicationUrl(): String = sessionStore.baseUrl() + "/signup/gym"
+
+    fun websiteUrl(path: String): String {
+        require(path in setOf("/profile", "/preferences/edit", "/policies/privacy", "/policies/terms", "/support", "/trainer/gyms", "/trainer/verification", "/gym/admin/trainers/affiliations") || path.matches(Regex("/trainer/clients/[1-9][0-9]*")))
+        return sessionStore.baseUrl() + path
+    }
+
+    fun clearAuthError() {
+        _authState.value = _authState.value.copy(error = null)
+    }
+
+    suspend fun clientDetail(clientId: String): MobileClientDetail {
+        require(clientId.toLongOrNull()?.let { it > 0 } == true) { "Choose a valid client record." }
+        val json = apiClient.get("/api/mobile/trainer/clients/$clientId")
+        val client = json.getJSONObject("client")
+        return MobileClientDetail(
+            name = "${client.optString("first_name")} ${client.optString("last_name")}".trim(),
+            email = client.optString("email"),
+            logs = parseLogs(json.optJSONArray("logs")),
         )
     }
 
@@ -84,6 +116,11 @@ class OneToOneMobileRepository(
             todayCompleted = json.optInt("todayCompleted"),
             actions = json.optJSONArray("actions").strings(),
             notifications = parseNotifications(json.optJSONArray("notifications")),
+            relationshipCount = when (_authState.value.user?.role) {
+                MobileRole.TRAINER -> json.optJSONObject("stats")?.takeIf { it.has("clients") }?.optInt("clients")
+                MobileRole.GYM_ADMIN -> json.optJSONObject("stats")?.takeIf { it.has("trainers") }?.optInt("trainers")
+                else -> null
+            },
         )
     }
 
@@ -148,11 +185,15 @@ class OneToOneMobileRepository(
         return apiClient.post("/api/mobile/chat/message", JSONObject().put("message", message)).optString("reply")
     }
 
-    suspend fun roleItems(): List<RoleItem> {
+    suspend fun roleItems(route: String = "trainers"): List<RoleItem> {
         val user = _authState.value.user ?: return emptyList()
         val json = when (user.role) {
             MobileRole.TRAINER -> apiClient.get("/api/mobile/trainer/clients").optJSONArray("clients")
-            MobileRole.GYM_ADMIN -> apiClient.get("/api/mobile/gym/trainers").optJSONArray("trainers")
+            MobileRole.GYM_ADMIN -> if (route == "requests") {
+                apiClient.get("/api/mobile/gym/requests").optJSONArray("requests")
+            } else {
+                apiClient.get("/api/mobile/gym/trainers").optJSONArray("trainers")
+            }
             else -> apiClient.get("/api/mobile/client/trainer").optJSONArray("trainers")
         }
         val items = mutableListOf<RoleItem>()
@@ -186,6 +227,9 @@ class OneToOneMobileRepository(
             val user = parseUser(json.getJSONObject("user"))
             sessionStore.saveSession(token, user)
             _authState.value = AuthState(loading = false, user = user)
+        } catch (exception: CancellationException) {
+            _authState.value = _authState.value.copy(loading = false)
+            throw exception
         } catch (exception: Exception) {
             _authState.value = AuthState(loading = false, error = exception.message)
         }
@@ -225,7 +269,7 @@ class OneToOneMobileRepository(
                     id = row.optString("id"),
                     date = row.optString("date"),
                     comments = row.optString("comments"),
-                    durationMinutes = row.optInt("duration_minutes"),
+                    durationMinutes = if (row.isNull("duration_minutes")) null else row.optInt("duration_minutes"),
                 )
             )
         }

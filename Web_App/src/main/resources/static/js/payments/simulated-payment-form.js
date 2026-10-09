@@ -29,7 +29,9 @@
                 newCardSection.classList.toggle('hidden', !newCardActive);
             }
 
+            if (numberDisplay) numberDisplay.disabled = !newCardActive;
             newCardInputs.forEach(function (input) {
+                input.disabled = !newCardActive;
                 if (newCardActive) {
                     input.setAttribute('required', 'required');
                 } else {

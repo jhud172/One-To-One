@@ -1,0 +1,19 @@
+<th:block xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="preview(settings)" class="display-preview" th:attr="data-display-layout=${settings.layout},data-display-theme=${settings.theme},data-display-density=${settings.density},data-display-transition=${settings.transition},data-display-progress=${settings.progress},data-display-rest=${settings.restTimer}">
+    <p class="display-preview__sample" th:text="#{ui.display.sample}">Sample preview — no workout data</p>
+    <div th:each="component : ${settings.components}" class="display-preview__module" th:attr="data-component=${component}">
+        <th:block th:replace="~{fragments/workout-display-preview :: module(${component})}"></th:block>
+    </div>
+</div>
+<th:block th:fragment="module(component)">
+    <div th:switch="${component}">
+        <div th:case="'progress'"><span th:text="#{ui.02336}">Session progress</span><strong>50%</strong><progress value="50" max="100" th:attr="aria-label=#{ui.02336}">50%</progress></div>
+        <div th:case="'timer'" class="display-preview__metric"><span th:text="#{ui.02820}">Timer</span><bdi>12:30</bdi></div>
+        <div th:case="'exerciseCard'"><p th:text="#{ui.02821}">Exercise card</p><strong th:text="#{ui.display.sampleExercise}">Example movement</strong></div>
+        <div th:case="'notes'"><span th:text="#{ui.00175}">Notes</span><p th:text="#{ui.display.sampleNotes}">Keep the movement controlled.</p></div>
+        <div th:case="'setEntry'" class="display-preview__set"><span><span th:text="#{ui.00642}">Weight</span><bdi>20 kg</bdi></span><span><span th:text="#{ui.02339}">Reps</span><bdi>8</bdi></span></div>
+        <div th:case="'summary'" class="display-preview__metric"><span th:text="#{ui.02189}">Summary</span><bdi>160 kg</bdi></div>
+        <div th:case="'restTimer'" class="display-preview__metric"><span th:text="#{ui.02823}">Rest timer</span><bdi>01:00</bdi></div>
+    </div>
+</th:block>
+</th:block>

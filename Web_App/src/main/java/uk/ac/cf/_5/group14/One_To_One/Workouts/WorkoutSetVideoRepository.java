@@ -11,5 +11,5 @@ public interface WorkoutSetVideoRepository extends JpaRepository<WorkoutSetVideo
 
     Optional<WorkoutSetVideo> findByIdAndSetLog(Long id, WorkoutSetLog setLog);
 
-    List<WorkoutSetVideo> findByStatusOrderByCreatedAtAsc(VideoProcessingStatus status);
+    List<WorkoutSetVideo> findBySetLogSessionOrderByCreatedAtDescIdDesc(WorkoutSession session);
 }

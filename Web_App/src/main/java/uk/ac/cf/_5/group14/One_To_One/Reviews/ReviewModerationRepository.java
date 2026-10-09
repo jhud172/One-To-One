@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ReviewModerationRepository extends JpaRepository<ReviewModeration, Long> {
+    @org.springframework.data.jpa.repository.Query("select m.reviewId from ReviewModeration m where m.id = :id")
+    java.util.Optional<Long> findReviewIdById(@org.springframework.data.repository.query.Param("id") Long id);
 
     /**
      * Find all pending moderation requests.

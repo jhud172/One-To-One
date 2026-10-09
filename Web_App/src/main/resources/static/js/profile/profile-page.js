@@ -1650,18 +1650,21 @@ const closeOptionsBtn   = document.getElementById('close-options-drawer');
 function openOptionsDrawer() {
     if (!optionsDrawerRoot) return;
     optionsDrawerRoot.classList.add('is-open');
+    optionsDrawerRoot.inert = false;
     optionsDrawerRoot.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     if (openOptionsBtn) {
         openOptionsBtn.classList.add('is-open');
         openOptionsBtn.setAttribute('aria-expanded', 'true');
     }
+    if (closeOptionsBtn) closeOptionsBtn.focus();
 }
 window.openOptionsDrawer = openOptionsDrawer;
 
 function closeOptionsDrawer() {
     if (!optionsDrawerRoot) return;
     optionsDrawerRoot.classList.remove('is-open');
+    optionsDrawerRoot.inert = true;
     optionsDrawerRoot.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     if (openOptionsBtn) {
@@ -1689,6 +1692,7 @@ const closeSettingsBtn   = document.getElementById('close-settings-drawer');
 function openSettingsDrawer() {
     if (!settingsDrawerRoot) return;
     settingsDrawerRoot.classList.add('is-open');
+    settingsDrawerRoot.inert = false;
     settingsDrawerRoot.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     if (closeSettingsBtn) closeSettingsBtn.focus();
@@ -1698,6 +1702,7 @@ window.openSettingsDrawer = openSettingsDrawer;
 function closeSettingsDrawer() {
     if (!settingsDrawerRoot) return;
     settingsDrawerRoot.classList.remove('is-open');
+    settingsDrawerRoot.inert = true;
     settingsDrawerRoot.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     if (openSettingsBtn) openSettingsBtn.focus();
@@ -1733,6 +1738,7 @@ const closePurchasesBtn   = document.getElementById('close-purchases-drawer');
 function openPurchasesDrawer() {
     if (!purchasesDrawerRoot) return;
     purchasesDrawerRoot.classList.add('is-open');
+    purchasesDrawerRoot.inert = false;
     purchasesDrawerRoot.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     if (closePurchasesBtn) closePurchasesBtn.focus();
@@ -1741,6 +1747,7 @@ function openPurchasesDrawer() {
 function closePurchasesDrawer() {
     if (!purchasesDrawerRoot) return;
     purchasesDrawerRoot.classList.remove('is-open');
+    purchasesDrawerRoot.inert = true;
     purchasesDrawerRoot.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     if (openPurchasesBtn) openPurchasesBtn.focus();
@@ -1749,6 +1756,24 @@ function closePurchasesDrawer() {
 if (openPurchasesBtn)  openPurchasesBtn.addEventListener('click', openPurchasesDrawer);
 if (closePurchasesBtn) closePurchasesBtn.addEventListener('click', closePurchasesDrawer);
 if (purchasesOverlay)  purchasesOverlay.addEventListener('click', closePurchasesDrawer);
+
+// Keep keyboard navigation inside the active drawer; nested editors handle their own focus.
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return;
+    const root = [optionsDrawerRoot, settingsDrawerRoot, purchasesDrawerRoot]
+        .find(drawer => drawer && drawer.classList.contains('is-open'));
+    if (!root || document.querySelector('#edit-card-modal:not(.hidden), #profile-image-editor-modal.is-open, #custom-date-picker.is-open')) return;
+    const focusable = [...root.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex="0"]')]
+        .filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (!first) return;
+    if (!root.contains(document.activeElement) || (event.shiftKey && document.activeElement === first)) {
+        event.preventDefault(); (event.shiftKey ? last : first).focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+    }
+});
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -1830,9 +1855,11 @@ document.addEventListener('click', (e) => {
         fetch('/profile/settings/theme', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: body.toString()
+            body: body.toString(),
+            keepalive: true
         }).then(function (res) {
-            if (res.ok || res.redirected) {
+            const savedProfile = !res.redirected || new URL(res.url, window.location.origin).pathname === '/profile';
+            if (res.ok && savedProfile) {
                 if (feedback) {
                     feedback.textContent = 'Appearance saved.';
                     feedback.classList.remove('hidden', 'text-rose-600', 'dark:text-rose-400');

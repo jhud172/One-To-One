@@ -2,6 +2,7 @@ package uk.ac.cf._5.group14.One_To_One.TrainerLibrary;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.AssertTrue;
 
 public class TrainerLibraryExerciseForm {
 
@@ -9,6 +10,7 @@ public class TrainerLibraryExerciseForm {
     @Size(max = 120)
     private String name;
 
+    @Size(max = 10000)
     private String description;
 
     @NotBlank
@@ -29,7 +31,17 @@ public class TrainerLibraryExerciseForm {
     /**
      * Newline-separated notes, stored as separate rows.
      */
+    @Size(max = 10000)
     private String notesText;
+
+    @AssertTrue
+    public boolean isVideoUrlValid() {
+        return isSafeVideoUrl(videoUrl);
+    }
+
+    public static boolean isSafeVideoUrl(String url) {
+        return uk.ac.cf._5.group14.One_To_One.Security.SafeHttpUrl.isSafe(url);
+    }
 
     public String getName() {
         return name;

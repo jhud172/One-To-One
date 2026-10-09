@@ -1,45 +1,15 @@
-let currentRating = 0;
-
-function setRating(rating) {
-    currentRating = rating;
-    document.getElementById('starsInput').value = rating;
-    
-    // Update star colors
-    const buttons = document.querySelectorAll('.star-btn');
-    buttons.forEach((btn, index) => {
-        const svg = btn.querySelector('svg');
-        if (index < rating) {
-            svg.classList.remove('text-slate-300');
-            svg.classList.add('text-yellow-400');
-        } else {
-            svg.classList.remove('text-yellow-400');
-            svg.classList.add('text-slate-300');
-        }
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector("[data-review-form]");
+    if (!form || form.dataset.reviewInitialised === "true") return;
+    form.dataset.reviewInitialised = "true";
+    const status = form.querySelector(".review-draft-status");
+    let dirty = form.dataset.retained === "true";
+    form.addEventListener("input", () => {
+        dirty = true;
+        if (status) status.textContent = form.dataset.unsaved || "";
     });
-
-    // Update rating text
-    const texts = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
-    document.getElementById('ratingText').textContent = texts[rating];
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.star-btn').forEach(function (button) {
-        button.addEventListener('click', function () {
-            const rating = Number(button.dataset.rating || 0);
-            if (rating > 0) {
-                setRating(rating);
-            }
-        });
-    });
-
-    const form = document.querySelector('form');
-    if (!form) {
-        return;
-    }
-
-    form.addEventListener('submit', function () {
-        const checkboxes = document.querySelectorAll('input[name="tag"]:checked');
-        const tags = Array.from(checkboxes).map(cb => cb.value).join(',');
-        document.getElementById('tagsInput').value = tags;
+    form.addEventListener("submit", () => { dirty = false; });
+    window.addEventListener("beforeunload", event => {
+        if (dirty) { event.preventDefault(); event.returnValue = ""; }
     });
 });

@@ -30,7 +30,8 @@ public record ScheduledWorkoutSessionViewModel(
             String type,
             String status,
             boolean completed,
-            List<SetView> sets
+            List<SetView> sets,
+            Long catalogueExerciseId
     ) {
     }
 

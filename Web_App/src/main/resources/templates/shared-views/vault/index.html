@@ -1,313 +1,56 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02280}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02280}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
 <div th:fragment="styles"></div>
-
-<div th:fragment="content">
-<div class="vault-layout">
-
-    <!-- ── Metrics Strip ──────────────────────────────────────── -->
-    <div class="vault-metrics" th:if="${metrics != null}">
-        <div class="vault-metric-card">
-            <span class="vault-metric-value" th:text="${metrics['totalNotes'] ?: 0}">0</span>
-            <span class="vault-metric-label" th:text="#{ui.02254}">Total Notes</span>
-        </div>
-        <div class="vault-metric-card">
-            <span class="vault-metric-value vault-metric-accent" th:text="${metrics['notesThisMonth'] ?: 0}">0</span>
-            <span class="vault-metric-label" th:text="#{ui.02255}">This Month</span>
-        </div>
-        <div class="vault-metric-card">
-            <span class="vault-metric-value" th:text="${metrics['pinnedCount'] ?: 0}">0</span>
-            <span class="vault-metric-label" th:text="#{ui.01747}">Pinned</span>
-        </div>
-        <div class="vault-metric-card">
-            <span class="vault-metric-value text-base leading-snug" th:text="${metrics['topTag'] != null ? '#' + metrics['topTag'] : '—'}">—</span>
-            <span class="vault-metric-label" th:text="#{ui.02256}">Top Tag</span>
-        </div>
-    </div>
-
-    <!-- ── AI Result Flash ───────────────────────────────────── -->
-    <div class="vault-ai-panel mt-4" th:if="${aiResult != null}" data-vault-flash>
-        <div class="vault-ai-panel-title">
-            <svg class="h-4 w-4 text-violet-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-            </svg>
-            <span th:text="${aiResultTitle ?: 'AI Result'}">AI Result</span>
-        </div>
-        <div class="vault-ai-panel-body" th:text="${aiResult}">Result</div>
-    </div>
-
-    <!-- ── Page Body ─────────────────────────────────────────── -->
-    <div class="vault-body">
-
-        <!-- ── Left Sidebar ───────────────────────────────────── -->
-        <aside class="vault-sidebar">
-            <form id="vaultFilterForm" th:action="@{/vault}" method="get">
-                <div class="vault-sidebar-panel">
-
-                    <!-- Type Filters -->
-                    <div class="vault-sidebar-section">
-                        <p class="vault-sidebar-title" th:text="#{ui.00623}">Type</p>
-                        <div class="space-y-0.5">
-                            <a th:href="@{/vault(search=${searchQuery},from=${fromDate},to=${toDate},pinned=${pinnedOnly})}"
-                               class="vault-filter-btn"
-                               th:classappend="${selectedType == null} ? ' active' : ''">
-                                <span class="h-2 w-2 rounded-full bg-slate-400 shrink-0"></span>
-                                <th:block th:text="#{ui.01727}">All types</th:block>
-                            </a>
-                            <a th:each="t : ${noteTypes}"
-                               th:href="@{/vault(type=${t.name()},search=${searchQuery},from=${fromDate},to=${toDate},pinned=${pinnedOnly})}"
-                               class="vault-filter-btn"
-                               th:classappend="${selectedType != null and selectedType == t} ? ' active' : ''">
-                                <span class="h-2 w-2 rounded-full shrink-0"
-                                      th:classappend="${t.name() == 'TRAINING'} ? ' bg-blue-400'
-                                                    : (${t.name() == 'NUTRITION'} ? ' bg-green-400'
-                                                    : (${t.name() == 'INJURY'} ? ' bg-rose-400'
-                                                    : (${t.name() == 'GOAL'} ? ' bg-amber-400'
-                                                    : (${t.name() == 'REFLECTION'} ? ' bg-purple-400'
-                                                    : ' bg-sky-400'))))"></span>
-                                <span th:text="${#strings.replace(#strings.toLowerCase(t.name()),'_',' ')}">type</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Smart Filters -->
-                    <div class="vault-sidebar-section">
-                        <button type="button" class="vault-sidebar-title flex w-full items-center justify-between cursor-pointer" data-vault-collapse="smartFilters">
-                            <span th:text="#{ui.02257}">Smart Filters</span>
-                            <svg data-collapse-icon class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </button>
-                        <div id="smartFilters" class="mt-2 space-y-3">
-                            <!-- Pinned toggle -->
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="pinned" value="true" class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                       th:checked="${pinnedOnly}">
-                                <span class="text-sm text-slate-700 dark:text-slate-200" th:text="#{ui.02258}">Pinned only</span>
-                            </label>
-                            <!-- Date From -->
-                            <div>
-                                <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1" th:text="#{ui.02259}">From date</label>
-                                <input type="date" name="from"
-                                       th:value="${fromDate}"
-                                       class="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-400/40">
-                            </div>
-                            <!-- Date To -->
-                            <div>
-                                <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1" th:text="#{ui.02260}">To date</label>
-                                <input type="date" name="to"
-                                       th:value="${toDate}"
-                                       class="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-400/40">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- AI Insights placeholder -->
-                    <div class="vault-sidebar-section">
-                        <p class="vault-sidebar-title" th:text="#{ui.02261}">AI Insights</p>
-                        <div class="rounded-lg border border-violet-100 dark:border-violet-700/20 bg-violet-50 dark:bg-violet-900/10 p-3 text-xs text-violet-700 dark:text-violet-300" th:text="#{ui.02262}">
-                            Select notes and use AI actions to generate weekly summaries, check-in rewrites, or per-note insights.
-                        </div>
-                        <div th:if="${notes != null and !notes.isEmpty()}" class="mt-3">
-                            <form th:action="@{/vault/ai/summarise-week}" method="post" id="weekSummaryForm">
-                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <th:block th:each="n : ${notes}">
-                                    <input type="hidden" name="noteIds" th:value="${n.id}">
-                                </th:block>
-                                <input type="hidden" name="returnTo" th:value="@{/vault}">
-                                <button type="submit" class="w-full rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 transition-colors" th:text="#{ui.02263}">
-                                    Summarise all visible
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                </div>
-            </form>
-        </aside>
-
-        <!-- ── Main Panel ─────────────────────────────────────── -->
-        <main class="vault-main">
-
-            <!-- Toolbar -->
-            <div class="vault-toolbar">
-                <div class="vault-search-wrap">
-                    <span class="vault-search-icon">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </span>
-                    <form id="vaultSearchForm" th:action="@{/vault}" method="get" class="contents">
-                        <input type="hidden" name="type" th:value="${selectedType != null ? selectedType.name() : ''}">
-                        <input type="hidden" name="pinned" th:value="${pinnedOnly ? 'true' : 'false'}">
-                        <input type="hidden" name="from" th:value="${fromDate}">
-                        <input type="hidden" name="to" th:value="${toDate}">
-                        <input id="vaultSearch" name="search" type="search" autocomplete="off"
-                               th:value="${searchQuery}"
-                               placeholder="Search notes…"
-                               class="vault-search-input" th:placeholder="#{ui.02264}">
-                    </form>
-                </div>
-                <div class="vault-toolbar-actions">
-                    <a th:href="@{/vault/new}" class="vault-new-btn">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        <th:block th:text="#{ui.02124}">New</th:block>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Active filter chips -->
-            <div class="vault-active-filters" th:if="${selectedType != null or (searchQuery != null and !searchQuery.isBlank()) or (fromDate != null) or (toDate != null) or pinnedOnly}">
-                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium mr-1" th:text="#{ui.02265}">Filters:</span>
-                <span class="vault-filter-chip" th:if="${selectedType != null}">
-                    <span th:text="${#strings.replace(#strings.toLowerCase(selectedType.name()),'_',' ')}">type</span>
-                    <a th:href="@{/vault(search=${searchQuery},from=${fromDate},to=${toDate},pinned=${pinnedOnly})}"
-                       class="vault-filter-chip-remove" aria-label="Remove type filter" th:attr="aria-label=#{ui.02266}">×</a>
-                </span>
-                <span class="vault-filter-chip" th:if="${searchQuery != null and !searchQuery.isBlank()}">
-                    "<span th:text="${searchQuery}">query</span>"
-                    <a th:href="@{/vault(type=${selectedType != null ? selectedType.name() : ''},from=${fromDate},to=${toDate},pinned=${pinnedOnly})}"
-                       class="vault-filter-chip-remove" aria-label="Remove search" th:attr="aria-label=#{ui.02267}">×</a>
-                </span>
-                <span class="vault-filter-chip" th:if="${fromDate != null}">
-                    <th:block th:text="#{ui.02268}">From</th:block> <span th:text="${fromDate}">date</span>
-                    <a th:href="@{/vault(type=${selectedType != null ? selectedType.name() : ''},search=${searchQuery},to=${toDate},pinned=${pinnedOnly})}"
-                       class="vault-filter-chip-remove" aria-label="Remove from filter" th:attr="aria-label=#{ui.02269}">×</a>
-                </span>
-                <span class="vault-filter-chip" th:if="${toDate != null}">
-                    <th:block th:text="#{ui.02270}">To</th:block> <span th:text="${toDate}">date</span>
-                    <a th:href="@{/vault(type=${selectedType != null ? selectedType.name() : ''},search=${searchQuery},from=${fromDate},pinned=${pinnedOnly})}"
-                       class="vault-filter-chip-remove" aria-label="Remove to filter" th:attr="aria-label=#{ui.02271}">×</a>
-                </span>
-                <span class="vault-filter-chip" th:if="${pinnedOnly}">
-                    <th:block th:text="#{ui.01747}">Pinned</th:block>
-                    <a th:href="@{/vault(type=${selectedType != null ? selectedType.name() : ''},search=${searchQuery},from=${fromDate},to=${toDate})}"
-                       class="vault-filter-chip-remove" aria-label="Remove pinned filter" th:attr="aria-label=#{ui.02272}">×</a>
-                </span>
-                <a th:href="@{/vault}" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-1 transition-colors" th:text="#{ui.02273}">Clear all</a>
-            </div>
-
-            <!-- Note Cards -->
-            <div class="vault-cards" th:if="${notes != null and !notes.isEmpty()}">
-                <div th:each="n : ${notes}"
-                     class="vault-card group"
-                     th:classappend="${n.pinned} ? ' pinned' : ''">
-
-                    <!-- Clickable area -->
-                    <a th:href="@{/vault/{id}(id=${n.id})}"
-                       class="absolute inset-0 rounded-xl z-0"
-                       data-card-link
-                       th:aria-label="${'Open: ' + n.title}"></a>
-
-                    <div class="relative z-10">
-                        <div class="vault-card-header">
-                            <div class="vault-card-badges">
-                                <!-- Type badge -->
-                                <span class="vault-type-badge"
-                                      th:classappend="${n.noteType != null ? n.noteType.name() : 'NOTE'}"
-                                      th:text="${n.noteType != null ? #strings.replace(#strings.toLowerCase(n.noteType.name()),'_',' ') : 'note'}">type</span>
-                                <!-- Pinned -->
-                                <span class="vault-pin-badge" th:if="${n.pinned}">
-                                    <svg class="h-3 w-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                        <path d="M10 2a1 1 0 011 1v1.268l4.243 4.243A1 1 0 0116 9.5v1a1 1 0 01-1 1h-4v5.5a1 1 0 01-2 0V11.5H5a1 1 0 01-1-1v-1a1 1 0 01.757-.97L9 4.268V3a1 1 0 011-1z"/>
-                                    </svg>
-                                    <th:block th:text="#{ui.01747}">Pinned</th:block>
-                                </span>
-                                <!-- Mood -->
-                                <span class="vault-mood-badge" th:if="${n.mood != null and !n.mood.isBlank()}"
-                                      th:text="${n.mood.toLowerCase()}">mood</span>
-                                <!-- AI insight badge -->
-                                <span class="vault-ai-badge" th:if="${n.aiSummary != null and !n.aiSummary.isBlank()}">
-                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                                    </svg>
-                                    <th:block th:text="#{ui.02274}">Insight</th:block>
-                                </span>
-                            </div>
-                            <span class="vault-card-date shrink-0 text-xs text-slate-400 dark:text-slate-500"
-                                  th:if="${n.updatedAt != null}"
-                                  th:text="${#temporals.format(n.updatedAt, 'dd MMM yyyy')}">Date</span>
-                        </div>
-
-                        <h3 class="vault-card-title" th:text="${n.title}">Title</h3>
-                        <p class="vault-card-preview" th:text="${n.content}">Preview</p>
-
-                        <div class="vault-card-footer">
-                            <div class="vault-card-tags" th:if="${n.tags != null and !n.tags.isBlank()}">
-                                <span th:each="tag : ${#strings.arraySplit(n.tags, ',')}"
-                                      th:if="${!tag.trim().isBlank()}"
-                                      class="vault-tag"
-                                      th:text="${'#' + tag.trim().toLowerCase()}">tag</span>
-                            </div>
-                            <div th:if="${n.linkedDate != null}" class="text-xs text-slate-400 dark:text-slate-500 ml-auto" th:text="${#temporals.format(n.linkedDate, 'dd MMM yyyy')}">linked</div>
-                        </div>
-                    </div>
-
-                    <!-- Hover actions -->
-                    <div class="vault-card-actions">
-                        <a th:href="@{/vault/{id}/edit(id=${n.id})}" class="vault-action-btn" th:text="#{ui.00138}">Edit</a>
-                        <form th:action="@{/vault/{id}/pin(id=${n.id})}" method="post" class="inline">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <input type="hidden" name="returnTo" th:value="@{/vault(type=${selectedType != null ? selectedType.name() : ''},search=${searchQuery},from=${fromDate},to=${toDate},pinned=${pinnedOnly})}">
-                            <button type="submit" class="vault-action-btn" th:text="${n.pinned ? 'Unpin' : 'Pin'}">Pin</button>
-                        </form>
-                        <form th:action="@{/vault/{id}/delete(id=${n.id})}" method="post" class="inline" data-vault-confirm-delete>
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <button type="submit" class="vault-action-btn destructive" th:text="#{ui.00139}">Delete</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Empty state -->
-            <div class="vault-empty" th:if="${notes == null or notes.isEmpty()}">
-                <div class="vault-empty-icon">
-                    <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
-                    </svg>
-                </div>
-                <h3 class="vault-empty-title" th:if="${(searchQuery != null and !searchQuery.isBlank()) or selectedType != null or fromDate != null or toDate != null or pinnedOnly}" th:text="#{ui.02275}">No notes match your filters</h3>
-                <h3 class="vault-empty-title" th:if="${(searchQuery == null or searchQuery.isBlank()) and selectedType == null and fromDate == null and toDate == null and !pinnedOnly}" th:text="#{ui.02276}">Your vault is empty</h3>
-                <p class="vault-empty-body" th:if="${(searchQuery != null and !searchQuery.isBlank()) or selectedType != null or fromDate != null or toDate != null or pinnedOnly}" th:text="#{ui.02277}">Try adjusting your filters or clearing your search.</p>
-                <p class="vault-empty-body" th:if="${(searchQuery == null or searchQuery.isBlank()) and selectedType == null and fromDate == null and toDate == null and !pinnedOnly}" th:text="#{ui.02278}">Start capturing your training reflections, nutrition notes, goals, and insights. Your first note is one click away.</p>
-                <div class="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <a th:href="@{/vault/new}" class="vault-new-btn">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        <th:block th:text="#{ui.02279}">Create first note</th:block>
-                    </a>
-                    <a th:if="${(searchQuery != null and !searchQuery.isBlank()) or selectedType != null or pinnedOnly}"
-                       th:href="@{/vault}"
-                       class="inline-flex items-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors" th:text="#{ui.00563}">
-                        Clear filters
-                    </a>
-                </div>
-            </div>
-
-        </main>
-    </div>
+<div th:fragment="content" class="vault-workspace-v2">
+<header class="vault-heading"><div><p class="vault-eyebrow" th:text="#{ui.02280}"></p><h1 th:text="#{ui.02280}"></h1><p th:text="#{ui.vault.entryHint}"></p></div>
+<nav class="vault-actions"><a class="vault-action" th:href="@{/notes}" th:text="#{ui.00175}"></a><a class="vault-action vault-primary" th:href="@{/vault/new(returnTo=${vaultReturnTo})}" th:text="#{ui.vault.new}"></a></nav></header>
+<div class="vault-feedback" role="alert" th:if="${vaultInvalid}"><p th:text="#{ui.vault.filtersInvalid}"></p><div class="vault-actions"><a class="vault-action" href="#vaultSearch" th:text="#{ui.02264}"></a><a class="vault-action" href="#vaultFrom" th:text="#{ui.02259}"></a><a class="vault-action" href="#vaultTo" th:text="#{ui.02260}"></a></div></div>
+<p class="vault-feedback" role="alert" th:if="${vaultAiError}" th:text="${vaultAiError == 'stale' ? #messages.msg('ui.vault.stale') : #messages.msg('ui.vault.aiError')}"></p>
+<p class="vault-feedback" role="status" th:if="${vaultDeleted}" th:text="#{ui.scheduleWorkout.deleted}"></p>
+<p class="vault-feedback" role="status" th:if="${vaultSaved}" th:text="#{ui.vault.saved}"></p>
+<section class="vault-panel vault-generated" th:if="${aiResult != null}" aria-labelledby="vault-result-title">
+<h2 id="vault-result-title" th:text="${aiResultKind == 'rewrite' ? #messages.msg('ui.02305') : (aiResultKind == 'insight' ? #messages.msg('ui.02299') : #messages.msg('ui.02304'))}"></h2>
+<p th:text="#{ui.vault.source}"></p><ul><li th:each="title : ${aiResultTitles}" th:text="${title}"></li></ul>
+<time dir="ltr" th:if="${aiResultGeneratedAt != null}" th:attr="datetime=${aiResultGeneratedAt}" th:text="${#temporals.format(aiResultGeneratedAt, 'dd MMM yyyy HH:mm')}"></time><p class="vault-reflection-text" dir="auto" th:text="${aiResult}"></p></section>
+<div class="vault-metrics" th:if="${metrics != null}">
+<div class="vault-panel"><strong th:text="${metrics['totalNotes'] ?: 0}"></strong><span th:text="#{ui.02254}"></span></div>
+<div class="vault-panel"><strong th:text="${metrics['notesThisMonth'] ?: 0}"></strong><span th:text="#{ui.02255}"></span></div>
+<div class="vault-panel"><strong th:text="${metrics['pinnedCount'] ?: 0}"></strong><span th:text="#{ui.01747}"></span></div>
+<div class="vault-panel"><strong th:text="${metrics['topTag'] != null ? '#' + metrics['topTag'] : '—'}"></strong><span th:text="#{ui.02256}"></span></div>
 </div>
-
-<!-- Confirm modal -->
-<div id="confirmOverlay"
-     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 opacity-0 pointer-events-none transition-opacity [&.show]:opacity-100 [&.show]:pointer-events-auto">
-    <div class="w-full max-w-md rounded-xl border border-slate-200 bg-white dark:bg-slate-900 p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-        <h3 id="confirmTitle" class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.01783}">Confirm</h3>
-        <p id="confirmMessage" class="mt-2 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02120}">Are you sure?</p>
-        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button id="confirmCancel" class="inline-flex items-center justify-center rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-slate-100 shadow-sm hover:bg-slate-50 focus:outline-none" type="button" th:text="#{ui.00125}">Cancel</button>
-            <button id="confirmOk" class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none" type="button" th:text="#{ui.00139}">Delete</button>
-        </div>
-    </div>
+<form class="vault-panel vault-filters" th:action="@{/vault}" method="get">
+<div><label for="vaultSearch" th:text="#{ui.02264}"></label><input id="vaultSearch" name="search" type="search" maxlength="120" th:value="${searchQuery}"></div>
+<div><label for="vaultType" th:text="#{ui.00623}"></label><select id="vaultType" name="type"><option value="" th:text="#{ui.01727}"></option><option th:each="type : ${noteTypes}" th:value="${type}" th:selected="${type == selectedType}" th:text="${#messages.msg(type.labelKey)}"></option></select></div>
+<div><label for="vaultFrom" th:text="#{ui.02259}"></label><input dir="ltr" id="vaultFrom" name="from" type="text" inputmode="numeric" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" placeholder="YYYY-MM-DD" th:value="${fromDate}"></div>
+<div><label for="vaultTo" th:text="#{ui.02260}"></label><input dir="ltr" id="vaultTo" name="to" type="text" inputmode="numeric" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" placeholder="YYYY-MM-DD" th:value="${toDate}"></div>
+<label class="vault-check"><input type="checkbox" name="pinned" value="true" th:checked="${pinnedOnly}"><span th:text="#{ui.02258}"></span></label>
+<div class="vault-actions"><button class="vault-action vault-primary" type="submit" th:text="#{ui.00554}"></button><a class="vault-action" th:href="@{/vault}" th:text="#{ui.02273}"></a></div></form>
+<details class="vault-panel vault-ai-controls" th:if="${notes != null and !notes.isEmpty()}"><summary th:text="#{ui.02301}"></summary>
+<p th:text="#{ui.vault.aiInput}"></p>
+<p th:if="${!vaultPremium}" th:text="#{ui.vault.aiPremium}"></p>
+<p th:if="${vaultPremium and !vaultAiAvailable}" th:text="#{ui.vault.aiUnavailable}"></p>
+<form id="vaultSelection" method="post" th:action="@{/vault/ai/summarise-week}">
+<input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+<input type="hidden" name="returnTo" th:value="${vaultReturnTo}">
+<p class="vault-scope" th:text="#{ui.vault.scope}"></p><p th:text="#{ui.vault.select}"></p><output id="vaultSelectionCount" aria-live="polite">0 / 20</output>
+<fieldset th:disabled="${!vaultAiEnabled}"><legend class="sr-only" th:text="#{ui.02301}"></legend>
+<label class="vault-check"><input type="checkbox" name="aiConsent" value="true" required><span th:text="#{ui.vault.aiDisclosure}"></span></label>
+<div class="vault-actions"><button class="vault-action vault-primary" type="submit" th:text="#{ui.02304}"></button><button class="vault-action" type="submit" th:formaction="@{/vault/ai/rewrite-checkin}" th:text="#{ui.02305}"></button></div></fieldset>
+</form></details>
+<div class="vault-card-grid" th:if="${notes != null and !notes.isEmpty()}">
+<article class="vault-panel vault-reflection-card" th:each="note : ${notes}">
+<div class="vault-card-meta"><span class="vault-type-badge" th:classappend="${note.noteType}" th:text="${#messages.msg(note.noteType.labelKey)}"></span><span th:if="${note.pinned}" th:text="#{ui.01747}"></span></div>
+<h2 dir="auto"><a th:href="@{/vault/{id}(id=${note.id},returnTo=${vaultReturnTo})}" th:text="${note.title}"></a></h2>
+<p dir="auto" class="vault-reflection-preview" th:text="${#strings.abbreviate(note.content, 200)}"></p>
+<p th:if="${note.linkedDate != null}"><span th:text="#{ui.02282}"></span>: <time dir="ltr" th:attr="datetime=${note.linkedDate}" th:text="${note.linkedDate}"></time></p>
+<p th:if="${note.linkedWorkoutSessionId != null and sessionsById[note.linkedWorkoutSessionId] != null}" th:text="${sessionsById[note.linkedWorkoutSessionId].nameSnapshot}"></p>
+<time dir="ltr" th:attr="datetime=${note.updatedAt}" th:if="${note.updatedAt != null}" th:text="${#temporals.format(note.updatedAt, 'dd MMM yyyy HH:mm')}"></time>
+<p class="vault-tags" th:if="${!#strings.isEmpty(note.tags)}" th:text="${note.tags}"></p>
+<div class="vault-actions"><a class="vault-action" th:href="@{/vault/{id}/edit(id=${note.id},returnTo=${vaultReturnTo})}" th:text="#{ui.00138}"></a>
+<form method="post" th:action="@{/vault/{id}/pin(id=${note.id})}"><input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><input type="hidden" name="returnTo" th:value="${vaultReturnTo}"><button class="vault-action" type="submit" th:text="${note.pinned ? #messages.msg('ui.vault.unpin') : #messages.msg('ui.vault.pin')}"></button></form></div>
+<label class="vault-check"><input type="checkbox" name="noteIds" th:disabled="${!vaultAiEnabled}" th:value="${note.id}" form="vaultSelection"><span th:text="#{ui.vault.select}"></span><span class="sr-only" th:text="${note.title}"></span></label>
+</article></div>
+<section class="vault-panel vault-empty" th:if="${notes == null or notes.isEmpty()}"><h2 th:text="${metrics['totalNotes'] == 0 ? #messages.msg('ui.02276') : #messages.msg('ui.02275')}"></h2><p th:text="${metrics['totalNotes'] == 0 ? #messages.msg('ui.02278') : #messages.msg('ui.02277')}"></p><a class="vault-action" th:href="@{/vault/new(returnTo=${vaultReturnTo})}" th:text="#{ui.vault.new}"></a></section>
+<nav class="vault-pagination" th:attr="aria-label=#{ui.vault.pages}"><p th:text="#{ui.vault.page(${vaultPage.page},${vaultPage.pageCount},${vaultPage.total})}"></p><a class="vault-action" th:if="${vaultPage.page > 1}" th:href="${vaultPrevious}" th:text="#{ui.library.previousPage}"></a><a class="vault-action" th:if="${vaultPage.page < vaultPage.pageCount}" th:href="${vaultNext}" th:text="#{ui.library.nextPage}"></a></nav>
 </div>
-</div>
-
-<div th:fragment="pageScripts">
-    <script src="/js/notes/vault.js" defer></script>
-</div>
-
+<div th:fragment="pageScripts"><script th:src="@{/js/notes/vault.js(v=${uiCssVersion})}" defer></script></div>
 </th:block>

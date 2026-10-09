@@ -1,0 +1,16 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.gymLink.history}, null, ~{::content}, null)}">
+<div th:fragment="content" class="gym-affiliations-v2" aria-labelledby="affiliation-history-title">
+    <header class="gym-affiliations-v2__heading">
+        <h1 id="affiliation-history-title" th:text="#{ui.gymLink.history}">Connection history</h1>
+        <a th:href="${trainerSide} ? @{/trainer/gyms} : @{/gym/admin/trainers/affiliations}" th:text="#{ui.gymLink.back}">Back to your workspace</a>
+    </header>
+    <p th:if="${#lists.isEmpty(events)}" th:text="#{ui.gymLink.legacy}">Existing connection preserved from your primary gym.</p>
+    <ol class="gym-affiliations-v2__timeline">
+        <li th:each="event : ${events}">
+            <strong th:text="${#messages.msg('ui.gymLink.' + (event.action == 'REQUESTED' ? 'PENDING' : event.action == 'DECLINED' ? 'DECLINED' : event.action == 'ENDED' or event.action == 'CANCELLED' ? 'ENDED' : 'ACTIVE'))}"></strong>
+            <span th:text="${event.actorUserId == null} ? #{ui.gymLink.legacy} : (${event.actorUserId == viewerId} ? #{ui.gymLink.you} : #{ui.gymLink.other})"></span>
+            <time th:datetime="${event.createdAt}" th:text="${#temporals.format(event.createdAt, 'dd MMM yyyy, HH:mm', 'Europe/London')}"></time>
+        </li>
+    </ol>
+</div>
+</th:block>

@@ -43,7 +43,10 @@ public class WorkoutManagementController {
 
         model.addAttribute("pageTitle", "Workout Management");
         model.addAttribute("today", today);
-        model.addAttribute("activeWorkouts", scheduledWorkoutSessionService.listOpenLaunchItems(user, today));
+        var activeWorkouts = scheduledWorkoutSessionService.listOpenLaunchItems(user, today);
+        model.addAttribute("activeWorkouts", activeWorkouts);
+        model.addAttribute("nextWorkout", activeWorkouts.isEmpty() ? null : activeWorkouts.getFirst());
+        model.addAttribute("otherWorkouts", activeWorkouts.stream().skip(1).toList());
         model.addAttribute("upcomingWorkouts",
                 scheduledWorkoutSessionService.listUpcomingLaunchItems(user, today.plusDays(1), lookaheadEnd).stream()
                         .filter(item -> !item.completed())

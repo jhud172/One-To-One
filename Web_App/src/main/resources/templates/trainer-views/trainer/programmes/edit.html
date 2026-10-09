@@ -1,49 +1,36 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02738}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02738}">Edit Programme</h1>
-                </div>
-                <a th:href="@{/trainer/library/programmes/{id}(id=${programmeId})}"
-                   class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.00571}">
-                    Back
-                </a>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02738}, null, ~{::content}, ~{::pageScripts})}">
+    <div th:fragment="content" class="client-workspace-v2 library-exercise-v2 programme-library-v2">
+        <header class="detail-header"><div class="detail-header-content"><div><h1 class="detail-title" th:text="#{ui.02738}"></h1><p class="detail-subtitle" th:text="#{ui.library.programmeEditHint}"></p></div><a class="detail-btn-secondary" th:href="@{/trainer/library/programmes/{id}(id=${programmeId},q=${query},page=${libraryPage})}" th:text="#{ui.00664}"></a></div></header>
+        <form th:fragment="programmeForm" th:object="${form}" th:action="${programmeId == null} ? @{/trainer/library/programmes/create(q=${query},page=${libraryPage})} : @{/trainer/library/programmes/{id}/edit(id=${programmeId},q=${query},page=${libraryPage})}" method="post" class="profile-editor-form library-programme-form">
+            <input th:if="${programmeId != null}" type="hidden" th:field="*{expectedRevision}">
+            <div th:if="${#fields.hasAnyErrors() and programmeConflict != true}" id="programme-errors" class="profile-editor-errors" role="alert">
+                <h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.library.programmeInvalid}"></p>
+                <ul><li th:if="${#fields.hasErrors('title')}"><a href="#title" th:text="#{ui.00583}"></a></li><li th:if="${#fields.hasErrors('weeks')}"><a href="#weeks" th:text="#{ui.02737}"></a></li><li th:if="${#fields.hasErrors('notesText')}"><a href="#notesText" th:text="#{ui.02687}"></a></li></ul>
             </div>
-
-            <form class="mt-6 space-y-4" method="post" th:action="@{/trainer/library/programmes/{id}/edit(id=${programmeId})}" th:object="${form}">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
-                <div>
-                    <label class="block text-sm font-semibold" for="title" th:text="#{ui.00583}">Title</label>
-                    <input id="title" type="text" th:field="*{title}"
-                           class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30" />
-                    <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+            <section th:if="${programmeConflict}" class="detail-section library-programme-conflict" role="alert" aria-labelledby="programme-conflict-title">
+                <h2 id="programme-conflict-title" class="detail-section-title" th:text="#{ui.library.programmeChanged}"></h2><p th:text="#{ui.library.programmeConflictHelp}"></p>
+                <h3 dir="auto" th:text="${latestProgramme.title}"></h3><p th:text="${latestProgramme.weeks != null} ? #{ui.plan.weeks(${latestProgramme.weeks})} : #{ui.library.programmeDurationOpen}"></p>
+                <ul class="detail-list"><li th:each="note : ${latestProgrammeNotes}" class="plan-coaching-note" dir="auto" th:text="${note.noteText}"></li></ul>
+            </section>
+            <div class="library-exercise-editor-layout">
+                <div class="library-exercise-fields">
+                    <fieldset class="detail-section"><legend class="detail-section-title" th:text="#{ui.02657}"></legend>
+                        <div class="profile-editor-fields">
+                            <div class="profile-editor-bio"><label for="title"><span th:text="#{ui.00583}"></span> <span aria-hidden="true">*</span></label><input id="title" type="text" dir="auto" required maxlength="120" th:field="*{title}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('title')},aria-describedby=${#fields.hasErrors('title') ? 'programme-errors' : null}"></div>
+                            <div class="profile-editor-bio"><label for="weeks" th:text="#{ui.02737}"></label><input id="weeks" type="text" inputmode="numeric" pattern="[0-9]{1,10}" maxlength="10" th:field="*{weeks}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('weeks')},aria-describedby=${#fields.hasErrors('weeks') ? 'weeks-help programme-errors' : 'weeks-help'}"><p id="weeks-help" th:text="#{ui.library.programmeDurationHelp}"></p></div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="detail-section"><legend class="detail-section-title" th:text="#{ui.02675}"></legend><label for="notesText" th:text="#{ui.02687}"></label><textarea id="notesText" dir="auto" rows="6" maxlength="10000" th:field="*{notesText}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('notesText')},aria-describedby=${#fields.hasErrors('notesText') ? 'notes-help programme-errors' : 'notes-help'}"></textarea><p id="notes-help" th:text="#{ui.library.programmeInstructionSharing}"></p></fieldset>
                 </div>
-
-                <div>
-                    <label class="block text-sm font-semibold" for="weeks" th:text="#{ui.02737}">Weeks</label>
-                    <input id="weeks" type="number" min="1" th:field="*{weeks}"
-                           class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white" />
-                    <div class="mt-1 text-sm text-rose-300" th:if="${#fields.hasErrors('weeks')}" th:errors="*{weeks}"></div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold" for="notesText" th:text="#{ui.02687}">Coaching notes (one per line)</label>
-                    <textarea id="notesText" rows="5" th:field="*{notesText}"
-                              class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"></textarea>
-                </div>
-
-                <div class="flex items-center justify-end gap-2">
-                    <button type="submit"
-                            class="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.00382}">
-                        Save changes
-                    </button>
-                </div>
-            </form>
-        </div>
+                <section class="detail-section library-exercise-preview" aria-labelledby="programme-preview-title">
+                    <h2 id="programme-preview-title" class="detail-section-title" th:text="#{ui.library.previewTitle}"></h2><p class="detail-subtitle" th:text="#{ui.library.programmePreviewHint}"></p>
+                    <h3 data-library-preview="title" dir="auto" th:text="${form.title}"></h3>
+                    <h3 id="programme-preview-weeks" th:text="#{ui.02737}"></h3><p data-library-preview="weeks" dir="auto" th:text="${draftWeeks}"></p>
+                    <h3 id="programme-preview-notes" th:text="#{ui.00239}"></h3><p class="library-preview-text" role="region" aria-labelledby="programme-preview-notes" th:tabindex="${#strings.isEmpty(form.notesText) ? -1 : 0}" data-library-preview="notesText" dir="auto" th:text="${form.notesText}"></p>
+                </section>
+            </div>
+            <div class="connection-actions"><button type="submit" class="detail-btn-primary" th:text="${programmeId == null} ? #{ui.02735} : (${programmeConflict} ? #{ui.library.saveReviewedDraft} : #{ui.00686})"></button><a class="detail-btn-secondary" th:href="${programmeId == null} ? @{/trainer/library/programmes(q=${query},page=${libraryPage})} : @{/trainer/library/programmes/{id}(id=${programmeId},q=${query},page=${libraryPage})}" th:text="#{ui.00125}"></a></div>
+        </form>
     </div>
-
+    <th:block th:fragment="pageScripts"><script th:src="@{/js/trainer/trainer-library-editor.js(v=${assetVersion})}" defer></script></th:block>
 </th:block>

@@ -7,11 +7,11 @@
              data-lang=${currentLanguage.code()},
              data-theme=${userSettings != null && userSettings.theme != null ? userSettings.theme.toString().toLowerCase() : 'system'},
              data-colorblind=${userSettings != null && userSettings.colorBlindMode ? 'on' : 'off'}"
-    th:with="assetVersion=${uiCssVersion != null and !#strings.isEmpty(uiCssVersion) ? uiCssVersion : '20260820p81'},
+    th:with="assetVersion=${uiCssVersion != null and !#strings.isEmpty(uiCssVersion) ? uiCssVersion : '20261002v2b'},
              authUser=${@authHelper.getAuthenticatedUser()},
-             includeNavbar=${@environment.getProperty('app.ui.includeNavbar') != 'false'},
+             includeNavbar=${@environment.getProperty('app.ui.includeNavbar') != 'false' and disableNavbar != true},
              includeGlobalChatbot=${@environment.getProperty('app.ui.includeChatbot') != 'false' and disableGlobalChatbot != true and disableGlobalChatbot != 'true'},
-             includeQuickActions=${#authentication != null and #authentication.authenticated and #authentication.principal != 'anonymousUser'},
+             includeQuickActions=${#authentication != null and #authentication.authenticated and #authentication.principal != 'anonymousUser' and disableQuickActions != true},
              documentTitle=${includeGuestExperience == true and currentRequestPath != '/' and pageTitle != null and !#strings.isEmpty(pageTitle) and !#strings.contains(#strings.toLowerCase(pageTitle), 'one to one') ? pageTitle + ' | One To One' : (pageTitle != null and !#strings.isEmpty(pageTitle) ? pageTitle : 'One To One')}"
     th:fragment="layout(pageTitle, pageStyles, content, pageScripts)">
 <head>
@@ -19,9 +19,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description"
           th:content="${pageDescription} ?: 'One To One connects clients with verified personal trainers through structured programmes, secure payments and visible progress.'">
-    <meta th:if="${includeGuestExperience}" name="theme-color" content="#04100c">
-    <meta th:unless="${includeGuestExperience}" name="theme-color" content="#f4f8f5" media="(prefers-color-scheme: light)">
-    <meta th:unless="${includeGuestExperience}" name="theme-color" content="#07120e" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f3f6fb" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#060914" media="(prefers-color-scheme: dark)">
     <meta property="og:site_name" content="One To One">
     <meta property="og:type" content="website">
     <meta property="og:title" th:content="${documentTitle}">
@@ -38,6 +37,9 @@
 
     <!-- No-flash theme script: must run before CSS to prevent flash of wrong theme. -->
     <script th:src="@{/js/core/theme-preload.js(v='20260730a')}"></script>
+    <noscript>
+        <link rel="stylesheet" th:href="@{/css/components/core/shell-noscript.css(v=${assetVersion})}"/>
+    </noscript>
     <script th:src="@{/js/core/overlay-manager.js(v='20260713a')}"></script>
 
     <!-- Core styles stay small; shell and route bundles load only when their UI is present. -->
@@ -55,10 +57,11 @@
     <th:block th:if="${pageStyles != null}">
         <th:block th:replace="${pageStyles}"></th:block>
     </th:block>
+    <link rel="stylesheet" th:href="@{/css/bundles/design-system.css(v=${assetVersion})}">
 </head>
 
-<body class="min-h-screen bg-cyber-900 text-slate-100 antialiased"
-    th:classappend="${((userSettings != null and userSettings.easyMode) ? ' text-lg leading-relaxed' : ' text-base') + (userSettings != null and userSettings.colorBlindMode ? ' color-blind' : '') + (timeOfDayMoodClass != null ? ' ' + timeOfDayMoodClass : '') + (includeGlobalChatbot ? ' has-global-chat' : '') + (includeQuickActions ? ' has-quick-actions has-platform-panel' : ' public-guest') + (includeGuestExperience ? ' guest-route' : '')}"
+<body class="version-two min-h-screen bg-cyber-900 text-slate-100 antialiased"
+    th:classappend="${((userSettings != null and userSettings.easyMode) ? ' text-lg leading-relaxed' : ' text-base') + (userSettings != null and userSettings.colorBlindMode ? ' color-blind' : '') + (timeOfDayMoodClass != null ? ' ' + timeOfDayMoodClass : '') + (includeGlobalChatbot == true ? ' has-global-chat' : '') + (includeQuickActions == true ? ' has-quick-actions has-platform-panel' : ' public-guest') + (includeGuestExperience == true ? ' guest-route' : '')}"
     th:attr="data-time-theme=${timeTheme},
              data-chat-history=${disableChatHistory == true ? 'off' : 'on'},
              data-language=${currentLanguage.code()},
@@ -80,7 +83,7 @@
 </main>
 
 <!-- FOOTER -->
-<th:block th:insert="~{universal-fragments/layout/footer :: footer}"></th:block>
+<th:block th:if="${disableFooter != true}" th:insert="~{universal-fragments/layout/footer :: footer}"></th:block>
 
 <!-- CHATBOT (global) -->
 <th:block th:if="${includeGlobalChatbot}">
@@ -95,12 +98,14 @@
 </th:block>
 
 <!-- Core scripts -->
+<th:block th:insert="~{universal-fragments/layout/confirmation-dialog :: confirmationDialog}"></th:block>
+<script th:src="@{/js/core/dom-safety.js(v=${assetVersion})}" defer></script>
 <script th:if="${includeGlobalChatbot}" th:src="@{/js/chat/chat.js(v=${assetVersion})}" defer></script>
 <script th:src="@{/js/core/form-auto-submit.js(v='20260320a')}" defer></script>
-<script th:src="@{/js/core/confirm-action.js(v='20260320a')}" defer></script>
-<script th:src="@{/js/core/back-navigation.js(v='20260320a')}" defer></script>
+<script th:src="@{/js/core/confirm-action.js(v=${assetVersion})}" defer></script>
+<script th:src="@{/js/core/back-navigation.js(v=${assetVersion})}" defer></script>
 <script th:src="@{/js/core/health-chart-toggle.js(v='20260320a')}" defer></script>
-<script th:if="${includeQuickActions}" th:src="@{/js/core/quick-actions.js(v='20260713b')}" defer></script>
+<script th:if="${includeQuickActions}" th:src="@{/js/core/quick-actions.js(v=${assetVersion})}" defer></script>
 <script th:if="${includeQuickActions}" th:src="@{/js/core/platform-panel.js(v=${assetVersion})}" defer></script>
 <script th:if="${includeQuickActions}" th:src="@{/js/public/site-tour.js(v=${assetVersion})}" defer></script>
 <script th:src="@{/js/core/navbar-premium.js(v='20260316a')}" defer></script>

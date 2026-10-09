@@ -154,7 +154,7 @@ class RoleAwareSharedSurfaceContractTest {
     void calendarDrawerAndGoalViewsExposeCompleteKeyboardPatterns() throws IOException {
         String month = read("src/main/resources/templates/shared-views/calendar/month.html");
         String week = read("src/main/resources/templates/shared-views/calendar/week.html");
-        String drawer = read("src/main/resources/templates/shared-views/calendar/fragments/schedule-drawer-week.html");
+        String drawer = read("src/main/resources/templates/shared-views/calendar/fragments/schedule-drawer.html");
         String calendarScript = read("src/main/resources/static/js/calendar/calendar-ux.js");
         String goals = read("src/main/resources/templates/client-views/goals/index.html");
         String goalsScript = read("src/main/resources/static/js/goals/goal-pages.js");

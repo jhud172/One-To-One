@@ -3,7 +3,7 @@
     const menu = document.getElementById('siteNavMenu');
     if (!button || !menu) return;
 
-    const mobileNavBreakpoint = window.matchMedia('(max-width: 880px)');
+    const mobileNavBreakpoint = window.matchMedia('(max-width: 1377px)');
     const header = button.closest('.navheader');
     const overlayManager = window.OneToOneOverlay;
     let lastScrollY = window.scrollY || 0;
@@ -193,11 +193,17 @@
 
     const mobileQuickActionsToggle = document.getElementById('mobileQuickActionsToggle');
     if (mobileQuickActionsToggle) {
-        mobileQuickActionsToggle.addEventListener('click', () => {
+        mobileQuickActionsToggle.addEventListener('click', (event) => {
             const quickActionsToggle = document.getElementById('quickActionsToggle');
             if (quickActionsToggle) {
-                quickActionsToggle.click();
+                // The same menu click must not reach the shelf's outside-click handler.
+                event.stopPropagation();
                 closeMenu();
+                if (typeof window.toggleQuickActionsShelf === 'function') {
+                    window.toggleQuickActionsShelf(button);
+                } else {
+                    quickActionsToggle.click();
+                }
             }
         });
     }

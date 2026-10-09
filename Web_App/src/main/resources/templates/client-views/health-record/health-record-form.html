@@ -1,111 +1,19 @@
-<th:block th:replace="~{base :: layout(#{ui.00656}, ~{::pageStyles}, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="pageStyles">
-        <link rel="stylesheet" th:href="@{/vendor/slimselect/slimselect.css}">
-    </div>
-
-    <div th:fragment="content">
-        <div class="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-6">
-            <div>
-                <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100" th:text="#{ui.00631}">Health record</h1>
-                <p class="mt-1 text-sm text-slate-700 dark:text-slate-200" th:text="#{ui.00632}">Enter your measurements and activity level.</p>
-            </div>
-
-            <form th:action="@{/health-record}" th:method="post" th:object="${healthRecordForm}" class="mt-6 rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50">
-                <input th:type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-
-                <label th:for="*{id}"><input th:field="*{id}" type="hidden"></label>
-                <label th:for="*{user.id}"><input th:field="*{user.id}" type="hidden"></label>
-
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label th:for="*{baselineDate}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00633}">Date and time</label>
-                        <div class="mt-1">
-                            <input type="datetime-local" th:field="*{baselineDate}" class="w-full rounded-xl border border-slate-300 bg-white p-2 text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label th:for="*{systolicBloodPressure}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00634}">Systolic blood pressure</label>
-                        <div class="mt-1">
-                            <input th:field="*{systolicBloodPressure}" placeholder="mmHg" class="w-full rounded-xl border border-slate-300 bg-white p-2 text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" th:placeholder="#{ui.00635}">
-                        </div>
-                        <div th:errors="*{systolicBloodPressure}" th:if="${#fields.hasErrors('systolicBloodPressure')}" class="mt-2 text-sm font-medium text-red-800 dark:text-red-200" th:text="#{ui.00636}">Systolic blood pressure error</div>
-                    </div>
-
-                    <div>
-                        <label th:for="*{diastolicBloodPressure}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00637}">Diastolic blood pressure</label>
-                        <div class="mt-1">
-                            <input th:field="*{diastolicBloodPressure}" placeholder="mmHg" class="w-full rounded-xl border border-slate-300 bg-white p-2 text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" th:placeholder="#{ui.00635}">
-                        </div>
-                        <div th:errors="*{diastolicBloodPressure}" th:if="${#fields.hasErrors('diastolicBloodPressure')}" class="mt-2 text-sm font-medium text-red-800 dark:text-red-200" th:text="#{ui.00638}">Diastolic blood pressure error</div>
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label th:for="*{cholesterol}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00639}">Cholesterol</label>
-                        <div class="mt-1">
-                            <input th:field="*{cholesterol}" placeholder="mmol/L" class="w-full rounded-xl border border-slate-300 bg-white p-2 text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" th:placeholder="#{ui.00640}">
-                        </div>
-                        <div th:errors="*{cholesterol}" th:if="${#fields.hasErrors('cholesterol')}" class="mt-2 text-sm font-medium text-red-800 dark:text-red-200" th:text="#{ui.00641}">Cholesterol error</div>
-                    </div>
-
-                    <div>
-                        <label th:for="*{weightKg}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00642}">Weight</label>
-                        <div class="mt-1">
-                            <input th:field="*{weightKg}" placeholder="kg" class="w-full rounded-xl border border-slate-300 bg-white p-2 text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" th:placeholder="#{ui.00643}">
-                        </div>
-                        <div th:errors="*{weightKg}" th:if="${#fields.hasErrors('weightKg')}" class="mt-2 text-sm font-medium text-red-800 dark:text-red-200" th:text="#{ui.00644}">Weight error</div>
-                    </div>
-
-                    <div>
-                        <label th:for="*{heightCm}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00645}">Height</label>
-                        <div class="mt-1">
-                            <input th:field="*{heightCm}" placeholder="cm" class="w-full rounded-xl border border-slate-300 bg-white p-2 text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" th:placeholder="#{ui.00646}">
-                        </div>
-                        <div th:errors="*{heightCm}" th:if="${#fields.hasErrors('heightCm')}" class="mt-2 text-sm font-medium text-red-800 dark:text-red-200" th:text="#{ui.00647}">Height error</div>
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label th:for="*{waistCm}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00648}">Waist circumference</label>
-                        <div class="mt-1">
-                            <input th:field="*{waistCm}" placeholder="cm" class="w-full rounded-xl border border-slate-300 bg-white p-2 text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" th:placeholder="#{ui.00646}">
-                        </div>
-                        <div th:errors="*{waistCm}" th:if="${#fields.hasErrors('waistCm')}" class="mt-2 text-sm font-medium text-red-800 dark:text-red-200" th:text="#{ui.00649}">Waist circumference error</div>
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label th:for="*{activityLevel}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00650}">Activity level</label>
-                        <div class="mt-1">
-                            <select th:field="*{activityLevel}" class="w-full rounded-xl border border-slate-300 bg-white p-2 text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                                <option value="Sedentary" th:text="#{ui.00651}">I do little to no exercise</option>
-                                <option value="Lightly Active" th:text="#{ui.00652}">I exercise 1-3 times a week</option>
-                                <option value="Moderately Active" th:text="#{ui.00653}">I exercise 3-5 times a week</option>
-                                <option value="Very Active" th:text="#{ui.00654}">I exercise 6-7 times a week</option>
-                            </select>
-                        </div>
-                        <div th:errors="*{activityLevel}" th:if="${#fields.hasErrors('activityLevel')}" class="mt-2 text-sm font-medium text-red-800 dark:text-red-200" th:text="#{ui.00655}">Activity level error</div>
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label th:for="*{physicalConditions}" class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00335}">Physical conditions</label>
-                        <div class="mt-1">
-                            <select id="selectElement" multiple="multiple" th:field="*{physicalConditions}" class="w-full">
-                                <option th:each="physicalCondition: ${allPhysicalConditions}" th:text="${physicalCondition.name}" th:value="${physicalCondition.id}"></option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" th:text="#{ui.00109}">Save</button>
-                </div>
-            </form>
-        </div>
-
-    </div>
-
-    <div th:fragment="pageScripts">
-        <script th:src="@{/vendor/slimselect/slimselect.js}"></script>
-        <script th:src="@{/js/health/health-record-form-page.js}"></script>
-    </div>
-</th:block>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.00631}, null, ~{::content}, null)}">
+<div th:fragment="content" class="client-workspace-v2 personal-records-v2 health-records-v2">
+    <header class="detail-header"><div class="detail-header-content"><div><h1 class="detail-title" th:text="#{ui.00631}"></h1><p class="detail-subtitle" th:text="#{ui.00632}"></p></div><a class="detail-btn-secondary" th:href="@{/health-record/list}" th:text="#{ui.01969}"></a></div></header>
+    <th:block th:replace="~{client-views/health-record/fragments/health-scope :: healthScope}"></th:block>
+    <form class="detail-section profile-editor-form" th:object="${healthRecordForm}" th:action="@{/health-record}" method="post" data-health-record-form>
+        <div th:if="${#fields.hasAnyErrors()}" id="health-errors" class="profile-editor-errors" role="alert"><h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.health.invalid}"></p><ul><li th:if="${#fields.hasErrors('baselineDate')}"><a href="#baselineDate" th:text="#{ui.00633}"></a></li><li th:if="${#fields.hasErrors('systolicBloodPressure')}"><a href="#systolicBloodPressure" th:text="#{ui.00634}"></a></li><li th:if="${#fields.hasErrors('diastolicBloodPressure')}"><a href="#diastolicBloodPressure" th:text="#{ui.00637}"></a></li><li th:if="${#fields.hasErrors('cholesterol')}"><a href="#cholesterol" th:text="#{ui.00639}"></a></li><li th:if="${#fields.hasErrors('weightKg')}"><a href="#weightKg" th:text="#{ui.00642}"></a></li><li th:if="${#fields.hasErrors('heightCm')}"><a href="#heightCm" th:text="#{ui.00645}"></a></li><li th:if="${#fields.hasErrors('waistCm')}"><a href="#waistCm" th:text="#{ui.00648}"></a></li><li th:if="${#fields.hasErrors('activityLevel')}"><a href="#activityLevel" th:text="#{ui.00650}"></a></li><li th:if="${#fields.hasErrors('physicalConditions')}"><a href="#physicalConditions" th:text="#{ui.00335}"></a></li></ul></div>
+        <p id="health-required-help" class="health-record-help" th:text="#{ui.health.requiredHint}"></p>
+        <label for="baselineDate" th:text="#{ui.00633}"></label><input id="baselineDate" type="datetime-local" required th:field="*{baselineDate}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('baselineDate')},aria-describedby=${#fields.hasErrors('baselineDate') ? 'health-date-error' + (healthDateMalformed ? ' health-date-draft' : '') : 'health-required-help'}"><p th:if="${#fields.hasErrors('baselineDate')}" id="health-date-error" th:errors="*{baselineDate}"></p><p th:if="${healthDateMalformed}" id="health-date-draft" class="personal-history-rejected" dir="ltr" th:text="${healthDateDraft}"></p>
+        <fieldset><legend class="detail-section-title" th:text="#{ui.00632}"></legend><p id="health-number-help" class="health-record-help" th:text="#{ui.health.numberHint}"></p><div class="profile-editor-fields"><div><label for="systolicBloodPressure"><span th:text="#{ui.00634}"></span> (<span th:text="#{ui.00635}"></span>)</label><input id="systolicBloodPressure" type="text" required th:field="*{systolicBloodPressure}" inputmode="numeric" pattern="[0-9]{1,3}" maxlength="8" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('systolicBloodPressure')},aria-describedby=${#fields.hasErrors('systolicBloodPressure') ? 'health-number-help health-systolicBloodPressure-error' : 'health-number-help'}"><p th:if="${#fields.hasErrors('systolicBloodPressure')}" id="health-systolicBloodPressure-error" th:errors="*{systolicBloodPressure}"></p></div>
+<div><label for="diastolicBloodPressure"><span th:text="#{ui.00637}"></span> (<span th:text="#{ui.00635}"></span>)</label><input id="diastolicBloodPressure" type="text" required th:field="*{diastolicBloodPressure}" inputmode="numeric" pattern="[0-9]{1,3}" maxlength="8" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('diastolicBloodPressure')},aria-describedby=${#fields.hasErrors('diastolicBloodPressure') ? 'health-number-help health-diastolicBloodPressure-error' : 'health-number-help'}"><p th:if="${#fields.hasErrors('diastolicBloodPressure')}" id="health-diastolicBloodPressure-error" th:errors="*{diastolicBloodPressure}"></p></div>
+<div><label for="cholesterol"><span th:text="#{ui.00639}"></span> (<span th:text="#{ui.00640}"></span>)</label><input id="cholesterol" type="text" required th:field="*{cholesterol}" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="8" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('cholesterol')},aria-describedby=${#fields.hasErrors('cholesterol') ? 'health-number-help health-cholesterol-error' : 'health-number-help'}"><p th:if="${#fields.hasErrors('cholesterol')}" id="health-cholesterol-error" th:errors="*{cholesterol}"></p></div>
+<div><label for="weightKg"><span th:text="#{ui.00642}"></span> (<span th:text="#{ui.00643}"></span>)</label><input id="weightKg" type="text" required th:field="*{weightKg}" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="8" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('weightKg')},aria-describedby=${#fields.hasErrors('weightKg') ? 'health-number-help health-weightKg-error' : 'health-number-help'}"><p th:if="${#fields.hasErrors('weightKg')}" id="health-weightKg-error" th:errors="*{weightKg}"></p></div>
+<div><label for="heightCm"><span th:text="#{ui.00645}"></span> (<span th:text="#{ui.00646}"></span>)</label><input id="heightCm" type="text" required th:field="*{heightCm}" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="8" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('heightCm')},aria-describedby=${#fields.hasErrors('heightCm') ? 'health-number-help health-heightCm-error' : 'health-number-help'}"><p th:if="${#fields.hasErrors('heightCm')}" id="health-heightCm-error" th:errors="*{heightCm}"></p></div>
+<div><label for="waistCm"><span th:text="#{ui.00648}"></span> (<span th:text="#{ui.00646}"></span>)</label><input id="waistCm" type="text" required th:field="*{waistCm}" inputmode="decimal" pattern="[0-9]+([.][0-9]{1,2})?" maxlength="8" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('waistCm')},aria-describedby=${#fields.hasErrors('waistCm') ? 'health-number-help health-waistCm-error' : 'health-number-help'}"><p th:if="${#fields.hasErrors('waistCm')}" id="health-waistCm-error" th:errors="*{waistCm}"></p></div></div></fieldset>
+        <label for="activityLevel" th:text="#{ui.00650}"></label><select id="activityLevel" required th:field="*{activityLevel}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('activityLevel')},aria-describedby=${#fields.hasErrors('activityLevel') ? 'health-activity-error' : 'health-required-help'}"><option value="" th:text="#{ui.health.chooseActivity}"></option><option th:if="${healthRecordForm.activityLevel != null and !#strings.isEmpty(healthRecordForm.activityLevel) and !healthActivityLabels.containsKey(healthRecordForm.activityLevel)}" th:value="${healthRecordForm.activityLevel}" th:text="${healthRecordForm.activityLevel}" disabled></option><option value="Sedentary" th:text="#{ui.00651}"></option><option value="Lightly Active" th:text="#{ui.00652}"></option><option value="Moderately Active" th:text="#{ui.00653}"></option><option value="Very Active" th:text="#{ui.00654}"></option></select><p th:if="${#fields.hasErrors('activityLevel')}" id="health-activity-error" th:errors="*{activityLevel}"></p>
+        <fieldset id="physicalConditions" tabindex="-1" th:attr="aria-describedby=${#fields.hasErrors('physicalConditions') ? 'health-conditions-help health-conditions-error' : 'health-conditions-help'},aria-invalid=${#fields.hasErrors('physicalConditions')}"><legend class="detail-section-title" th:text="#{ui.00335}"></legend><p id="health-conditions-help" class="health-record-help" th:text="#{ui.health.conditionsHint}"></p><p th:if="${#fields.hasErrors('physicalConditions')}" id="health-conditions-error" th:errors="*{physicalConditions}"></p><div class="health-condition-choices"><label class="profile-editor-visibility" th:each="condition : ${allPhysicalConditions}"><input type="checkbox" th:field="*{physicalConditions}" th:value="${condition.id}"><span dir="auto" th:text="${condition.name}"></span></label></div></fieldset>
+        <div class="connection-actions"><button class="detail-btn-primary" type="submit" th:text="#{ui.00109}"></button><a class="detail-btn-secondary" th:href="@{/health-record/list}" th:text="#{ui.00125}"></a></div>
+    </form>
+</div></th:block>

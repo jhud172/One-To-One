@@ -2,11 +2,11 @@
 <footer xmlns:th="http://www.thymeleaf.org"
         xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
         th:fragment="footer"
-        sec:authorize="!isAuthenticated()"
-        class="footer-redesign mt-12">
+        class="footer-redesign mt-12"
+        th:classappend="${#authorization.expression('isAuthenticated()')} ? 'footer-redesign--account' : ''">
 
     <div class="footer-container">
-        <div class="footer-main">
+        <div class="footer-main" sec:authorize="!isAuthenticated()">
             <div class="footer-brand">
                 <a th:href="@{/}" class="footer-brand-link">
                     <img th:src="@{/img/brand/logo.png}" alt="" class="footer-logo-img" />
@@ -40,14 +40,15 @@
         </div>
 
         <div class="footer-lower">
-            <p class="footer-copyright" th:text="#{ui.02979}">&copy; 2026 Crystal Productions. One To One.</p>
+            <p class="footer-copyright" th:text="#{ui.footer.copyright(${#temporals.format(#temporals.createNow(), 'yyyy')})}">&copy; Crystal Productions. One To One.</p>
 
-            <p class="footer-trust">
+            <p class="footer-trust" sec:authorize="!isAuthenticated()">
                 <span class="footer-trust-dot" aria-hidden="true"></span>
                 <th:block th:text="#{ui.02980}">Verified trainers · Secure platform payments</th:block>
             </p>
 
             <nav class="footer-legal-links" aria-label="Legal" th:attr="aria-label=#{ui.02981}">
+                <a sec:authorize="isAuthenticated()" th:href="@{/support}" class="footer-legal-link" th:text="#{ui.00950}">Support</a>
                 <a th:href="@{/policies/privacy}" class="footer-legal-link" th:text="#{ui.02982}">Privacy</a>
                 <a th:href="@{/policies/terms}" class="footer-legal-link" th:text="#{ui.01519}">Terms</a>
                 <a th:href="@{/policies/payments}" class="footer-legal-link" th:text="#{ui.00830}">Payments</a>

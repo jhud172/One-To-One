@@ -12,6 +12,11 @@ import uk.ac.cf._5.group14.One_To_One.Users.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Arrays;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.LockModeType;
 
 @Service
 public class TrainerReviewService {
@@ -24,6 +29,9 @@ public class TrainerReviewService {
     private final TrainerReviewRepository reviewRepository;
     private final TrainerClientLinkRepository linkRepository;
     private final UserRepository userRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public TrainerReviewService(TrainerReviewRepository reviewRepository,
                                TrainerClientLinkRepository linkRepository,
@@ -39,23 +47,39 @@ public class TrainerReviewService {
      */
     @Transactional
     public TrainerReview createReview(Long clientUserId, Long trainerId, Integer stars, String tags, String comment) {
+        List<String> invalid = new ArrayList<>();
+        if (stars == null || stars < 1 || stars > 5) invalid.add("stars");
+        if (comment != null && comment.length() > 10000) invalid.add("comment");
+        List<String> selectedTags = tags == null || tags.isBlank() ? List.of()
+                : Arrays.stream(tags.split(",", -1)).map(String::trim).distinct().toList();
+        if ((tags != null && tags.length() > 500) || selectedTags.stream().anyMatch(tag -> !TrainerReviewTag.isSupported(tag))) invalid.add("tags");
+        if (!invalid.isEmpty()) throw new ReviewValidationException(invalid);
         // Verify client role
-        User client = userRepository.findById(clientUserId)
+        // Relationship changes use this same client lock. Serialise eligibility and duplicate checks.
+        User client = userRepository.findByIdForUpdate(clientUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        entityManager.refresh(client, LockModeType.PESSIMISTIC_WRITE);
         if (client.getRole() != Role.CLIENT) {
             throw new TrainerReviewException(TrainerReviewException.Reason.USER_NOT_CLIENT, ERROR_NOT_CLIENT);
         }
+        if (!client.isEnabled()) throw new AccessDeniedException("Client is disabled");
 
         // Verify trainer exists
         User trainer = userRepository.findById(trainerId)
                 .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
-        if (trainer.getRole() != Role.TRAINER) {
+        if (trainer.getRole() != Role.TRAINER || !trainer.isTrainerVerified() || !trainer.isEnabled()) {
             throw new IllegalArgumentException("User is not a trainer");
         }
 
         // Find active or most recent ended link
         TrainerClientLink link = findEligibleLink(clientUserId, trainerId);
         if (link == null) {
+            throw new TrainerReviewException(TrainerReviewException.Reason.LINK_NOT_ELIGIBLE, ERROR_LINK_NOT_ELIGIBLE);
+        }
+        entityManager.refresh(link, LockModeType.PESSIMISTIC_WRITE);
+        if (!clientUserId.equals(link.getClientUserId()) || !trainerId.equals(link.getTrainerUserId())
+                || (link.getStatus() != TrainerClientLinkStatus.ACTIVE
+                    && !(link.getStatus() == TrainerClientLinkStatus.ENDED && link.getActivatedAt() != null))) {
             throw new TrainerReviewException(TrainerReviewException.Reason.LINK_NOT_ELIGIBLE, ERROR_LINK_NOT_ELIGIBLE);
         }
 
@@ -65,7 +89,8 @@ public class TrainerReviewService {
         }
 
         // Create review
-        TrainerReview review = new TrainerReview(trainerId, clientUserId, link.getId(), stars, tags, comment);
+        TrainerReview review = new TrainerReview(trainerId, clientUserId, link.getId(), stars,
+                selectedTags.isEmpty() ? null : String.join(",", selectedTags), comment);
         return reviewRepository.save(review);
     }
 
@@ -84,12 +109,9 @@ public class TrainerReviewService {
         }
 
         // If no active link, find most recent ended link with this trainer
-        List<TrainerClientLink> endedLinks = linkRepository
-                .findByTrainerUserIdAndStatusOrderByUpdatedAtDesc(trainerId, TrainerClientLinkStatus.ENDED);
-
-        return endedLinks.stream()
-                .filter(link -> link.getClientUserId().equals(clientUserId))
-                .findFirst()
+        return linkRepository
+                .findFirstByTrainerUserIdAndClientUserIdAndStatusAndActivatedAtIsNotNullOrderByUpdatedAtDescIdDesc(
+                        trainerId, clientUserId, TrainerClientLinkStatus.ENDED)
                 .orElse(null);
     }
 
@@ -97,6 +119,10 @@ public class TrainerReviewService {
      * Check if client can leave a review for this trainer.
      */
     public boolean canClientReviewTrainer(Long clientUserId, Long trainerId) {
+        User client = userRepository.findById(clientUserId).orElse(null);
+        User trainer = userRepository.findById(trainerId).orElse(null);
+        if (client == null || client.getRole() != Role.CLIENT || !client.isEnabled()
+                || trainer == null || trainer.getRole() != Role.TRAINER || !trainer.isEnabled() || !trainer.isTrainerVerified()) return false;
         TrainerClientLink link = findEligibleLink(clientUserId, trainerId);
         if (link == null) {
             return false;

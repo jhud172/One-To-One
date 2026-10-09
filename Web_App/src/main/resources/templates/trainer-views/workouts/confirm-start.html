@@ -1,0 +1,7 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(${template.name}, null, ~{::content}, null)}">
+<div th:fragment="content"><section class="studio-v2">
+    <header class="studio-v2__header"><div><p class="studio-v2__eyebrow" th:text="#{ui.02916}">Workout player</p><h1><bdi th:text="${template.name}">Workout</bdi></h1></div><a class="training-launch__action" href="/workouts" th:text="#{ui.02918}">Back to templates</a></header>
+    <p class="studio-v2__notice" th:text="#{ui.studio.count(${#lists.size(template.exercises)})}">Exercises</p>
+    <p class="studio-v2__notice" th:text="#{ui.personal.help}">Save each set before leaving.</p>
+    <form method="post" th:action="@{/workouts/{id}/start(id=${template.id})}"><button type="submit" class="training-launch__action training-launch__action--primary" th:text="#{ui.02882}">Start</button></form>
+</section></div></th:block>

@@ -1,7 +1,6 @@
 package uk.ac.cf._5.group14.One_To_One.Web;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,17 +37,31 @@ public class DevModeController {
      * Shows available pages users can browse in dev mode
      */
     @GetMapping
-    public String devModeHub(Authentication authentication, Model model) {
+    public String devModeHub(Authentication authentication,
+                             @RequestParam(defaultValue = "") String search,
+                             jakarta.servlet.http.HttpServletResponse response, Model model) {
         if (!devModeProperties.isDevMode()) {
             return "redirect:/";
         }
 
         model.addAttribute("compactTopContent", true);
         model.addAttribute("isDevMode", true);
-        model.addAttribute("devHubView",
-                devModePageAccessService.buildHubView(authentication != null
-                        && authentication.isAuthenticated()
-                        && !(authentication instanceof AnonymousAuthenticationToken)));
+        var hub = devModePageAccessService.buildHubView(authentication);
+        String keyword = search.trim();
+        if (keyword.length() > 100) {
+            response.setStatus(400);
+            model.addAttribute("devHubError", "Use no more than 100 characters to search routes.");
+            keyword = keyword.substring(0, 100);
+        }
+        model.addAttribute("devHubSearch", keyword);
+        model.addAttribute("devHubTotal", hub.publicPages().size() + hub.loginRequiredPages().size() + hub.restrictedPages().size());
+        String needle = keyword.toLowerCase(java.util.Locale.ROOT);
+        java.util.function.Predicate<DevModePageAccessService.DevModePageHubCard> matches = page ->
+                (page.title() + " " + page.path() + " " + page.description()).toLowerCase(java.util.Locale.ROOT).contains(needle);
+        model.addAttribute("devHubView", new DevModePageAccessService.DevModeHubView(
+                hub.publicPages().stream().filter(matches).toList(),
+                hub.loginRequiredPages().stream().filter(matches).toList(),
+                hub.restrictedPages().stream().filter(matches).toList()));
         return "system-views/dev-mode/hub";
     }
     
@@ -88,17 +101,24 @@ public class DevModeController {
     @PostMapping("/waitlist")
     public String joinWaitlist(@RequestParam("email") String email,
                                RedirectAttributes redirectAttributes) {
-        String trimmed = (email == null) ? "" : email.trim();
-        if (trimmed.isEmpty() || !trimmed.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$")) {
+        if (!devModeProperties.isDevMode()) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND);
+        }
+        String trimmed = (email == null) ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+        if (trimmed.length() > 255 || trimmed.isEmpty() || !trimmed.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$")) {
             redirectAttributes.addFlashAttribute("waitlistError", "Please enter a valid email address.");
+            redirectAttributes.addFlashAttribute("waitlistDraft", trimmed.length() <= 255 ? trimmed : "");
             return "redirect:/login";
         }
-        if (waitlistEmailRepository.existsByEmail(trimmed)) {
-            redirectAttributes.addFlashAttribute("waitlistSuccess", "You're already on the list! We'll email you when we launch.");
-        } else {
-            waitlistEmailRepository.save(new WaitlistEmail(trimmed));
-            redirectAttributes.addFlashAttribute("waitlistSuccess", "Thanks! We'll notify you at " + trimmed + " when we go live.");
+        if (!waitlistEmailRepository.existsByEmailIgnoreCase(trimmed)) {
+            try {
+                waitlistEmailRepository.saveAndFlush(new WaitlistEmail(trimmed));
+            } catch (org.springframework.dao.DataIntegrityViolationException collision) {
+                if (!waitlistEmailRepository.existsByEmailIgnoreCase(trimmed)) throw collision;
+            }
         }
+        // Registration is interest only; it does not prove inbox ownership or send mail.
+        redirectAttributes.addFlashAttribute("waitlistSuccess", "Launch interest recorded. No email has been sent; address confirmation is required before outreach.");
         return "redirect:/login";
     }
 }

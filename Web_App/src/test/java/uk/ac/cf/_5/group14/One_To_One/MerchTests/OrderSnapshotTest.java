@@ -34,6 +34,9 @@ class OrderSnapshotTest {
     @Mock
     private MerchProductService productService;
 
+    @Mock private jakarta.persistence.EntityManager entities;
+    @Mock private uk.ac.cf._5.group14.One_To_One.MerchOrders.MerchPaymentGateway gateway;
+
     @InjectMocks
     private MerchOrderServiceImpl orderService;
 

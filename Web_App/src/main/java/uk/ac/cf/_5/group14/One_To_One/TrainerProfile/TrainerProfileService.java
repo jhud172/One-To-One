@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import uk.ac.cf._5.group14.One_To_One.Users.Role;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
@@ -51,9 +52,27 @@ public class TrainerProfileService {
         return profileRepository.findByUserId(userId);
     }
 
+    public java.util.List<SocialLink> getVisibleSocialLinks(TrainerProfile profile) {
+        if (profile == null) return java.util.List.of();
+        var links = new java.util.ArrayList<SocialLink>();
+        addSocialLink(links, profile.getShowInstagram(), profile.getInstagramUrl(), "ui.01243", validator.isValidInstagramUrl(profile.getInstagramUrl()));
+        addSocialLink(links, profile.getShowTikTok(), profile.getTiktokUrl(), "ui.01245", validator.isValidTikTokUrl(profile.getTiktokUrl()));
+        addSocialLink(links, profile.getShowYouTube(), profile.getYoutubeUrl(), "ui.01247", validator.isValidYouTubeUrl(profile.getYoutubeUrl()));
+        addSocialLink(links, profile.getShowLinkedIn(), profile.getLinkedInUrl(), "ui.01249", validator.isValidLinkedInUrl(profile.getLinkedInUrl()));
+        addSocialLink(links, profile.getShowWebsite(), profile.getWebsiteUrl(), "ui.01251", validator.isValidWebsiteUrl(profile.getWebsiteUrl()));
+        return java.util.List.copyOf(links);
+    }
+
+    private void addSocialLink(java.util.List<SocialLink> links, Boolean visible, String url, String key, boolean valid) {
+        if (Boolean.TRUE.equals(visible) && valid && url != null && !url.isBlank()) links.add(new SocialLink(key, url.trim()));
+    }
+
+    public record SocialLink(String labelKey, String url) { }
+
     /**
      * Update trainer profile with validation.
      */
+    @Transactional
     public TrainerProfile updateProfile(Long userId, TrainerProfile updatedProfile) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -62,7 +81,21 @@ public class TrainerProfileService {
             throw new IllegalStateException("Only trainers can update profiles");
         }
 
-        // Validate URLs
+        if (updatedProfile == null) throw new IllegalArgumentException("Profile is required");
+        validateLength(updatedProfile.getBio(), 500);
+        validateLength(updatedProfile.getSpecializations(), 200);
+        validateLength(updatedProfile.getLocation(), 120);
+        validateLength(updatedProfile.getPrimaryGym(), 200);
+        validateLength(updatedProfile.getInstagramUrl(), 500);
+        validateLength(updatedProfile.getTiktokUrl(), 500);
+        validateLength(updatedProfile.getYoutubeUrl(), 500);
+        validateLength(updatedProfile.getLinkedInUrl(), 500);
+        validateLength(updatedProfile.getWebsiteUrl(), 500);
+        if (updatedProfile.getPricePerSession() != null && updatedProfile.getPricePerSession() < 0) {
+            throw new IllegalArgumentException("Price must be non-negative");
+        }
+
+        // Validate all input before changing the persisted profile.
         String validationError = validator.validateProfile(updatedProfile);
         if (validationError != null) {
             throw new IllegalArgumentException(validationError);
@@ -85,13 +118,17 @@ public class TrainerProfileService {
         profile.setWebsiteUrl(updatedProfile.getWebsiteUrl());
         
         // Update visibility flags
-        profile.setShowInstagram(updatedProfile.getShowInstagram());
-        profile.setShowTikTok(updatedProfile.getShowTikTok());
-        profile.setShowYouTube(updatedProfile.getShowYouTube());
-        profile.setShowLinkedIn(updatedProfile.getShowLinkedIn());
-        profile.setShowWebsite(updatedProfile.getShowWebsite());
+        profile.setShowInstagram(Boolean.TRUE.equals(updatedProfile.getShowInstagram()));
+        profile.setShowTikTok(Boolean.TRUE.equals(updatedProfile.getShowTikTok()));
+        profile.setShowYouTube(Boolean.TRUE.equals(updatedProfile.getShowYouTube()));
+        profile.setShowLinkedIn(Boolean.TRUE.equals(updatedProfile.getShowLinkedIn()));
+        profile.setShowWebsite(Boolean.TRUE.equals(updatedProfile.getShowWebsite()));
 
         return profileRepository.save(profile);
+    }
+
+    private void validateLength(String value, int maximum) {
+        if (value != null && value.length() > maximum) throw new IllegalArgumentException("Profile field is too long");
     }
 
     /**

@@ -1,0 +1,29 @@
+<!-- Archived W077: no controller, template, JavaScript or saved-link caller remains.
+     The live schedule workspace supplies selection and the existing /schedules/{id}/apply route. -->
+<th:block xmlns:th="http://www.thymeleaf.org"
+          th:replace="~{base :: layout(#{ui.02568}, null, ~{::content}, null)}">
+
+    <div th:fragment="content">
+        <div class="schedule-apply-page mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+            <h1 class="schedule-apply-title text-2xl font-bold tracking-tight" th:text="#{ui.02563}">Select a schedule</h1>
+            <p class="schedule-apply-subtitle mt-2 text-sm" th:text="#{ui.02564}">Choose a schedule to apply.</p>
+
+            <section class="schedule-apply-list-surface mt-6 rounded-2xl p-6">
+                <div th:if="${schedules != null and !#lists.isEmpty(schedules)}" class="space-y-3">
+                    <a th:each="s : ${schedules}"
+                       th:href="@{'/schedules/' + ${s.id} + '/apply'}"
+                       class="schedule-apply-choice-link block rounded-xl p-4">
+                        <div class="schedule-apply-choice-title font-semibold" th:text="${s.name}">Schedule name</div>
+                        <div class="schedule-apply-choice-copy mt-1 text-sm" th:text="#{ui.02565}">Apply this schedule to your calendar &rarr;</div>
+                    </a>
+                </div>
+
+                <div th:if="${schedules == null or #lists.isEmpty(schedules)}" class="schedule-apply-empty text-sm">
+                    <th:block th:text="#{ui.02566}">No schedules available.</th:block>
+                    <a href="/schedules" class="schedule-apply-link font-semibold" th:text="#{ui.02567}">Go to schedules</a>.
+                </div>
+            </section>
+        </div>
+    </div>
+
+</th:block>

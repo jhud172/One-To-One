@@ -1,46 +1,20 @@
-<th:block th:replace="~{base :: layout(#{ui.00665}, null, ~{::content}, null)}">
-
-    <div th:fragment="content">
-        <div class="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-            <div class="flex items-end justify-between gap-4">
-                <div>
-                    <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100" th:text="#{ui.00657}">All health records</h2>
-                    <p class="mt-1 text-sm text-slate-700 dark:text-slate-200" th:text="#{ui.00658}">Review your submitted health records.</p>
-                </div>
-            </div>
-
-            <div th:if="${param.success}">
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100" th:text="#{ui.00659}">
-                    Health record saved successfully!
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-                        <thead class="bg-slate-50 dark:bg-slate-950/30">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00660}">Date</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00661}">Blood pressure</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00642}">Weight</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00662}">Activity</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00663}">Action</th>
-                        </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-transparent">
-                        <tr th:each="rec : ${records}">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100" th:text="${rec.baselineDate}"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100" th:text="${rec.systolicBloodPressure + '/' + rec.diastolicBloodPressure}"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100" th:text="${rec.weightKg} + ' kg'"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100" th:text="${rec.activityLevel}"></td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <a th:href="@{'/health-record/' + ${rec.id}}" class="text-sm font-semibold text-blue-700 hover:underline dark:text-blue-300" th:text="#{ui.00664}">View</a>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.00665}, null, ~{::content}, null)}">
+<div th:fragment="content" class="client-workspace-v2 personal-records-v2 health-records-v2">
+    <header class="detail-header"><div class="detail-header-content"><div><h1 class="detail-title" th:text="#{ui.00657}"></h1><p class="detail-subtitle" th:text="#{ui.00658}"></p></div><a class="detail-btn-primary" th:href="@{/health-record}" th:text="#{ui.00631}"></a></div><p th:if="${healthRecordSaved}" class="checkin-feedback" role="status" th:text="#{ui.00659}"></p></header>
+    <th:block th:replace="~{client-views/health-record/fragments/health-scope :: healthScope}"></th:block>
+    <form class="detail-section personal-history-filters" method="get" th:action="@{/health-record/list}" th:object="${healthHistoryFilter}">
+        <div th:if="${#fields.hasAnyErrors()}" id="health-history-errors" class="profile-editor-errors" role="alert"><h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.health.filterInvalid}"></p><ul><li th:if="${#fields.hasErrors('from')}"><a href="#from" th:text="#{ui.log.dateFrom}"></a></li><li th:if="${#fields.hasErrors('until')}"><a href="#until" th:text="#{ui.log.dateUntil}"></a></li><li th:if="${#fields.hasErrors('activity')}"><a href="#activity" th:text="#{ui.00650}"></a></li></ul></div>
+        <div class="personal-history-filter-grid">
+            <div><label for="healthSearch" th:text="#{ui.health.searchHint}"></label><input id="healthSearch" dir="auto" type="search" name="q" maxlength="120" th:value="${query}"></div>
+            <div><label for="from" th:text="#{ui.log.dateFrom}"></label><input type="date" th:field="*{from}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('from')},aria-describedby=${#fields.hasErrors('from') ? 'health-history-errors' : null}"><p th:if="${healthFromMalformed}" class="personal-history-rejected" dir="ltr" th:text="${healthDraftFrom}"></p></div>
+            <div><label for="until" th:text="#{ui.log.dateUntil}"></label><input type="date" th:field="*{until}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('until')},aria-describedby=${#fields.hasErrors('until') ? 'health-history-errors' : null}"><p th:if="${healthUntilMalformed}" class="personal-history-rejected" dir="ltr" th:text="${healthDraftUntil}"></p></div>
+            <div><label for="activity" th:text="#{ui.00650}"></label><select th:field="*{activity}" th:attr="aria-invalid=${#fields.hasErrors('activity')},aria-describedby=${#fields.hasErrors('activity') ? 'health-history-errors' : null}"><option value="" th:text="#{ui.health.allActivities}"></option><option th:if="${!#strings.isEmpty(healthHistoryFilter.activity) and !healthActivityLabels.containsKey(healthHistoryFilter.activity)}" th:value="${healthHistoryFilter.activity}" th:text="${healthHistoryFilter.activity}" disabled></option><option value="Sedentary" th:text="#{ui.00651}"></option><option value="Lightly Active" th:text="#{ui.00652}"></option><option value="Moderately Active" th:text="#{ui.00653}"></option><option value="Very Active" th:text="#{ui.00654}"></option></select></div>
+            <div><label for="healthSort" th:text="#{ui.health.sortLabel}"></label><select id="healthSort" name="sort"><option value="newest" th:selected="${healthHistoryFilter.sort == 'newest'}" th:text="#{ui.01991}"></option><option value="oldest" th:selected="${healthHistoryFilter.sort == 'oldest'}" th:text="#{ui.01992}"></option></select></div>
         </div>
-    </div>
-</th:block>
+        <div class="connection-actions"><button class="detail-btn-primary" type="submit" th:text="#{ui.00260}"></button><a th:if="${healthFiltered or #fields.hasAnyErrors()}" class="detail-btn-secondary" th:href="@{/health-record/list(sort=${healthHistoryFilter.sort})}" th:text="#{ui.00555}"></a></div>
+    </form>
+    <p th:unless="${#fields.hasErrors('healthHistoryFilter.*')}" class="personal-history-count" role="status" th:text="#{ui.library.resultsRange(${healthRangeStart},${healthRangeEnd},${healthTotal})}"></p>
+    <section th:if="${#lists.isEmpty(records) and !#fields.hasErrors('healthHistoryFilter.*')}" class="detail-section"><h2 class="detail-section-title" th:text="${healthFiltered} ? #{ui.health.noMatch} : #{ui.health.emptyHistory}"></h2><a th:if="${healthFiltered}" class="detail-btn-secondary" th:href="@{/health-record/list(sort=${healthHistoryFilter.sort})}" th:text="#{ui.00555}"></a></section>
+    <div class="library-exercise-grid"><article th:each="record : ${records}" class="detail-section health-history-card"><h2 class="detail-section-title"><a th:href="@{/health-record/{id}(id=${record.id})}"><time dir="ltr" th:datetime="${record.baselineDate}" th:text="${record.baselineDate != null ? #temporals.format(record.baselineDate,'dd MMM yyyy HH:mm') : '—'}"></time></a></h2><dl class="library-exercise-facts"><div><dt th:text="#{ui.00661}"></dt><dd><bdi dir="ltr"><span th:text="${record.systolicBloodPressure ?: '—'}"></span> / <span th:text="${record.diastolicBloodPressure ?: '—'}"></span> <span th:text="#{ui.00635}"></span></bdi></dd></div><div><dt th:text="#{ui.00642}"></dt><dd><bdi dir="ltr"><span th:text="${record.weightKg ?: '—'}"></span> <span th:text="#{ui.00643}"></span></bdi></dd></div><div><dt th:text="#{ui.00650}"></dt><dd dir="auto" th:text="${record.activityLevel == null or #strings.isEmpty(record.activityLevel) ? '—' : (healthActivityLabels[record.activityLevel] != null ? #messages.msg(healthActivityLabels[record.activityLevel]) : record.activityLevel)}"></dd></div></dl><a class="detail-btn-secondary" th:href="@{/health-record/{id}(id=${record.id})}" th:attr="aria-label=${#messages.msg('ui.00664') + ' · ' + (record.baselineDate ?: '—')}" th:text="#{ui.00664}"></a></article></div>
+    <nav th:if="${healthPageCount > 1}" class="connection-actions" th:attr="aria-label=#{ui.00105}"><a th:if="${healthPage > 1}" class="detail-btn-secondary" th:href="@{/health-record/list(q=${query},sort=${healthHistoryFilter.sort},from=${healthHistoryFilter.from},until=${healthHistoryFilter.until},activity=${healthHistoryFilter.activity},page=${healthPage - 1})}" th:aria-label="${#messages.msg('ui.00105') + ' ' + (healthPage - 1)}"><span aria-hidden="true">←</span> <span th:text="${healthPage - 1}"></span></a><p aria-current="page"><span th:text="#{ui.00105}"></span> <span th:text="${healthPage}"></span> <span th:text="#{ui.00983}"></span> <span th:text="${healthPageCount}"></span></p><a th:if="${healthPage < healthPageCount}" class="detail-btn-secondary" th:href="@{/health-record/list(q=${query},sort=${healthHistoryFilter.sort},from=${healthHistoryFilter.from},until=${healthHistoryFilter.until},activity=${healthHistoryFilter.activity},page=${healthPage + 1})}" th:text="#{ui.03032}"></a></nav>
+</div></th:block>

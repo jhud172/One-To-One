@@ -1,0 +1,143 @@
+/* Shared primitives only: route composition belongs in its page stylesheet. */
+body.version-two.has-platform-panel:has(#platformPanelTrack [data-action="charlie"]) #chatFab,
+body.version-two.has-platform-panel:has(#platformPanelTrack [data-action="actions"]) #quickActionsToggle {
+    display: none;
+}
+html body.version-two {
+    background: var(--v2-page);
+    color: var(--v2-ink);
+    font-family: var(--v2-font);
+    line-height: 1.6;
+    color-scheme: light;
+}
+html.dark body.version-two { color-scheme: dark; }
+body.version-two.public-guest {
+    --guest-page: var(--v2-page);
+    --guest-page-muted: var(--v2-raised);
+    --guest-surface: var(--v2-surface);
+    --guest-border: var(--v2-border);
+    --guest-ink: var(--v2-ink);
+    --guest-copy: var(--v2-muted);
+}
+body.version-two.public-guest #main-content { background: var(--v2-page); }
+body.version-two :focus-visible { outline: 3px solid var(--v2-focus); outline-offset: 3px; }
+body.version-two :is(a, button, input, select, textarea, summary) {
+    scroll-margin-block-start: 7rem;
+    scroll-margin-block-end: calc(var(--shell-platform-panel-height, 0px) + var(--shell-local-dock-height, 0px) + var(--shell-floating-control-clearance, 0px) + 1rem);
+}
+body.version-two ::selection { background: var(--v2-accent); color: var(--v2-on-accent); }
+body.version-two .navheader {
+    --nav-hover-accent: var(--v2-accent);
+    --nav-hover-highlight: var(--v2-accent);
+    --nav-active-accent: var(--v2-accent);
+    --nav-active-highlight: var(--v2-accent);
+    --nav-active-dot-core: var(--v2-ink);
+    background: var(--v2-surface);
+    border-color: var(--v2-border);
+    box-shadow: none;
+}
+@supports (backdrop-filter: blur(16px)) {
+    body.version-two .navheader { background: color-mix(in srgb, var(--v2-surface) 94%, transparent); backdrop-filter: blur(16px); }
+}
+body.version-two .accentstrip { background: linear-gradient(90deg, var(--v2-accent), var(--v2-connection)); opacity: 0.7; }
+body.version-two .nav-login-cta { background: var(--v2-accent); color: var(--v2-on-accent); border-color: transparent; box-shadow: none; }
+body.version-two .nav-login-cta:hover { background: var(--v2-accent-hover); box-shadow: none; transform: none; }
+body.version-two .nav-login-cta::before { content: none; }
+body.version-two .nav-login-cta__icon { background: transparent; color: inherit; border-color: currentColor; box-shadow: none; }
+body.version-two .navsurface { background: var(--v2-surface); border-color: var(--v2-border); box-shadow: none; }
+body.version-two .navsurface:hover { background: var(--v2-surface); }
+body.version-two .navlink { color: var(--v2-muted); }
+body.version-two .navlink-active { color: var(--v2-accent); background: var(--v2-accent-soft); }
+body.version-two .navlink:hover { color: var(--v2-accent); }
+html:not(.dark) body.version-two.public-guest.guest-route .navsurface__track .navlink-active { color: var(--v2-accent); }
+body.version-two .footer-redesign,
+body.version-two.public-guest.guest-route .footer-redesign {
+    --footer-accent: 8 105 135;
+    --footer-ink: 17 33 57;
+    --footer-copy: 71 90 115;
+    --footer-line: 204 215 230;
+    background: var(--v2-surface);
+    border-color: var(--v2-border);
+}
+html.dark body.version-two .footer-redesign,
+html.dark body.version-two.public-guest.guest-route .footer-redesign {
+    --footer-accent: 73 218 255;
+    --footer-ink: 244 248 255;
+    --footer-copy: 183 197 217;
+    --footer-line: 43 59 83;
+}
+body.version-two .footer-redesign::before { background: linear-gradient(90deg, transparent, var(--v2-accent), var(--v2-connection), transparent); }
+body.version-two .footer-cta { background: var(--v2-accent); color: var(--v2-on-accent); box-shadow: none; }
+body.version-two .footer-cta:hover { background: var(--v2-accent-hover); box-shadow: none; }
+body.version-two .footer-cta::before { content: none; }
+body.version-two .app-dashboard {
+    --dashboard-title: var(--v2-ink);
+    --dashboard-text: var(--v2-ink);
+    --dashboard-muted: var(--v2-muted);
+    --dashboard-subtle: var(--v2-muted);
+    --dashboard-accent: var(--v2-accent);
+    --dashboard-accent-strong: var(--v2-accent);
+    --dashboard-blue: var(--v2-accent);
+    --dashboard-surface: var(--v2-surface);
+    --dashboard-surface-subtle: var(--v2-raised);
+    --dashboard-border: var(--v2-border);
+    --dashboard-control-border: var(--v2-control-border);
+    --dashboard-focus: var(--v2-focus);
+}
+/* Route layout rules must never reveal intentionally hidden controls. */
+body.version-two [hidden],
+body.version-two .hidden { display: none !important; }
+body.version-two .btn {
+    min-height: 44px;
+    border-radius: var(--v2-radius-control);
+    transition: background-color var(--motion-duration-micro) var(--motion-ease-standard), border-color var(--motion-duration-micro) var(--motion-ease-standard), box-shadow var(--motion-duration-micro) var(--motion-ease-standard);
+}
+body.version-two .btn::before { content: none; }
+body.version-two .btn:hover { transform: none; }
+body.version-two .btn--primary { background: var(--v2-accent); color: var(--v2-on-accent); box-shadow: none; }
+body.version-two .btn--primary:hover { background: var(--v2-accent-hover); }
+body.version-two :is(.btn--secondary, .btn--ghost) { background: transparent; color: var(--v2-accent); border: 1px solid var(--v2-control-border); box-shadow: none; }
+body.version-two :is(.btn--secondary, .btn--ghost):hover { background: var(--v2-accent-soft); }
+body.version-two .field__label { color: var(--v2-ink); }
+body.version-two :is(.field__input, .field__textarea, .field__select) {
+    min-height: 44px;
+    border: 1px solid var(--v2-control-border);
+    border-radius: var(--v2-radius-control);
+    background-color: var(--v2-surface);
+    color: var(--v2-ink);
+    box-shadow: none;
+}
+body.version-two :is(.field__input, .field__textarea)::placeholder { color: var(--v2-muted); opacity: 1; }
+body.version-two .field__hint { color: var(--v2-muted); }
+body.version-two .field__error { color: var(--v2-danger); }
+body.version-two .field__input--error { border-color: var(--v2-danger); }
+body.version-two .field__input--success { border-color: var(--v2-success); }
+body.version-two :is(.field__checkbox, .field__radio, .field__switch) { accent-color: var(--v2-accent); box-shadow: none; }
+body.version-two .card {
+    background: var(--v2-surface);
+    border-color: var(--v2-border);
+    border-radius: var(--v2-radius-panel);
+    box-shadow: var(--v2-shadow-panel);
+    backdrop-filter: none;
+}
+body.version-two .card:hover { transform: none; box-shadow: var(--v2-shadow-panel); border-color: var(--v2-border); }
+body.version-two .card--interactive:hover { border-color: var(--v2-accent); }
+body.version-two .role-surface {
+    --role-surface-border: var(--v2-border);
+    --role-surface-muted: var(--v2-muted);
+    --role-surface-ink: var(--v2-ink);
+    --role-surface-accent: var(--v2-accent);
+}
+body.version-two :is(.role-surface__header, .role-surface__surface) { background: var(--v2-surface); border-radius: var(--v2-radius-panel); box-shadow: var(--v2-shadow-panel); }
+body.version-two .role-surface__action--primary { background: var(--v2-accent); color: var(--v2-on-accent); border-color: var(--v2-accent); box-shadow: none; }
+body.version-two .role-surface__action--primary:hover { background: var(--v2-accent-hover); }
+body.version-two .role-surface__action--secondary { background: var(--v2-surface); color: var(--v2-ink); border-color: var(--v2-control-border); }
+body.version-two .role-surface__action--secondary:hover { background: var(--v2-raised); }
+body.version-two .role-surface__empty-icon { background: var(--v2-accent-soft); color: var(--v2-accent); }
+body.version-two .role-surface__notice { background: var(--v2-accent-soft); color: var(--v2-ink); border-left-color: var(--v2-accent); }
+body.version-two :is(.role-surface__field label, .role-surface__label) { color: var(--v2-ink); }
+body.version-two .role-surface__field :is(input, select, textarea) { background: var(--v2-surface); color: var(--v2-ink); border-color: var(--v2-control-border); }
+@media (forced-colors: active) {
+    body.version-two :focus-visible { outline-color: Highlight; }
+    body.version-two .btn--primary { border: 1px solid ButtonText; }
+}

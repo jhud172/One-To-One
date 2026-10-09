@@ -1106,8 +1106,18 @@
 /* ===== DRAWER TRANSITIONS ===== */
 #task-drawer,
 #workout-drawer {
-  transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease;
 }
+
+#workout-drawer [data-workout-dialog] {
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+    top: auto;
+}
+#workout-drawer [data-workout-dialog]::backdrop { background: rgb(6 9 20 / 0.6); }
+#workout-drawer [data-testid="workout-drawer-close"] { min-height: 44px; min-width: 44px; }
+@media (min-width: 640px) { #workout-drawer [data-workout-dialog] { top: 0; } }
 
 #task-drawer .sm\:w-96,
 #workout-drawer .sm\:w-\[28rem\] {
@@ -2380,6 +2390,50 @@
 }
 .day-inherit-color {
     color: inherit;
+}
+
+/* Keep native navigation and task creation usable before scripts initialise. */
+#day-main-content:not([data-day-tabs-enhanced="true"]) .day-tab-panel {
+    margin-bottom: 1.5rem;
+    scroll-margin-top: 6rem;
+}
+
+#day-main-content:not([data-day-tabs-enhanced="true"]) #day-tab-pill,
+#day-main-content:not([data-day-tabs-enhanced="true"]) #day-shortcuts-btn,
+#day-main-content:not([data-day-tabs-enhanced="true"]) #time-theme-toggle-btn,
+#day-main-content:not([data-day-tabs-enhanced="true"]) #ai-optimise-btn,
+[data-task-filter-controls]:not([data-enhanced="true"]) {
+    display: none;
+}
+
+#add-task-modal:not([data-task-modal-enhanced="true"]) {
+    display: block;
+    position: static;
+    inset: auto;
+    z-index: auto;
+    margin-top: 1.5rem;
+    scroll-margin-top: 6rem;
+}
+
+#add-task-modal:not([data-task-modal-enhanced="true"]) > .relative {
+    min-height: 0;
+    padding: 0;
+}
+
+#add-task-modal:not([data-task-modal-enhanced="true"]) [data-add-task-dialog] {
+    max-width: 48rem;
+}
+
+#add-task-modal:not([data-task-modal-enhanced="true"]) [data-modal-backdrop],
+#add-task-modal:not([data-task-modal-enhanced="true"]) #close-add-task,
+#add-task-modal:not([data-task-modal-enhanced="true"]) [data-task-template-heading],
+#add-task-modal:not([data-task-modal-enhanced="true"]) [data-task-template-heading] + div {
+    display: none;
+}
+
+.day-native-completion-form {
+    margin: 0;
+    flex-shrink: 0;
 }
 
 body.focus-mode-page {

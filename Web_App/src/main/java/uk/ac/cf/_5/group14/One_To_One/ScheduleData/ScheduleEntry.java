@@ -20,7 +20,8 @@ public class ScheduleEntry {
     @JoinColumn(name = "schedule_id")
     private Schedule schedule;
 
-    @ManyToOne(optional = false)
+    // A custom movement has no catalogue exercise; services validate exactly one reference.
+    @ManyToOne
     @JoinColumn(name = "exercise_id")
     private Exercise exercise;
 

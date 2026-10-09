@@ -1,0 +1,26 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.moderation.title}, null, ~{::content}, null)}">
+    <div th:fragment="content" class="client-workspace-v2 moderation-workspace-v2">
+        <nav class="client-workspace-nav" th:attr="aria-label=#{ui.moderation.title}"><a th:href="@{/admin/dashboard}" th:text="#{ui.00005}">Back to operations</a></nav>
+        <header class="detail-header"><h1 class="detail-title" th:text="#{ui.moderation.title}">Review moderation</h1><p class="detail-subtitle" th:text="#{ui.moderation.summary}">A decision resolves every pending report for that review.</p></header>
+        <p th:if="${moderationSaved == true}" role="status" class="checkin-feedback" th:text="#{ui.moderation.saved}">Moderation decision saved.</p>
+        <p th:if="${moderationError == true}" role="alert" class="checkin-review-error" th:text="#{ui.moderation.error}">This report may already be resolved. Otherwise, enter resolution notes of 1 to 10,000 characters and try again.</p>
+        <p th:if="${#lists.isEmpty(pendingModerations)}" class="detail-empty assessment-history-empty" th:text="#{ui.moderation.empty}">No reports awaiting review.</p>
+        <div class="moderation-report-list">
+            <article th:each="report : ${pendingModerations}" class="detail-section" th:with="review=${reviewsById[report.reviewId]}">
+                <h2 class="detail-section-title" th:text="#{ui.moderation.review}">Reported review</h2>
+                <div th:if="${review != null}" class="detail-card moderation-review">
+                    <p th:text="${review.stars} + ' / 5'"></p><p class="plan-coaching-note" th:text="${review.comment}"></p><p class="detail-subtitle" th:text="${review.tags}"></p>
+                </div>
+                <dl class="moderation-report-context">
+                    <div><dt th:text="#{ui.01035}">Reason</dt><dd class="plan-coaching-note" th:text="${report.reason}"></dd></div>
+                    <div th:if="${usersById[report.reportedByUserId] != null}"><dt th:text="#{ui.moderation.reporter}">Reported by</dt><dd th:text="${usersById[report.reportedByUserId].fullName}"></dd></div>
+                </dl>
+                <time th:attr="datetime=${report.reportedAt}" th:text="${#temporals.format(report.reportedAt, 'dd MMM yyyy HH:mm')}"></time>
+                <form th:if="${review != null}" th:action="@{/admin/moderation/{id}/hide(id=${report.id})}" method="post" class="client-checkin-form" th:attr="data-confirm=#{ui.moderation.confirm}">
+                    <div><label th:for="${'resolution-' + report.id}" th:text="#{ui.moderation.notes}">Resolution notes</label><textarea th:id="${'resolution-' + report.id}" name="notes" required maxlength="10000" rows="4" th:text="${moderationDraft != null and moderationDraft.id == report.id ? moderationDraft.notes : ''}"></textarea></div>
+                    <div class="connection-actions"><button class="detail-btn-secondary moderation-hide" type="submit" th:text="#{ui.moderation.hide}">Hide review</button><button class="detail-btn-primary" type="submit" th:formaction="@{/admin/moderation/{id}/keep(id=${report.id})}" th:text="#{ui.moderation.keep}">Keep visible</button></div>
+                </form>
+            </article>
+        </div>
+    </div>
+</th:block>

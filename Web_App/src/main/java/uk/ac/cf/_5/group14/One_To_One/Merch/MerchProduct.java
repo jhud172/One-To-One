@@ -14,6 +14,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+// Metadata edits must not overwrite stock changed by atomic reservation/restoration queries.
+@org.hibernate.annotations.DynamicUpdate
 @Entity
 @Table(name = "merch_products")
 @Getter

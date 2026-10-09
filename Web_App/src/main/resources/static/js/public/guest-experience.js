@@ -14,6 +14,10 @@
 
     roots.forEach((root) => {
         const revealTargets = Array.from(root.querySelectorAll('[data-guest-reveal]'));
+        root.addEventListener('focusin', (event) => {
+            const target = event.target.closest('[data-guest-reveal]');
+            if (target) target.classList.add('is-visible');
+        });
 
         if (!canReveal) {
             revealTargets.forEach((target) => target.classList.add('is-visible'));

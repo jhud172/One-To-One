@@ -1,7 +1,7 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(#{ui.00126}, null, ~{::content}, null)}">
 
-    <div th:fragment="content" class="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
+    <div th:fragment="content" class="merch-workspace-v2 merch-admin-v2 mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
 
         <h1 class="mb-6 text-2xl font-bold gradient-text" th:text="${formTitle}">Product Form</h1>
 
@@ -10,58 +10,62 @@
              th:text="${errorMessage}"></div>
 
         <form th:action="${formAction}" method="post" enctype="multipart/form-data"
-              class="card-neon card--cyan space-y-5 p-6">
+              class="card-neon card--cyan space-y-5 p-6" th:object="${productForm}">
 
+            <div th:if="${#fields.hasAnyErrors()}" class="merch-feedback" role="alert"><p th:text="#{ui.00958}"></p><ul><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul></div>
+            <div th:if="${stockChanged}" class="merch-feedback" role="alert"><p th:text="#{ui.merch.stockConflict}"></p><p><span th:text="#{ui.00133}"></span>: <strong th:text="${currentStock}"></strong></p></div>
+            <input th:if="${editingId != null}" type="hidden" th:field="*{originalStock}">
+            <p th:text="#{ui.merch.stockHint}"></p>
             <!-- Name -->
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00111}">Product Name *</label>
-                <input type="text" name="name" required maxlength="200"
-                       th:value="${product.name}"
+                <label for="merch-name" class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00111}">Product Name *</label>
+                <input type="text" id="merch-name" th:field="*{name}" required maxlength="200"
+
                        class="input-field w-full" placeholder="e.g. One To One Hoodie"  th:placeholder="#{ui.00112}"/>
             </div>
 
             <!-- Description -->
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00113}">Description</label>
-                <textarea name="description" rows="3" maxlength="2000"
+                <label for="merch-description" class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00113}">Description</label>
+                <textarea id="merch-description" th:field="*{description}" rows="3" maxlength="2000"
                           class="input-field w-full resize-none"
                           placeholder="Product description..."
-                          th:text="${product.description}" th:placeholder="#{ui.00114}"></textarea>
+                           th:placeholder="#{ui.00114}"></textarea>
             </div>
 
             <!-- Price -->
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00115}">Price (£) *</label>
-                    <input type="number" name="price" required min="0" step="0.01"
-                           th:value="${product.price}"
+                    <label for="merch-price" class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00115}">Price (£) *</label>
+                    <input type="text" inputmode="decimal" id="merch-price" th:field="*{price}" required pattern="[0-9]{1,8}([.][0-9]{1,2})?" maxlength="11"
+
                            class="input-field w-full" placeholder="0.00" />
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00116}">Stock Quantity *</label>
-                    <input type="number" name="stockQuantity" required min="0"
-                           th:value="${product.stockQuantity}"
+                    <label for="merch-stockQuantity" class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00116}">Stock Quantity *</label>
+                    <input type="number" id="merch-stockQuantity" th:field="*{stockQuantity}" required min="0" max="2147483647"
+
                            class="input-field w-full" placeholder="0" />
                 </div>
             </div>
 
             <!-- Category -->
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00117}">Category</label>
-                <input type="text" name="category" maxlength="100"
-                       th:value="${product.category}"
+                <label for="merch-category" class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00117}">Category</label>
+                <input type="text" id="merch-category" th:field="*{category}" maxlength="100"
+
                        class="input-field w-full" placeholder="e.g. Clothing, Accessories"  th:placeholder="#{ui.00118}"/>
             </div>
 
             <!-- Product Image -->
             <div>
-                <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00119}">Product Image</label>
-                <div th:if="${product.imageUrl != null}" class="mb-2">
-                    <img th:src="${product.imageUrl}" alt="Current image"
+                <label for="merch-image" class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1" th:text="#{ui.00119}">Product Image</label>
+                <div th:if="${currentImage != null}" class="mb-2">
+                    <img th:src="${currentImage}" alt="Current image"
                          class="h-24 w-24 rounded object-cover border border-slate-700"  th:alt="#{ui.00120}"/>
                     <p class="mt-1 text-xs text-slate-500" th:text="#{ui.00121}">Upload a new image to replace the current one.</p>
                 </div>
-                <input type="file" name="image" accept="image/png,image/jpeg,image/webp"
+                <input type="file" id="merch-image" name="image" accept="image/png,image/jpeg,image/webp"
                        class="block w-full text-sm text-slate-400
                               file:mr-4 file:py-2 file:px-4
                               file:rounded file:border-0
@@ -73,8 +77,8 @@
 
             <!-- Active toggle -->
             <div class="flex items-center gap-3">
-                <input type="checkbox" name="active" id="active"
-                       th:checked="${product.active}"
+                <input type="checkbox" th:field="*{active}" id="active"
+
                        class="h-4 w-4 rounded border-slate-600 bg-slate-800 text-neon-cyan" />
                 <label for="active" class="text-sm text-slate-300" th:text="#{ui.00123}">Active (visible in shop)</label>
             </div>

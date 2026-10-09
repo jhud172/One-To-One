@@ -1,119 +1,25 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02295}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02280}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
 <div th:fragment="styles"></div>
-
-<div th:fragment="content">
-    <div class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-
-        <!-- Header -->
-        <div class="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0">
-                    <a class="inline-flex items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors" th:href="@{/vault}">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                        <th:block th:text="#{ui.02281}">Back to Vault</th:block>
-                    </a>
-                    <h1 class="mt-2 text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100" th:text="${pageTitle}">Vault Note</h1>
-                </div>
-            </div>
-
-            <form class="mt-6 space-y-5"
-                  th:action="${note != null and note.id != null} ? @{/vault/{id}/edit(id=${note.id})} : @{/vault/new}"
-                  method="post">
-                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-
-                <!-- Type + Date row -->
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00623}">Type</label>
-                        <select name="noteType"
-                                class="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-colors">
-                            <option th:each="t : ${noteTypes}"
-                                    th:value="${t.name()}"
-                                    th:selected="${note != null and note.noteType != null and note.noteType == t}"
-                                    th:text="${#strings.replace(#strings.toLowerCase(t.name()),'_',' ')}">TRAINING</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-900 dark:text-slate-100"><th:block th:text="#{ui.02282}">Linked date</th:block> <span class="font-normal text-slate-400" th:text="#{ui.00679}">(optional)</span></label>
-                        <input type="date" name="linkedDate"
-                               th:value="${note != null and note.linkedDate != null ? note.linkedDate : ''}"
-                               class="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/40">
-                    </div>
-                </div>
-
-                <!-- Title -->
-                <div>
-                    <label class="block text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00583}">Title</label>
-                    <input name="title" required
-                           th:value="${note != null ? note.title : ''}"
-                           class="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-colors"
-                           placeholder="E.g. Week 3 check-in, shoulder discomfort, nutrition tweak" th:placeholder="#{ui.02283}">
-                </div>
-
-                <!-- Content -->
-                <div>
-                    <label class="block text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02167}">Content</label>
-                    <textarea name="content" required rows="10"
-                              class="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-colors resize-y"
-                              placeholder="Write your note… What happened, how did it feel, what did you notice?"
-                              th:text="${note != null ? note.content : ''}" th:placeholder="#{ui.02284}"></textarea>
-                </div>
-
-                <!-- Tags + Mood row -->
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-900 dark:text-slate-100"><th:block th:text="#{ui.02285}">Tags</th:block> <span class="font-normal text-slate-400" th:text="#{ui.02286}">(optional, comma-separated)</span></label>
-                        <input type="text" name="tags"
-                               th:value="${note != null ? note.tags : ''}"
-                               placeholder="e.g. legs, recovery, cardio"
-                               class="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-colors" th:placeholder="#{ui.02287}">
-                        <p class="mt-1 text-xs text-slate-400" th:text="#{ui.02288}">Separate tags with commas. They help filter your vault.</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-900 dark:text-slate-100"><th:block th:text="#{ui.02289}">Mood / Energy</th:block> <span class="font-normal text-slate-400" th:text="#{ui.00679}">(optional)</span></label>
-                        <select name="mood"
-                                class="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/40">
-                            <option value="" th:text="#{ui.02290}">— Not tracked —</option>
-                            <option th:each="m : ${moods}"
-                                    th:value="${m}"
-                                    th:selected="${note != null and note.mood != null and note.mood == m}"
-                                    th:text="${#strings.toLowerCase(m)}">mood</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Linked workout session -->
-                <div>
-                    <label class="block text-sm font-semibold text-slate-900 dark:text-slate-100"><th:block th:text="#{ui.02291}">Linked workout session</th:block> <span class="font-normal text-slate-400" th:text="#{ui.00679}">(optional)</span></label>
-                    <select name="linkedWorkoutSessionId"
-                            class="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/40">
-                        <option value="" th:text="#{ui.02292}">— None —</option>
-                        <option th:each="s : ${recentSessions}"
-                                th:value="${s.id}"
-                                th:selected="${note != null and note.linkedWorkoutSessionId != null and note.linkedWorkoutSessionId == s.id}"
-                                th:text="${#temporals.format(s.date, 'dd MMM yyyy') + ' — ' + (s.nameSnapshot != null ? s.nameSnapshot : (s.workout != null ? s.workout.name : 'Workout'))}">Session</option>
-                    </select>
-                    <p class="mt-1 text-xs text-slate-400" th:text="#{ui.02293}">Shows your most recent sessions.</p>
-                </div>
-
-                <!-- Actions -->
-                <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-                    <a th:href="@{/vault}"
-                       class="inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-slate-400/20 transition-colors" th:text="#{ui.00125}">
-                        Cancel
-                    </a>
-                    <button type="submit"
-                            class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-colors" th:text="#{ui.02294}">
-                        Save Note
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div th:fragment="pageScripts"></div>
-
+<div th:fragment="content" class="vault-workspace-v2 vault-editor-v2">
+<header class="vault-heading"><div><a class="vault-action" th:href="${vaultReturnTo}" th:text="#{ui.02281}"></a><h1 th:text="${editingId != null ? #messages.msg('ui.00138') + ' · ' + #messages.msg('ui.02295') : #messages.msg('ui.02124') + ' · ' + #messages.msg('ui.02295')}"></h1><p th:text="#{ui.vault.reflectionHint}"></p></div></header>
+<p class="vault-feedback" role="alert" th:if="${vaultInvalid == true}" th:text="#{ui.vault.invalid}"></p>
+<section class="vault-panel vault-feedback vault-conflict" role="alert" th:if="${vaultConflict != null}">
+<h2 th:text="#{ui.notes.conflict}"></h2><p th:text="#{ui.notes.reviewHint}"></p>
+<strong dir="auto" th:text="${vaultConflict.title}"></strong><label for="vaultSavedContent" th:text="#{ui.notes.savedContent}"></label><textarea id="vaultSavedContent" readonly dir="auto" th:text="${vaultConflict.content}"></textarea>
+<dl class="vault-context"><dt th:text="#{ui.00623}"></dt><dd th:text="${#messages.msg(vaultConflict.noteType.labelKey)}"></dd><dt th:text="#{ui.02282}"></dt><dd dir="ltr" th:text="${vaultConflict.linkedDate ?: '—'}"></dd><dt th:text="#{ui.02285}"></dt><dd dir="auto" th:text="${vaultConflict.tags ?: '—'}"></dd><dt th:text="#{ui.02289}"></dt><dd th:text="${vaultConflict.mood != null ? #messages.msg(vaultConflict.mood == 'LOW' ? 'ui.01739' : 'ui.vault.mood.' + vaultConflict.mood) : #messages.msg('ui.02290')}"></dd><dt th:text="#{ui.02291}"></dt><dd th:text="${vaultConflictSession != null ? vaultConflictSession.nameSnapshot : #messages.msg('ui.02292')}"></dd></dl>
+</section>
+<form class="vault-panel vault-editor-form" data-vault-editor th:attr="data-unsaved=#{ui.notes.unsaved},data-retained=${vaultInvalid == true or vaultConflict != null}" method="post" th:action="${editingId != null} ? @{/vault/{id}/edit(id=${editingId})} : @{/vault/new}">
+<input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+<input type="hidden" name="returnTo" th:value="${vaultReturnTo}"><input type="hidden" name="revision" th:if="${editingId != null}" th:value="${draft['revision']}">
+<div><label for="reflectionTitle" th:text="#{ui.00583}"></label><input dir="auto" id="reflectionTitle" name="title" required maxlength="120" th:value="${draft['title']}" th:placeholder="#{ui.02283}"></div>
+<div><label for="reflectionContent" th:text="#{ui.02167}"></label><textarea dir="auto" id="reflectionContent" name="content" required rows="12" maxlength="10000" th:text="${draft['content']}" th:placeholder="#{ui.02284}"></textarea></div>
+<div class="vault-form-grid"><div><label for="reflectionType" th:text="#{ui.00623}"></label><select id="reflectionType" name="noteType" required><option th:each="type : ${noteTypes}" th:value="${type}" th:selected="${type.name() == draft['noteType']}" th:text="${#messages.msg(type.labelKey)}"></option></select></div>
+<div><label for="reflectionDate" th:text="#{ui.02282}"></label><input dir="ltr" id="reflectionDate" name="linkedDate" type="text" inputmode="numeric" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" placeholder="YYYY-MM-DD" th:value="${draft['linkedDate']}"></div>
+<div><label for="reflectionTags" th:text="#{ui.02285}"></label><input id="reflectionTags" name="tags" maxlength="255" th:value="${draft['tags']}" th:placeholder="#{ui.02287}"></div>
+<div><label for="reflectionMood" th:text="#{ui.02289}"></label><select id="reflectionMood" name="mood"><option value="" th:text="#{ui.02290}"></option><option th:each="mood : ${moods}" th:value="${mood}" th:selected="${mood == draft['mood']}" th:text="${#messages.msg(mood == 'LOW' ? 'ui.01739' : 'ui.vault.mood.' + mood)}"></option></select></div></div>
+<div><label for="reflectionSession" th:text="#{ui.02291}"></label><select id="reflectionSession" name="linkedWorkoutSessionId"><option value="" th:text="#{ui.02292}"></option><option th:each="trainingSession : ${recentSessions}" th:value="${trainingSession.id}" th:selected="${#strings.toString(trainingSession.id) == draft['linkedWorkoutSessionId']}" th:text="${trainingSession.date + ' · ' + (trainingSession.nameSnapshot ?: #messages.msg('ui.02296'))}"></option></select><p th:text="#{ui.02293}"></p></div>
+<output class="vault-editor-status" aria-live="polite" th:text="${vaultInvalid == true or vaultConflict != null ? #messages.msg('ui.notes.unsaved') : ''}"></output>
+<div class="vault-actions"><button class="vault-action vault-primary" type="submit" th:text="${vaultConflict != null ? #messages.msg('ui.notes.keepDraft') : #messages.msg('ui.02294')}"></button><a class="vault-action" th:href="${vaultDetailReturnTo}" th:text="#{ui.00125}"></a></div>
+</form></div>
+<div th:fragment="pageScripts"><script th:src="@{/js/notes/vault.js(v=${uiCssVersion})}" defer></script></div>
 </th:block>

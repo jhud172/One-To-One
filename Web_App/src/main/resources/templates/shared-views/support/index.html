@@ -46,11 +46,11 @@
                         <div th:if="${authUser == null}" class="grid gap-4 sm:grid-cols-2">
                             <div class="role-surface__field">
                                 <label for="support-name" th:text="#{ui.00131}">Name</label>
-                                <input id="support-name" name="name" type="text" autocomplete="name">
+                                <input id="support-name" name="name" type="text" autocomplete="name" maxlength="120" th:value="${feedbackName}">
                             </div>
                             <div class="role-surface__field">
                                 <label for="support-email" th:text="#{ui.00096}">Email</label>
-                                <input id="support-email" name="email" type="email" autocomplete="email">
+                                <input id="support-email" name="email" type="email" autocomplete="email" maxlength="255" th:value="${feedbackEmail}">
                             </div>
                         </div>
 
@@ -58,27 +58,27 @@
                             <label for="support-type" th:text="#{ui.02241}">Support type</label>
                             <select id="support-type" name="requestType" required>
                                 <option value="" th:text="#{ui.02242}">Choose a support type</option>
-                                <option value="QUERY" th:text="#{ui.02243}">Question or account help</option>
-                                <option value="IMPROVEMENT" th:text="#{ui.02244}">Product improvement</option>
-                                <option value="BUG" th:text="#{ui.02245}">Something is not working</option>
-                                <option value="ERROR" th:text="#{ui.02246}">Error message</option>
+                                <option value="QUERY" th:selected="${feedbackType == 'QUERY'}" th:text="#{ui.02243}">Question or account help</option>
+                                <option value="IMPROVEMENT" th:selected="${feedbackType == 'IMPROVEMENT'}" th:text="#{ui.02244}">Product improvement</option>
+                                <option value="BUG" th:selected="${feedbackType == 'BUG'}" th:text="#{ui.02245}">Something is not working</option>
+                                <option value="ERROR" th:selected="${feedbackType == 'ERROR'}" th:text="#{ui.02246}">Error message</option>
                             </select>
                         </div>
 
                         <div class="role-surface__field">
                             <label for="support-subject" th:text="#{ui.00026}">Subject</label>
-                            <input id="support-subject" name="subject" type="text" maxlength="180" required
+                            <input id="support-subject" name="subject" type="text" maxlength="180" required th:value="${feedbackSubject}"
                                    placeholder="A short summary of what you need" th:placeholder="#{ui.02247}">
                         </div>
 
                         <div class="role-surface__field">
                             <label for="support-message" th:text="#{ui.01755}">Details</label>
-                            <textarea id="support-message" name="message" maxlength="5000" required
+                            <textarea id="support-message" name="message" maxlength="5000" required th:text="${feedbackMessage}"
                                       placeholder="Tell us what happened, where it happened and what you have already tried" th:placeholder="#{ui.02248}"></textarea>
                         </div>
 
                         <label class="flex min-h-11 items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-                            <input type="checkbox" name="allowEmailReply" class="mt-1 h-6 w-6 shrink-0">
+                            <input type="checkbox" name="allowEmailReply" class="mt-1 h-6 w-6 shrink-0" th:checked="${feedbackReply}">
                             <span th:text="#{ui.02249}">Allow the support team to reply by email. This is required for a question.</span>
                         </label>
 

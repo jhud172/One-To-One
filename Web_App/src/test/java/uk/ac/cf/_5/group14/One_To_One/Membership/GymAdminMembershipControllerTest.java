@@ -18,7 +18,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import java.time.LocalDate;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,6 +48,9 @@ class GymAdminMembershipControllerTest {
 
     @Autowired
     private GymMemberSubscriptionRepository subscriptionRepository;
+
+    @Autowired private PriceChangeEventRepository priceChangeEvents;
+    @MockBean private EmailService emailService;
 
     /** Creates a persisted GymProfile for the given user and returns its auto-generated ID. */
     private Long createGym(User owner, String name) {
@@ -140,7 +146,7 @@ class GymAdminMembershipControllerTest {
                 .with(csrf())
                 .param("gymId", String.valueOf(gymId))
                 .param("billingPeriod", "MONTHLY"))
-            .andExpect(status().isOk())
+            .andExpect(status().isBadRequest())
             .andExpect(view().name("gym-views/gym-admin/memberships/form"))
             .andExpect(model().attributeHasFieldErrors("product", "name", "priceDollars"));
     }
@@ -169,7 +175,7 @@ class GymAdminMembershipControllerTest {
                 .param("name", "")
                 .param("description", "Updated description")
                 .param("active", "true"))
-            .andExpect(status().isOk())
+            .andExpect(status().isBadRequest())
             .andExpect(view().name("gym-views/gym-admin/memberships/form"))
             .andExpect(model().attributeHasFieldErrors("product", "name"));
     }
@@ -194,7 +200,98 @@ class GymAdminMembershipControllerTest {
 
         mockMvc.perform(get("/gym/admin/memberships/" + otherProduct.getId() + "/price-history")
                 .with(user(admin.getUsername()).roles("GYM_ADMIN")))
+            .andExpect(status().isNotFound());
+    }
+
+    private User newAdmin(String label) {
+        String unique = UUID.randomUUID().toString().replace("-", "");
+        User admin = new User(unique + "@example.com", "Gym", "Admin", label + unique, "password123");
+        admin.setRole(Role.GYM_ADMIN);
+        admin = userRepository.save(admin);
+        admin.setGymId(createGym(admin, label));
+        return userRepository.save(admin);
+    }
+
+    @Test
+    void createFormHasNativeActionAndCreationFieldsAndUsesServerGym() throws Exception {
+        User admin = newAdmin("native");
+        mockMvc.perform(get("/gym/admin/memberships/create").with(user(admin.getUsername()).roles("GYM_ADMIN")))
             .andExpect(status().isOk())
-            .andExpect(view().name("system-views/error/403"));
+            .andExpect(content().string(containsString("action=\"/gym/admin/memberships/create\"")))
+            .andExpect(content().string(containsString("id=\"priceDollars\"")))
+            .andExpect(content().string(not(containsString("memberships/null/edit"))));
+        mockMvc.perform(post("/gym/admin/memberships/create").with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
+                .param("name", "  Native monthly  ").param("priceDollars", "49.99").param("billingPeriod", "MONTHLY")
+                .param("gymId", "999999").param("priceCents", "1").param("active", "true"))
+            .andExpect(status().is3xxRedirection());
+        GymMembershipProduct saved = productRepository.findByGymIdOrderByCreatedAtDesc(admin.getGymId()).get(0);
+        assertEquals("Native monthly", saved.getName());
+        assertEquals(4999, saved.getPriceCents());
+        assertEquals(admin.getGymId(), saved.getGymId());
+    }
+
+    @Test
+    void invalidCreationPricesRetainDraftAndNeverSave() throws Exception {
+        User admin = newAdmin("prices");
+        for (String price : new String[]{"21474836.48", "9.999", "-1", "not-a-number"}) {
+            mockMvc.perform(post("/gym/admin/memberships/create").with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
+                    .param("name", "Keep this name").param("priceDollars", price))
+                .andExpect(status().isBadRequest()).andExpect(model().attributeHasFieldErrors("product", "priceDollars"))
+                .andExpect(content().string(containsString("Keep this name")))
+                .andExpect(content().string(containsString("action=\"/gym/admin/memberships/create\"")));
+        }
+        assertTrue(productRepository.findByGymIdOrderByCreatedAtDesc(admin.getGymId()).isEmpty());
+    }
+
+    @Test
+    void editingKeepsTrustedActionAndCannotAlterPriceOrOwnership() throws Exception {
+        User admin = newAdmin("editor");
+        GymMembershipProduct product = productRepository.save(new GymMembershipProduct(admin.getGymId(), "Original", 2500));
+        String action = "/gym/admin/memberships/" + product.getId() + "/edit";
+        mockMvc.perform(post(action).with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf()).param("name", ""))
+            .andExpect(status().isBadRequest()).andExpect(content().string(containsString("action=\"" + action + "\"")))
+            .andExpect(content().string(containsString("25.00")));
+        assertEquals("Original", productRepository.findById(product.getId()).orElseThrow().getName());
+        mockMvc.perform(post(action).with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
+                .param("name", "Updated").param("priceDollars", "1.00").param("priceCents", "1").param("gymId", "999999"))
+            .andExpect(status().is3xxRedirection());
+        GymMembershipProduct saved = productRepository.findById(product.getId()).orElseThrow();
+        assertEquals(2500, saved.getPriceCents());
+        assertEquals(admin.getGymId(), saved.getGymId());
+        User other = newAdmin("other");
+        mockMvc.perform(post(action).with(user(other.getUsername()).roles("GYM_ADMIN")).with(csrf()).param("name", ""))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void priceChangeValidatesDraftRequiresConsentAndDeduplicatesAuditAndEmail() throws Exception {
+        User admin = newAdmin("audit");
+        GymMembershipProduct product = productRepository.save(new GymMembershipProduct(admin.getGymId(), "Audited", 2500));
+        User member = userRepository.save(new User(UUID.randomUUID() + "@example.com", "Member", "One", "member_" + UUID.randomUUID(), "password123"));
+        subscriptionRepository.save(new GymMemberSubscription(member.getId(), admin.getGymId(), product.getId(), Instant.now().plus(40, ChronoUnit.DAYS)));
+        String action = "/gym/admin/memberships/" + product.getId() + "/price-change";
+        String effective = LocalDate.now().plusDays(30).toString();
+        for (String price : new String[]{"9999999999", "24.999", "wrong"}) {
+            mockMvc.perform(post(action).with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
+                    .param("newPriceDollars", price).param("effectiveDate", effective).param("reason", "Retain this reason"))
+                .andExpect(status().isBadRequest()).andExpect(model().attributeHasFieldErrors("priceChange", "newPriceDollars"))
+                .andExpect(content().string(containsString("Retain this reason")));
+        }
+        mockMvc.perform(post(action).with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
+                .param("newPriceDollars", "29.99").param("effectiveDate", effective).param("reason", "Annual review"))
+            .andExpect(status().isBadRequest());
+        assertTrue(priceChangeEvents.findByProductIdOrderByCreatedAtDesc(product.getId()).isEmpty());
+        for (int i = 0; i < 2; i++) {
+            mockMvc.perform(post(action).with(user(admin.getUsername()).roles("GYM_ADMIN")).with(csrf())
+                    .param("newPriceDollars", "29.99").param("effectiveDate", effective).param("reason", "Annual review").param("confirmPriceChange", "true"))
+                .andExpect(status().is3xxRedirection());
+        }
+        assertEquals(1, priceChangeEvents.findByProductIdOrderByCreatedAtDesc(product.getId()).size());
+        assertEquals(2500, productRepository.findById(product.getId()).orElseThrow().getPriceCents());
+        verify(emailService, times(1)).sendPriceChangeNotification(any(), eq("Audited"), eq(25.0), eq(29.99), any(), eq("Annual review"), any());
+        mockMvc.perform(get("/gym/admin/memberships/" + product.getId() + "/price-history").with(user(admin.getUsername()).roles("GYM_ADMIN")))
+            .andExpect(status().isOk()).andExpect(content().string(containsString("Annual review")))
+            .andExpect(content().string(containsString("affected")))
+            .andExpect(content().string(not(containsString("member notified"))));
     }
 }

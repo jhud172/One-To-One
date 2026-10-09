@@ -8,6 +8,7 @@ const templatesRoot = path.join(projectRoot, 'src/main/resources/templates');
 const outputPath = path.join(projectRoot, 'src/main/resources/messages-ui.properties');
 const excludedParents = new Set(['script', 'style', 'svg', 'path', 'code', 'pre', 'textarea']);
 const attributeNames = ['placeholder', 'title', 'alt', 'aria-label'];
+const languageIndependentLabels = new Set(['kcal', 'g', 'ml', 'YYYY-MM-DD']);
 const messageByValue = new Map();
 const sourceByValue = new Map();
 let nextKey = 1;
@@ -37,6 +38,7 @@ const isTemplateExpression = (value) => /(?:\$|#|@|\*)\{|\[\[|\(\(/.test(value);
 const isUsefulCopy = (value) => {
     const normalised = normalise(value);
     return normalised.length > 0
+        && !languageIndependentLabels.has(normalised)
         && normalised.length <= 900
         && hasEnglishCopy(normalised)
         && !isTemplateExpression(normalised)
@@ -93,7 +95,13 @@ const pendingFiles = [];
 for (const absolutePath of files) {
     const relativePath = path.relative(templatesRoot, absolutePath).replaceAll('\\', '/');
     const source = fs.readFileSync(absolutePath, 'utf8');
-    const document = parse(source, {sourceCodeLocationInfo: true, scriptingEnabled: true});
+    // This private gift is a standalone English document without the platform language selector.
+    // Keep its personal copy separate from the multilingual product interface.
+    if (relativePath === 'birthday/mission-vi.html' && /<html\b[^>]*\blang="en-GB"[^>]*\bdata-localisation="fixed"/.test(source)) {
+        continue;
+    }
+    // Inspect fallback markup too; enabled scripting treats <noscript> as raw text.
+    const document = parse(source, {sourceCodeLocationInfo: true, scriptingEnabled: false});
     const replacements = [];
     const tagInsertions = new Map();
 
@@ -154,10 +162,18 @@ for (const absolutePath of files) {
             if (!value || !isUsefulCopy(value) || nodeAttributes.has(`th:${attributeName}`)) {
                 return;
             }
+            const attributeExpression = nodeAttributes.get('th:attr');
+            if (attributeExpression && new RegExp(`(?:^|,)\\s*${attributeName}\\s*=`).test(attributeExpression)) {
+                return;
+            }
             const key = keyFor(value, `${relativePath}:${node.sourceCodeLocation.startLine}@${attributeName}`);
             if (attributeName === 'aria-label') {
                 if (!nodeAttributes.has('th:attr')) {
                     addTagAttribute(node, `th:attr="aria-label=#{${key}}"`);
+                } else {
+                    const location = node.sourceCodeLocation.attrs['th:attr'];
+                    replacements.push({start: location.startOffset, end: location.endOffset,
+                        value: `th:attr="${attributeExpression.replaceAll('&', '&amp;').replaceAll('"', '&quot;')},aria-label=#{${key}}"`});
                 }
             } else {
                 addTagAttribute(node, `th:${attributeName}="#{${key}}"`);
@@ -205,6 +221,11 @@ const propertyLines = existingOutput.length > 0
         '# Edit the English value here, then synchronise every locale bundle.',
         '',
     ];
+if (process.argv.includes('--details')) {
+    for (const [value, key] of messageByValue) {
+        if (!existingKeys.has(key)) process.stderr.write(`${sourceByValue.get(value)}: ${value}\n`);
+    }
+}
 for (const [value, key] of messageByValue) {
     if (existingKeys.has(key)) {
         continue;
@@ -217,14 +238,14 @@ propertyLines.push('');
 if (write) {
     pendingFiles.forEach(({absolutePath, transformed}) => fs.writeFileSync(absolutePath, transformed, 'utf8'));
     fs.writeFileSync(outputPath, propertyLines.join('\n'), 'utf8');
-    const addedMessages = messageByValue.size - existingKeys.size;
+    const addedMessages = [...messageByValue.values()].filter(key => !existingKeys.has(key)).length;
     process.stdout.write(`Externalised ${addedMessages} new strings across ${pendingFiles.length} templates.\n`);
 } else if (pendingFiles.length > 0) {
     pendingFiles.forEach(({absolutePath, replacements}) => {
         process.stderr.write(`- ${path.relative(templatesRoot, absolutePath)} (${replacements})\n`);
     });
     process.stderr.write(
-        `${messageByValue.size - existingKeys.size} unlocalised strings remain across ${pendingFiles.length} templates. Run with --write.\n`,
+        `Unlocalised markup remains across ${pendingFiles.length} templates. Run with --write.\n`,
     );
     process.exitCode = 1;
 } else {

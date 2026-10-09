@@ -1,0 +1,91 @@
+- banner:
+  - link "One To One Logo One To One":
+    - /url: /
+    - img "One To One Logo"
+    - generic: One To One
+  - navigation "Primary navigation":
+    - link "Dashboard":
+      - /url: /dashboard
+      - generic: Dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: /chat
+      - generic: Charlie
+    - link "Trainers":
+      - /url: /client/trainers
+      - generic: Trainers
+    - link "Shop":
+      - /url: /merch
+      - generic: Shop
+    - link "Leaderboard":
+      - /url: /levels
+      - generic: Leaderboard
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - generic "Premium member":
+      - button "Premium features enabled":
+      - status: Premium Active
+    - button "Open profile menu":
+- main:
+  - heading "My Trainer" [level=1]
+  - paragraph: Your current one-to-one trainer connection.
+  - generic: Jordan Trainer
+  - generic: ACTIVE
+  - paragraph: "@demo_trainer"
+  - paragraph: In-platform payments only
+  - paragraph: Keep every payment protected inside ONE TO ONE.
+  - link "Learn more":
+    - /url: /policies/payments
+  - complementary:
+    - heading "Find Trainer" [level=2]
+    - generic: 2 available
+    - generic: Search trainers
+    - textbox "Search trainers":
+      - /placeholder: Search by name or username
+    - button "Search"
+    - generic: Trainer Demo
+    - generic: "@trainer_demo"
+    - button "Request" [disabled]
+    - generic: Jordan Trainer
+    - generic: "@demo_trainer"
+    - button "Request" [disabled]
+- button "Open Charlie"
+- text: Add photo Send message
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - button "Scroll platform actions left":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Scroll platform actions right":
+  - button "Customize platform panel":

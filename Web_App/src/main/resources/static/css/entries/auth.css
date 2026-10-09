@@ -1,3 +1,4 @@
 @import "../components/account/auth.css";
+@import "../components/account/auth-v2.css";
 
 @tailwind components;

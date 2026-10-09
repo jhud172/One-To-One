@@ -1,0 +1,18 @@
+.professional-review-v2 { max-width: 64rem; margin: 0 auto; padding: clamp(1rem, 4vw, 2.5rem); color: var(--v2-ink); }
+.professional-review-v2 header { margin-bottom: 2rem; }
+.professional-review-v2 h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 750; letter-spacing: -0.04em; }
+.professional-review-v2 h2 { font-size: 1.25rem; font-weight: 650; margin-bottom: 1rem; }
+.professional-review-v2 header p { color: var(--v2-muted); max-width: 65ch; }
+.professional-review-v2 section { background: var(--v2-surface); border: 1px solid var(--v2-border); border-radius: var(--v2-radius-panel); padding: clamp(1rem, 3vw, 1.75rem); margin-top: 1.5rem; }
+.professional-review-v2 :is(a, button) { display: inline-flex; align-items: center; min-height: 44px; color: var(--v2-accent); }
+.professional-review-v2 form { display: grid; gap: 1rem; }
+.professional-review-v2 textarea { width: 100%; padding: 0.75rem; resize: vertical; background: var(--v2-raised); color: var(--v2-ink); border: 1px solid var(--v2-control-border); border-radius: var(--v2-radius-control); }
+.professional-review-v2 button { padding: 0.7rem 1.2rem; justify-self: start; background: var(--v2-accent); color: var(--v2-on-accent); border-radius: var(--v2-radius-control); }
+.professional-review-v2__confirmation { display: flex; align-items: center; gap: 0.75rem; min-height: 44px; }
+.professional-review-v2__confirmation input { flex: 0 0 1.2rem; width: 1.2rem; height: 1.2rem; }
+.professional-review-v2 :is(.professional-review-v2__notice, .professional-review-v2__error) { padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--v2-control-border); border-radius: var(--v2-radius-control); background: var(--v2-raised); }
+.professional-review-v2__history { display: grid; gap: 1rem; list-style: none; padding: 0; }
+.professional-review-v2__history > li { padding: 1rem; background: var(--v2-raised); border-radius: var(--v2-radius-control); }
+.professional-review-v2 dl { display: grid; gap: 0.75rem; }
+.professional-review-v2 dt { color: var(--v2-muted); font-size: 0.85rem; }
+.professional-review-v2 dd { white-space: pre-wrap; overflow-wrap: anywhere; }

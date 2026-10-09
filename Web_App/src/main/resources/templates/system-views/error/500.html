@@ -13,19 +13,19 @@
             <div class="error-card__body">
                 <p class="error-eyebrow" th:text="#{ui.02383}">Service interruption</p>
                 <h1 id="error-title" class="error-title" th:text="#{ui.02384}">Something went wrong</h1>
-                <p class="error-copy" th:text="#{ui.02385}">The page could not be loaded. Your data has not been changed unless the previous action clearly completed.</p>
+                <p class="error-copy" th:text="#{ui.02385}">The page could not be loaded. Check your recent activity, orders or saved changes before repeating the action.</p>
 
                 <div class="error-actions">
                     <a th:href="@{/support}" class="error-button error-button--primary" th:text="#{ui.01470}">Contact support</a>
                     <a th:href="@{/}" class="error-button error-button--secondary" th:text="#{ui.01401}">Home</a>
-                    <button type="button" data-history-back data-history-fallback="/" class="error-button error-button--ghost" th:text="#{ui.02373}">Go back</button>
+                    <button type="button" hidden data-history-back data-history-fallback="/" class="error-button error-button--ghost" th:text="#{ui.02373}">Go back</button>
                 </div>
 
                 <div class="error-mini-panel">
                     <span th:text="#{ui.02386}">What to try</span>
                     <ul class="error-check-list">
-                        <li th:text="#{ui.02387}">Refresh the page.</li>
-                        <li th:text="#{ui.02388}">Retry the action from your dashboard.</li>
+                        <li th:text="#{ui.02387}">Return to your dashboard.</li>
+                        <li th:text="#{ui.02388}">Check the outcome in your dashboard before trying again.</li>
                         <li th:text="#{ui.02389}">Return later if the issue continues.</li>
                     </ul>
                 </div>

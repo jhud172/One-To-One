@@ -375,25 +375,26 @@
             });
 
             input.addEventListener("paste", (event) => {
-                const pasted = fullSanitizer((event.clipboardData || window.clipboardData).getData("text"));
+                const clipboard = event.clipboardData || window.clipboardData;
+                if (!clipboard) return;
+                const pasted = fullSanitizer(clipboard.getData("text"));
                 if (!pasted) {
                     return;
                 }
 
-                const sliceLength = inputs.length * 4;
-                const normalized = pasted.slice(0, sliceLength);
-                window.setTimeout(() => {
-                    inputs.forEach((segmentInput, segmentIndex) => {
-                        segmentInput.value = normalized.slice(segmentIndex * 4, (segmentIndex + 1) * 4);
-                    });
-                    clearLoginValidation();
-                    updateSegmentedCode(inputs, hiddenInput, sanitizer);
-
-                    const lastFilledIndex = Math.min(Math.ceil(normalized.length / 4) - 1, inputs.length - 1);
-                    if (lastFilledIndex >= 0) {
-                        inputs[lastFilledIndex].focus();
-                    }
-                }, 0);
+                event.preventDefault();
+                // A complete code replaces every segment; a shorter paste starts here.
+                const startIndex = pasted.length >= inputs.length * 4 ? 0 : index;
+                const normalized = pasted.slice(0, (inputs.length - startIndex) * 4);
+                const filledCount = Math.ceil(normalized.length / 4);
+                for (let offset = 0; offset < filledCount; offset++) {
+                    inputs[startIndex + offset].value = normalized.slice(offset * 4, (offset + 1) * 4);
+                }
+                clearLoginValidation();
+                updateSegmentedCode(inputs, hiddenInput, sanitizer);
+                const nextIndex = Math.min(startIndex + filledCount, inputs.length - 1);
+                inputs[nextIndex].focus();
+                inputs[nextIndex].select();
             });
         });
     }
@@ -410,6 +411,7 @@
         }
 
         input.name = options.name || "";
+        input.disabled = !options.name;
     }
 
     function activateRole(role, animate) {

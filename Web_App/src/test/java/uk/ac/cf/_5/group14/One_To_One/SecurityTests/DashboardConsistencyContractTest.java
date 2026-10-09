@@ -142,12 +142,11 @@ class DashboardConsistencyContractTest {
                 .contains("aria-label=\"Help and trust\" aria-hidden=\"true\" inert")
                 .contains("aria-label=\"Profile overview\" aria-hidden=\"true\" inert");
         assertThat(fragment)
-                .contains("role=\"tab\"")
-                .contains("role=\"tabpanel\"")
                 .contains("dashboard-action-panel-all")
-                .contains("aria-hidden=\"true\" inert")
                 .contains("data-ambience-location-request");
         assertThat(script)
+                .contains("tab.setAttribute(\"role\", \"tab\")")
+                .contains("view.setAttribute(\"role\", \"tabpanel\")")
                 .contains("panel?.toggleAttribute(\"inert\", !isOpen)")
                 .contains("view.toggleAttribute(\"inert\", !active)")
                 .contains("tab.tabIndex = active ? 0 : -1")

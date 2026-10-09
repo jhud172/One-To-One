@@ -437,3 +437,13 @@
   background: rgb(5 150 105);
   color: white;
 }
+
+/* Daily workspaces retain help and legal routes without a signup panel. */
+.footer-redesign--account .footer-container { padding-block: 1rem; }
+.footer-redesign--account .footer-lower { margin-top: 0; padding-top: 0; border-top: 0; grid-template-columns: 1fr auto; }
+.footer-redesign--account .footer-legal-links { flex-wrap: wrap; }
+.footer-redesign--account .footer-legal-link { min-height: 2.75rem; display: inline-flex; align-items: center; }
+@media (max-width: 640px) {
+  .footer-redesign--account .footer-lower { grid-template-columns: 1fr; }
+  .footer-redesign--account .footer-legal-links { justify-content: flex-start; }
+}

@@ -43,10 +43,14 @@ public class CustomExerciseServiceImpl implements CustomExerciseService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void deleteCustomExercise(Long userId, Long id) {
         CustomExercise exercise = getCustomExerciseById(id, userId);
         if (exercise == null) {
             return;
+        }
+        if (repo.isReferencedByTrainingData(id)) {
+            throw new org.springframework.dao.DataIntegrityViolationException("Custom exercise is used by saved training data");
         }
         repo.delete(exercise);
     }

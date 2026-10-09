@@ -1,12 +1,12 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02638}, null, ~{::content}, null)}">
+          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02638}, null, ~{::content}, ~{::scripts})}">
 
-    <div th:fragment="content" class="detail-container">
+    <div th:fragment="content" class="detail-container client-workspace-v2">
         <!-- Header with key metadata at top -->
         <div class="detail-header">
             <div class="detail-header-content">
                 <div class="detail-header-meta">
-                    <p class="detail-label" th:text="#{ui.02604}">Trainer Dashboard</p>
+                    <p class="detail-label" th:text="#{ui.02638}">Client overview</p>
                     <h1 class="detail-title" th:text="${client.fullName} ?: 'Client'">Client</h1>
                     <p class="detail-subtitle" th:text="${client.username != null ? '@' + client.username : ''}"></p>
                 </div>
@@ -17,21 +17,62 @@
             </div>
         </div>
 
+        <nav class="client-workspace-nav" th:attr="aria-label=#{ui.02638}">
+            <a href="#clientOverview" th:text="#{ui.01620}">Overview</a>
+            <a href="#clientAssignments" th:text="#{ui.00241}">Programmes</a>
+            <a href="#clientCheckIns" th:text="#{ui.00596}">Check-ins</a>
+            <a href="#clientConversation" th:text="#{ui.01866}">Conversations</a>
+            <a href="#clientPhase" th:text="#{ui.02612}">Coaching phase</a>
+            <a href="#clientSignals" th:text="#{ui.02622}">Shared signals</a>
+            <a href="#clientGoals" th:text="#{ui.00408}">Goals</a>
+        </nav>
+
         <!-- Structured content sections -->
         <div class="detail-sections">
 
-            <div class="detail-grid-2">
+            <section class="detail-section" id="clientOverview">
+                <h2 class="detail-section-title" th:text="#{ui.01620}">Overview</h2>
+                <div class="client-coaching-overview">
+                    <a href="#clientAssignments"><span th:text="#{ui.02618}">Assigned workouts</span><strong th:text="${#lists.size(assignedWorkouts)}">0</strong></a>
+                    <a href="#clientAssignments"><span th:text="#{ui.02620}">Assigned schedules</span><strong th:text="${#lists.size(assignedSchedules)}">0</strong></a>
+                    <a href="#clientGoals"><span th:text="#{ui.02634}">Active goals</span><strong th:text="${#lists.size(clientGoals)}">0</strong></a>
+                </div>
+            </section>
+
+            <div class="detail-grid-2" id="clientAssignments">
+                <div class="client-assignment-notices">
+                    <p class="client-workspace-feedback" role="status" th:if="${workspaceOutcome == 'workout'}" th:text="#{ui.coaching.workoutSaved}"></p>
+                    <p class="client-workspace-feedback" role="status" th:if="${workspaceOutcome == 'schedule'}" th:text="#{ui.coaching.scheduleSaved}"></p>
+                    <p class="client-workspace-feedback client-workspace-feedback--error" role="alert" th:if="${workspaceError == true and phaseDraft == null}" th:text="#{ui.coaching.error}"></p>
+                    <p class="client-workspace-limits" th:text="#{ui.coaching.sharedNotes}"></p>
+                </div>
                 <section class="detail-section">
                     <h2 class="detail-section-title" th:text="#{ui.02606}">Assign workout</h2>
                     <div class="detail-section-content">
                         <form class="space-y-3" method="post" th:action="@{/trainer/clients/{id}/assign-workout(id=${client.id})}">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <select name="templateId" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                            <label for="clientWorkoutTemplate" th:text="#{ui.02606}">Assign workout</label>
+                            <select id="clientWorkoutTemplate" name="templateId" required th:disabled="${#lists.isEmpty(templates)}" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                                <option th:if="${!#lists.isEmpty(templates)}" value="" th:selected="${workoutDraftId == null}" th:text="#{ui.02749}">Select a workout…</option>
                                 <option th:if="${#lists.isEmpty(templates)}" value="" th:text="#{ui.02607}">No workouts found</option>
-                                <option th:each="t : ${templates}" th:value="${t.id}" th:text="${t.name}"></option>
+                                <option th:each="t : ${templates}" th:value="${t.id}" th:selected="${workoutDraftId != null and workoutDraftId == t.id}" th:text="${t.name}"></option>
                             </select>
-                            <textarea name="trainerNotes" rows="3" placeholder="Trainer notes" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200" th:placeholder="#{ui.02608}"></textarea>
-                            <button type="submit" class="detail-btn-primary" th:text="#{ui.02606}">Assign workout</button>
+                            <div class="client-programme-previews" data-programme-previews="workout">
+                                <p class="detail-list-item-meta" data-preview-prompt hidden th:text="#{ui.coaching.choosePreview}"></p>
+                                <details th:each="t : ${templates}" class="client-programme-preview" th:attr="data-programme-id=${t.id}">
+                                    <summary><span th:text="#{ui.00059}">Preview</span>: <strong th:text="${t.name}"></strong></summary>
+                                    <p th:if="${t.description != null}" th:text="${t.description}"></p>
+                                    <p th:if="${#lists.isEmpty(t.movements)}" th:text="#{ui.coaching.emptyPreview}"></p>
+                                    <ol th:if="${!#lists.isEmpty(t.movements)}">
+                                        <li th:each="movement : ${t.movements}">
+                                            <strong th:text="${movement.name}"></strong>
+                                            <span><span th:text="${movement.sets}"></span> <span th:text="#{ui.02330}"></span> · <span th:text="${movement.reps}"></span> <span th:text="#{ui.02339}"></span> · <span th:text="#{ui.02813}"></span>: <span th:text="${movement.restSeconds}"></span></span>
+                                        </li>
+                                    </ol>
+                                </details>
+                            </div>
+                            <label for="clientWorkoutNotes" th:text="#{ui.02608}">Trainer notes</label>
+                            <textarea id="clientWorkoutNotes" name="trainerNotes" rows="3" maxlength="800" th:text="${workoutDraftNotes}" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"></textarea>
+                            <button type="submit" class="detail-btn-primary" th:disabled="${#lists.isEmpty(templates)}" th:text="#{ui.02606}">Assign workout</button>
                         </form>
                     </div>
                 </section>
@@ -40,42 +81,79 @@
                     <h2 class="detail-section-title" th:text="#{ui.02609}">Assign schedule</h2>
                     <div class="detail-section-content">
                         <form class="space-y-3" method="post" th:action="@{/trainer/clients/{id}/assign-schedule(id=${client.id})}">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <select name="scheduleId" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                            <label for="clientSchedule" th:text="#{ui.02609}">Assign schedule</label>
+                            <select id="clientSchedule" name="scheduleId" required th:disabled="${#lists.isEmpty(schedules)}" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                                <option th:if="${!#lists.isEmpty(schedules)}" value="" th:selected="${scheduleDraftId == null}" th:text="#{ui.02563}">Select a schedule</option>
                                 <option th:if="${#lists.isEmpty(schedules)}" value="" th:text="#{ui.02610}">No schedules found</option>
-                                <option th:each="s : ${schedules}" th:value="${s.id}" th:text="${s.name}"></option>
+                                <option th:each="s : ${schedules}" th:value="${s.id}" th:selected="${scheduleDraftId != null and scheduleDraftId == s.id}" th:text="${s.name}"></option>
                             </select>
-                            <textarea name="trainerNotes" rows="3" placeholder="Schedule notes" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200" th:placeholder="#{ui.02611}"></textarea>
-                            <button type="submit" class="detail-btn-primary" th:text="#{ui.02609}">Assign schedule</button>
+                            <div class="client-programme-previews" data-programme-previews="schedule">
+                                <p class="detail-list-item-meta" data-preview-prompt hidden th:text="#{ui.coaching.choosePreview}"></p>
+                                <details th:each="s : ${schedules}" class="client-programme-preview" th:attr="data-programme-id=${s.id}">
+                                    <summary><span th:text="#{ui.00059}">Preview</span>: <strong th:text="${s.name}"></strong></summary>
+                                    <p th:if="${#lists.isEmpty(s.movements)}" th:text="#{ui.coaching.emptyPreview}"></p>
+                                    <ol th:if="${!#lists.isEmpty(s.movements)}">
+                                        <li th:each="movement : ${s.movements}">
+                                            <span><span th:text="#{ui.02475}">Day</span> <span th:text="${movement.day}"></span></span>
+                                            <strong th:text="${movement.name}"></strong>
+                                        </li>
+                                    </ol>
+                                </details>
+                            </div>
+                            <label for="clientScheduleNotes" th:text="#{ui.02611}">Schedule notes</label>
+                            <textarea id="clientScheduleNotes" name="trainerNotes" rows="3" maxlength="800" th:text="${scheduleDraftNotes}" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"></textarea>
+                            <button type="submit" class="detail-btn-primary" th:disabled="${#lists.isEmpty(schedules)}" th:text="#{ui.02609}">Assign schedule</button>
                         </form>
                     </div>
                 </section>
             </div>
 
-            <section class="detail-section">
+            <section class="detail-section" id="clientPhase">
                 <h2 class="detail-section-title" th:text="#{ui.02612}">Coaching phase</h2>
                 <div class="detail-section-content">
+                    <p class="client-workspace-feedback" role="status" th:if="${workspaceOutcome == 'phase'}" th:text="#{ui.coaching.phaseSaved}"></p>
+                    <p class="client-workspace-feedback client-workspace-feedback--error" role="alert" th:if="${workspaceError == true and phaseDraft != null}" th:text="#{ui.coaching.error}"></p>
+                    <p class="client-workspace-limits" th:text="#{ui.coaching.limits}"></p>
                     <p class="text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02613}">Track the current phase and update with a quick note.</p>
                     <div class="grid gap-3 md:grid-cols-[1.2fr_1.8fr]">
                         <div class="detail-card">
                             <p class="detail-metadata-label" th:text="#{ui.02614}">Current phase</p>
                             <p class="detail-card-title mt-2"
-                                 th:text="${activeLink != null && activeLink.coachingPhase != null ? activeLink.coachingPhase : 'NOT SET'}">NOT SET</p>
+                                 th:text="${activeLink != null && activeLink.coachingPhase != null ? #messages.msg('ui.coaching.phase.' + activeLink.coachingPhase.name()) : #messages.msg('ui.coaching.phaseNone')}">Not set</p>
                             <p class="detail-list-item-meta" th:text="${activeLink != null ? activeLink.coachingPhaseLabel : ''}"></p>
                         </div>
                         <form method="post" class="detail-card space-y-3"
                               th:action="@{/trainer/clients/{id}/phase(id=${client.id})}">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                             <div class="grid gap-3 sm:grid-cols-2">
-                                <select name="phase" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
-                                    <option th:each="phase : ${coachingPhases}" th:value="${phase}" th:text="${phase}"></option>
+                                <div>
+                                <label for="clientCoachingPhase" th:text="#{ui.02612}">Coaching phase</label>
+                                <select id="clientCoachingPhase" name="phase" required class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                                    <option th:if="${phaseDraft == ''}" value="" selected th:text="#{ui.coaching.choosePhase}"></option>
+                                    <option th:each="phase : ${coachingPhases}" th:value="${phase}" th:selected="${phaseDraft != null ? phaseDraft == phase.name() : (activeLink != null and activeLink.coachingPhase == phase)}" th:text="${#messages.msg('ui.coaching.phase.' + phase.name())}"></option>
                                 </select>
-                                <input name="customLabel" placeholder="Custom label (optional)" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200" th:placeholder="#{ui.02615}">
+                                </div>
+                                <div>
+                                <label for="clientPhaseLabel" th:text="#{ui.02615}">Custom label (optional)</label>
+                                <input id="clientPhaseLabel" name="customLabel" maxlength="120" th:value="${phaseLabelDraft != null ? phaseLabelDraft : (activeLink != null ? activeLink.coachingPhaseLabel : '')}" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                                </div>
                             </div>
-                            <textarea name="notes" rows="2" placeholder="Audit note (optional)" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200" th:placeholder="#{ui.02616}"></textarea>
+                            <label for="clientPhaseNote" th:text="#{ui.02616}">Audit note (optional)</label>
+                            <textarea id="clientPhaseNote" name="notes" rows="2" maxlength="800" th:text="${phaseNoteDraft}" class="w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200"></textarea>
                             <button type="submit" class="detail-btn-primary" th:text="#{ui.02617}">Update phase</button>
                         </form>
                     </div>
+                    <details class="client-programme-preview" th:if="${!#lists.isEmpty(workspace.phaseHistory)}">
+                        <summary th:text="#{ui.coaching.phaseHistory}"></summary>
+                        <p class="detail-list-item-meta" th:text="#{ui.coaching.privateNotes}"></p>
+                        <ol>
+                            <li th:each="change : ${workspace.phaseHistory}">
+                                <strong th:text="${#messages.msg('ui.coaching.phase.' + change.phase.name())}"></strong>
+                                <time th:datetime="${change.changedAt}" th:text="${#temporals.format(change.changedAt, 'dd MMM yyyy HH:mm', #locale)}"></time>
+                                <span th:if="${change.label != null}" th:text="${change.label}"></span>
+                                <p th:if="${change.notes != null}" th:text="${change.notes}"></p>
+                            </li>
+                        </ol>
+                    </details>
                 </div>
             </section>
 
@@ -93,7 +171,7 @@
                                     </div>
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ring-white/10"
                                           th:classappend="${aw.completed} ? ' bg-emerald-400/10 text-emerald-300' : ' bg-slate-400/10 text-slate-300'"
-                                          th:text="${aw.completed} ? 'DONE' : 'PENDING'"></span>
+                                          th:text="${aw.completed} ? #{ui.01646} : #{ui.00168}"></span>
                                 </div>
                                 <p class="detail-list-item-description" th:text="${aw.trainerNotes}"></p>
                             </div>
@@ -127,7 +205,32 @@
                 </section>
             </div>
 
-            <section class="detail-section">
+            <section class="detail-section" id="clientCheckIns">
+                <h2 class="detail-section-title" th:text="#{ui.00596}">Check-ins</h2>
+                <div class="detail-section-content">
+                    <p class="detail-empty" th:if="${#lists.isEmpty(workspace.reviews)}" th:text="#{ui.00573}"></p>
+                    <div class="client-review-list">
+                        <a th:each="review : ${workspace.reviews}" th:href="@{/checkins/trainer-review/{id}(id=${review.id})}">
+                            <time th:datetime="${review.weekStartDate}" th:text="${#temporals.format(review.weekStartDate, 'dd MMM yyyy', #locale)}"></time>
+                            <span th:text="${review.status.name() == 'RESPONDED' ? #messages.msg('ui.00152') : #messages.msg('ui.00151')}"></span>
+                            <strong th:text="#{ui.coaching.review}"></strong>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="detail-section" id="clientConversation">
+                <h2 class="detail-section-title" th:text="#{ui.01866}">Conversations</h2>
+                <div class="detail-section-content">
+                    <p th:text="#{ui.coaching.conversationCopy}"></p>
+                    <a class="detail-btn-primary" th:if="${workspace.conversationId != null}" th:href="@{/inbox/{id}(id=${workspace.conversationId})}" th:text="#{ui.coaching.openConversation}"></a>
+                    <form method="post" th:if="${workspace.conversationId == null}" th:action="@{/inbox/start/{id}(id=${client.id})}">
+                        <button class="detail-btn-primary" th:text="#{ui.coaching.startConversation}"></button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="detail-section" id="clientSignals">
                 <div class="detail-section-header">
                     <div>
                         <h2 class="detail-section-title" th:text="#{ui.02622}">Shared signals</h2>
@@ -189,7 +292,7 @@
                 </div>
             </section>
 
-            <section class="detail-section">
+            <section class="detail-section" id="clientGoals">
                 <div class="detail-section-header">
                     <div>
                         <h2 class="detail-section-title" th:text="#{ui.02634}">Active goals</h2>
@@ -208,10 +311,10 @@
                             <div class="flex items-center justify-between gap-2">
                                 <div class="min-w-0">
                                     <p class="detail-card-title" th:text="${goal.title}">Goal</p>
-                                    <p class="detail-list-item-meta" th:text="${goal.goalType}">Type</p>
+                                    <p class="detail-list-item-meta" th:text="${#messages.msg('ui.coaching.goal.' + goal.goalType.name())}">Type</p>
                                 </div>
                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] ring-1 ring-white/10 bg-slate-400/10 text-slate-300"
-                                      th:text="${goal.status}">ACTIVE</span>
+                                      th:text="#{ui.00134}">Active</span>
                             </div>
                             <p class="detail-list-item-meta mt-3"
                                  th:with="adh=${goalAdherenceById != null ? goalAdherenceById.get(goal.id) : null}">
@@ -224,5 +327,9 @@
             </section>
         </div>
     </div>
+
+    <th:block th:fragment="scripts">
+        <script defer th:src="@{/js/trainer/client-workspace.js(v=${uiCssVersion})}"></script>
+    </th:block>
 
 </th:block>

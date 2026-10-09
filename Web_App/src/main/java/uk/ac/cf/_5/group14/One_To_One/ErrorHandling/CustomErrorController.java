@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -24,30 +25,39 @@ public class CustomErrorController implements ErrorController {
 
     @GetMapping("/access-denied")
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public String accessDenied(Model model) {
+    public String accessDenied(HttpServletResponse response, Model model) {
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Referrer-Policy", "no-referrer");
         model.addAttribute("statusCode", HttpStatus.FORBIDDEN.value());
         model.addAttribute("requestPath", "/access-denied");
         return "system-views/error/403";
     }
 
     @RequestMapping(ERROR_PATH)
-    public String handleError(HttpServletRequest request, Model model) {
+    public String handleError(HttpServletRequest request, HttpServletResponse response, Model model) {
         // Get the error status code
         Object status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         Object requestPath = request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
-        Object message = request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
 
         int statusCode = 500;
         if (status != null) {
-            statusCode = Integer.parseInt(status.toString());
+            try {
+                int candidate = Integer.parseInt(status.toString());
+                if (candidate >= 400 && candidate <= 599) statusCode = candidate;
+            } catch (NumberFormatException ignored) {
+                // A malformed dispatcher attribute must not break error recovery.
+            }
         }
+        response.setStatus(statusCode);
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Referrer-Policy", "no-referrer");
 
         // Add error information to model for templates
         model.addAttribute("statusCode", statusCode);
-        model.addAttribute("requestPath", requestPath != null ? requestPath.toString() : "Unknown");
+        model.addAttribute("requestPath", safePath(requestPath));
 
         // Log the error for debugging
-        logError(statusCode, requestPath, message);
+        logError(statusCode, requestPath);
 
         // Route to appropriate error template
         switch (statusCode) {
@@ -65,19 +75,25 @@ public class CustomErrorController implements ErrorController {
     /**
      * Log error details for debugging purposes
      */
-    private void logError(int statusCode, Object requestPath, Object message) {
-        String path = requestPath != null ? requestPath.toString() : "Unknown";
-        String msg = message != null ? message.toString() : "No message";
+    private void logError(int statusCode, Object requestPath) {
+        String path = safePath(requestPath);
         if (statusCode >= 500) {
-            log.error("HTTP error {} for path {}: {}", statusCode, path, msg);
+            log.error("HTTP error {} for path {}", statusCode, path);
             return;
         }
 
         if (statusCode == 403) {
-            log.info("HTTP error {} for path {}: {}", statusCode, path, msg);
+            log.info("HTTP error {} for path {}", statusCode, path);
             return;
         }
 
-        log.debug("HTTP error {} for path {}: {}", statusCode, path, msg);
+        log.debug("HTTP error {} for path {}", statusCode, path);
+    }
+
+    private String safePath(Object requestPath) {
+        String path = requestPath == null ? "Unknown" : requestPath.toString().replaceAll("[\\r\\n]", "");
+        int queryStart = path.indexOf('?');
+        if (queryStart >= 0) path = path.substring(0, queryStart);
+        return path.substring(0, Math.min(1000, path.length()));
     }
 }

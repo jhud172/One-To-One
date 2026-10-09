@@ -1,6 +1,8 @@
 package uk.ac.cf._5.group14.One_To_One.Inbox;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import uk.ac.cf._5.group14.One_To_One.Messaging.MessagingException;
 import org.springframework.web.bind.annotation.*;
 import uk.ac.cf._5.group14.One_To_One.Messaging.Message;
 import uk.ac.cf._5.group14.One_To_One.Messaging.MessageReadState;
@@ -90,9 +92,13 @@ public class InboxApiController {
     }
 
     @PostMapping("/threads/{threadId}/read")
-    public Map<String, Object> markRead(@PathVariable Long threadId) {
+    public Map<String, Object> markRead(@PathVariable Long threadId, @RequestParam(required = false) Long upToId) {
         User user = requireUser();
-        inboxService.markRead(user, threadId);
+        if (upToId == null) inboxService.markRead(user, threadId);
+        else {
+            if (upToId < 1) throw new IllegalArgumentException("Invalid read position");
+            inboxService.markRead(user, threadId, upToId);
+        }
         return Map.of("status", "ok");
     }
 
@@ -115,7 +121,20 @@ public class InboxApiController {
                 request.attachmentUrl(),
                 request.attachmentType()
         );
-        return ResponseEntity.ok(Map.of("id", message != null ? message.getId() : null));
+        if (message == null) return ResponseEntity.badRequest().body(Map.of("reason", "INVALID_MESSAGE"));
+        return ResponseEntity.ok(Map.of("id", message.getId()));
+    }
+
+    @ExceptionHandler(MessagingException.class)
+    public ResponseEntity<Map<String, String>> messagingError(MessagingException exception) {
+        HttpStatus status = exception.getReason() == MessagingException.Reason.OFF_PLATFORM_PAYMENT
+                ? HttpStatus.UNPROCESSABLE_ENTITY : HttpStatus.CONFLICT;
+        return ResponseEntity.status(status).body(Map.of("reason", exception.getReason().name()));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> invalidMessage(IllegalArgumentException exception) {
+        return ResponseEntity.badRequest().body(Map.of("reason", "INVALID_MESSAGE"));
     }
 
     private User requireUser() {

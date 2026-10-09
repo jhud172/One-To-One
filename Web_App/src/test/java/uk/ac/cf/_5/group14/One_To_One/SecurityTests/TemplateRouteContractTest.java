@@ -65,18 +65,16 @@ class TemplateRouteContractTest {
     }
 
     @Test
-    void trainerClientMessageActionsUseTheInboxPostContract() throws IOException {
+    void canonicalClientMessageActionsUseInboxAndUnusedAlternatesAreRetired() throws IOException {
         String clients = read("src/main/resources/templates/trainer-views/trainer/clients.html");
-        String activeClients = read("src/main/resources/templates/trainer-views/trainer/active-clients.html");
 
         assertThat(clients)
                 .contains("th:action=\"@{/inbox/start/{id}(id=${link.clientUserId})}\"")
                 .contains("method=\"post\"")
                 .doesNotContain("th:href=\"@{/inbox/start/{id}(id=${link.clientUserId})}\"");
-        assertThat(activeClients)
-                .contains("th:action=\"@{/inbox/start/{id}(id=${link.clientUserId})}\"")
-                .contains("method=\"post\"")
-                .doesNotContain("th:href=\"@{/inbox/start/{id}(id=${link.clientUserId})}\"");
+        assertThat(java.nio.file.Path.of("src/main/resources/templates/trainer-views/trainer/active-clients.html")).doesNotExist();
+        assertThat(java.nio.file.Path.of("src/main/resources/templates/trainer-views/trainer/client-requests.html")).doesNotExist();
+        assertThat(clients).contains("/decline(id=${req.clientUserId})").doesNotContain("/trainer/requests/{id}");
     }
 
     @Test
@@ -111,14 +109,13 @@ class TemplateRouteContractTest {
     }
 
     @Test
-    void scheduleListUsesPostFormsForDestructiveActions() throws IOException {
+    void scheduleListUsesPostFormsForDeletionAndAppliedWindowSettings() throws IOException {
         String template = read("src/main/resources/templates/trainer-views/schedule/list.html");
 
         assertThat(template).contains("method=\"post\"");
-        assertThat(template).contains("/schedules/applied/' + ${applied.id} + '/remove");
-        assertThat(template).contains("/schedules/' + ${schedule.id} + '/delete");
-        assertThat(template).doesNotContain("th:href=\"@{'/schedules/applied/' + ${applied.id} + '/remove'}\"");
-        assertThat(template).doesNotContain("th:href=\"@{'/schedules/' + ${schedule.id} + '/delete'}\"");
+        assertThat(template).contains("th:action=\"@{/schedules/applied/{id}/settings(id=${applied.id})}\"");
+        assertThat(template).contains("th:action=\"@{/schedules/{id}/delete(id=${schedule.id})}\"");
+        assertThat(template).doesNotContain("th:href=\"@{/schedules/applied/{id}/settings", "th:href=\"@{/schedules/{id}/delete");
     }
 
     @Test

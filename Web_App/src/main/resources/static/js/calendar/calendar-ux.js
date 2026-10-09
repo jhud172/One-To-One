@@ -44,8 +44,6 @@ function initCalendarUx() {
     const sortSelect = document.getElementById('schedule-sort');
     const scopeButtons = Array.from(scheduleDrawer?.querySelectorAll('[data-schedule-scope]') || []);
     const customScopeRow = scheduleDrawer?.querySelector('[data-scope-custom]') || null;
-    const scopeStartInput = document.getElementById('schedule-scope-start');
-    const scopeEndInput = document.getElementById('schedule-scope-end');
 
     const pinnedList = document.getElementById('schedule-pinned-list');
     const recentList = document.getElementById('schedule-recent-list');
@@ -68,7 +66,6 @@ function initCalendarUx() {
     let selectedScheduleId = null;
     let selectedStrategy = 'merge';
     let previewEnabled = true;
-    const previewCache = new Map();
     const favouriteStorageKey = 'calendar.scheduleDrawer.favourites';
     const pinnedStorageKey = 'calendar.scheduleDrawer.pinned';
     const recentStorageKey = 'calendar.scheduleDrawer.recent';
@@ -79,6 +76,11 @@ function initCalendarUx() {
     let searchQuery = '';
     let selectedScope = 'visible';
     const scheduleMetadataCache = new Map();
+    let impactRevision = 0;
+    let reviewedDeployment = null;
+    let deploymentInFlight = false;
+
+    function deploymentMessage(key) { return scheduleDrawer?.dataset[key] || ""; }
 
     function getCurrentPane() {
         return document.querySelector('[data-pane-center="true"]')
@@ -98,10 +100,14 @@ function initCalendarUx() {
         return { start: dates[0], end: dates[dates.length - 1] };
     }
 
+    function toLocalIsoDate(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
     function parseDate(dateIso) {
         if (!dateIso) return null;
         const date = new Date(`${dateIso}T00:00:00`);
-        if (Number.isNaN(date.getTime())) return null;
+        if (Number.isNaN(date.getTime()) || toLocalIsoDate(date) !== dateIso) return null;
         return date;
     }
 
@@ -115,7 +121,7 @@ function initCalendarUx() {
     function formatDateLabel(dateIso) {
         const date = parseDate(dateIso);
         if (!date) return dateIso || '--';
-        return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+        return date.toLocaleDateString(document.documentElement.lang || 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
     function clearPreview() {
@@ -141,7 +147,7 @@ function initCalendarUx() {
     }
 
     function saveSet(storageKey, values) {
-        localStorage.setItem(storageKey, JSON.stringify(Array.from(values)));
+        try { localStorage.setItem(storageKey, JSON.stringify(Array.from(values))); } catch { /* Selection remains usable when storage is unavailable. */ }
     }
 
     function loadRecent() {
@@ -154,7 +160,7 @@ function initCalendarUx() {
     }
 
     function saveRecent(values) {
-        localStorage.setItem(recentStorageKey, JSON.stringify(values.slice(0, 12)));
+        try { localStorage.setItem(recentStorageKey, JSON.stringify(values.slice(0, 12))); } catch { /* Selection remains usable when storage is unavailable. */ }
     }
 
     function trackRecent(scheduleId) {
@@ -206,7 +212,13 @@ function initCalendarUx() {
                 const base = li.getAttribute('data-schedule-name') || title.textContent || '';
                 if (searchQuery && base.toLowerCase().includes(searchQuery)) {
                     const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    title.innerHTML = base.replace(new RegExp(`(${escaped})`, 'ig'), '<mark>$1</mark>');
+                    const parts = base.split(new RegExp(`(${escaped})`, 'ig'));
+                    title.replaceChildren(...parts.map((part, index) => {
+                        if (index % 2 === 0) return document.createTextNode(part);
+                        const mark = document.createElement('mark');
+                        mark.textContent = part;
+                        return mark;
+                    }));
                 } else {
                     title.textContent = base;
                 }
@@ -415,9 +427,9 @@ function initCalendarUx() {
         });
 
         const enabled = !!selectedScheduleId;
-        if (impactReviewButton) impactReviewButton.disabled = !enabled;
+        if (impactReviewButton) impactReviewButton.disabled = !enabled || deploymentInFlight;
         if (impactApplyButton) {
-            impactApplyButton.disabled = !enabled || impactApplyButton.dataset.hasImpact !== 'true';
+            impactApplyButton.disabled = deploymentInFlight || !enabled || impactApplyButton.dataset.hasImpact !== 'true';
             impactApplyButton.textContent = enabled ? `Deploy "${getSelectedScheduleName()}"` : 'Deploy schedule';
         }
         if (previewDeployButton) {
@@ -425,9 +437,11 @@ function initCalendarUx() {
         }
         if (deployPanel) {
             deployPanel.classList.toggle('is-hidden', !enabled);
+            deployPanel.hidden = !enabled;
         }
         if (deployFooter) {
             deployFooter.classList.toggle('is-hidden', !enabled);
+            deployFooter.hidden = !enabled;
         }
         if (enabled) {
             updateContextHeader();
@@ -490,88 +504,32 @@ function initCalendarUx() {
         });
     }
 
-    async function fetchSchedulePreview(scheduleId) {
-        if (previewCache.has(scheduleId)) return previewCache.get(scheduleId);
-        const res = await fetch(`/api/schedules/${scheduleId}/preview`, { credentials: 'same-origin' });
-        if (!res.ok) throw new Error('Unable to load schedule preview');
-        const data = await res.json();
-        previewCache.set(scheduleId, data);
-        return data;
-    }
-
-    function renderPreview(data) {
+    function renderDeploymentPreview(impact) {
         clearPreview();
-        if (!previewEnabled || !data || !Array.isArray(data.entries)) return;
-
-        const groupedEntries = new Map();
-        data.entries.forEach((entry) => {
-            const day = Number(entry.dayOfWeek);
-            if (!Number.isFinite(day)) return;
-            if (!groupedEntries.has(day)) groupedEntries.set(day, []);
-
-            const name = entry.exercise?.name || entry.customExercise?.name || 'Scheduled workout';
-            groupedEntries.get(day).push(name);
+        if (!previewEnabled) return;
+        const byDate = new Map();
+        (impact.plannedOccurrences || []).forEach((occurrence) => {
+            if (!byDate.has(occurrence.date)) byDate.set(occurrence.date, []);
+            byDate.get(occurrence.date).push(occurrence.name);
         });
-
         getCurrentPane().querySelectorAll('.calendar-day-card[data-date]').forEach((card) => {
-            const dayNumber = getIsoDayNumber(card.getAttribute('data-date'));
-            const labels = groupedEntries.get(dayNumber) || [];
-            if (!labels.length) return;
-
+            const names = byDate.get(card.dataset.date) || [];
             const content = card.querySelector('.calendar-day-content');
-            if (!content) return;
-
+            if (!content || !names.length) return;
             const ghost = document.createElement('div');
             ghost.className = 'calendar-preview-ghost';
-            const visibleLabels = labels.slice(0, 2).join(' | ');
-            ghost.textContent = labels.length > 2 ? `${visibleLabels} +${labels.length - 2}` : visibleLabels;
+            ghost.textContent = names.slice(0, 2).join(' | ') + (names.length > 2 ? ` +${names.length - 2}` : '');
             content.appendChild(ghost);
-
-            const hasConflict = card.querySelector('.calendar-item[data-type="workout"], .calendar-item[data-type="occurrence"]') != null;
-            if (hasConflict) {
-                card.classList.add('calendar-day-card--preview-conflict');
-            }
         });
     }
 
     function renderProjectedLayout(scheduleId, impact) {
         if (!impact || !scheduleId) return;
-        const metadata = scheduleMetadataCache.get(scheduleId);
-        if (!metadata) return;
-
-        const activeDays = Array.isArray(metadata.activeDayIndexes) ? metadata.activeDayIndexes : [];
-        if (!activeDays.length) return;
-
-        const start = impact.windowStart;
-        const end = impact.windowEnd;
-        if (!start || !end) return;
-
-        clearPreview();
+        renderDeploymentPreview(impact);
         clearConflictHighlights();
-
-        const startDate = parseDate(start);
-        const endDate = parseDate(end);
-        if (!startDate || !endDate) return;
-
-        const rotationMode = (getListItemForSchedule(scheduleId)?.getAttribute('data-schedule-rotation') || 'weekly_repeat').replaceAll('_', ' ');
-
-        getCurrentPane().querySelectorAll('.calendar-day-card[data-date]').forEach((card) => {
-            const dateIso = card.getAttribute('data-date');
-            const dateObj = parseDate(dateIso);
-            if (!dateObj) return;
-            if (dateObj < startDate || dateObj > endDate) return;
-
-            const dayNumber = getIsoDayNumber(dateIso);
-            if (!activeDays.includes(dayNumber)) return;
-
-            const content = card.querySelector('.calendar-day-content');
-            if (!content) return;
-
-            const ghost = document.createElement('div');
-            ghost.className = 'calendar-preview-ghost calendar-preview-ghost--sim';
-            ghost.textContent = `Projected | ${rotationMode}`;
-            content.appendChild(ghost);
-            card.classList.add('calendar-day-card--simulated');
+        getCurrentPane().querySelectorAll('.calendar-preview-ghost').forEach((ghost) => {
+            ghost.classList.add('calendar-preview-ghost--sim');
+            ghost.closest('.calendar-day-card')?.classList.add('calendar-day-card--simulated');
         });
 
         const conflictDates = Array.isArray(impact.conflictDates) ? impact.conflictDates : [];
@@ -584,34 +542,11 @@ function initCalendarUx() {
     async function activateSchedule(scheduleId, withPreview = true, withImpact = false) {
         if (!scheduleId) return;
         selectedScheduleId = scheduleId;
-        if (impactApplyButton) impactApplyButton.dataset.hasImpact = 'false';
+        invalidateImpact();
         trackRecent(scheduleId);
         updateScheduleSelectionUi();
         renderQuickAccessChips();
-        if (!withPreview) return;
-
-        try {
-            const preview = await fetchSchedulePreview(scheduleId);
-            renderPreview(preview);
-        } catch (error) {
-            console.error(error);
-        }
-
-        if (withImpact) {
-            requestImpact().catch((error) => {
-                console.error(error);
-                if (impactSummary) {
-                    impactSummary.textContent = 'Unable to calculate impact. Please try again.';
-                }
-            });
-        }
-    }
-
-    function toLocalIsoDate(date) {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+        if (withPreview || withImpact) return requestImpact();
     }
 
     function weeksBetween(startIso, endIso) {
@@ -622,118 +557,119 @@ function initCalendarUx() {
         return Math.ceil(diffDays / 7);
     }
 
-    function intervalToWeeks(interval, unit) {
-        const safeInterval = Math.max(1, Math.trunc(interval || 1));
-        if (unit === 'day') return Math.ceil(safeInterval / 7);
-        if (unit === 'month') return safeInterval * 4;
-        if (unit === 'year') return safeInterval * 52;
-        return safeInterval;
-    }
-
     function computeRepeatConfig() {
         const bounds = getVisibleDateBounds();
-        const startDate = deployStartInput?.value || selectedDay || bounds?.start || toLocalIsoDate(new Date());
-        const repeat = repeatSelect?.value || 'forever';
-        const endDateInput = repeatEndInput?.value || '';
-        let weeks = 4;
-        let scope = 'weeks';
+        const fallback = selectedDay || bounds?.start || toLocalIsoDate(new Date());
+        const startDate = selectedScope === 'visible' ? bounds?.start || fallback
+            : selectedScope === 'day' ? fallback : deployStartInput?.value || '';
+        const endDate = selectedScope === 'visible' ? bounds?.end || startDate
+            : selectedScope === 'day' ? startDate : repeatEndInput?.value || '';
+        return { startDate, endDate, repeat: repeatSelect?.value || 'weekly', scope: 'weeks',
+            weeks: startDate && endDate ? weeksBetween(startDate, endDate) : 1 };
+    }
 
-        if (repeat === 'forever') {
-            scope = 'forward';
-            weeks = 52;
-        } else if (endDateInput) {
-            weeks = weeksBetween(startDate, endDateInput);
-        } else if (repeat === 'yearly') {
-            weeks = 52;
-        } else if (repeat === 'monthly') {
-            weeks = 4;
-        } else if (repeat === 'weekly') {
-            weeks = 1;
-        } else if (repeat === 'daily') {
-            weeks = 1;
-        } else {
-            weeks = intervalToWeeks(Number(repeatIntervalInput?.value || 1), repeatUnitSelect?.value || 'week');
+    function syncScopeInputs() {
+        const config = computeRepeatConfig();
+        if (selectedScope !== 'custom') {
+            if (deployStartInput) deployStartInput.value = config.startDate;
+            if (repeatEndInput) repeatEndInput.value = config.endDate;
         }
+        if (deployStartInput) deployStartInput.readOnly = selectedScope === 'visible';
+        if (repeatEndInput) repeatEndInput.readOnly = selectedScope !== 'custom';
+        scopeButtons.forEach((button) => {
+            const active = button.dataset.scheduleScope === selectedScope;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
+    }
 
-        weeks = Math.max(1, Math.min(52, Math.trunc(weeks)));
-
-        let computedEnd = endDateInput;
-        if (!computedEnd && repeat !== 'forever') {
-            const start = parseDate(startDate);
-            if (start) {
-                const end = new Date(start);
-                end.setDate(end.getDate() + (weeks * 7) - 1);
-                computedEnd = toLocalIsoDate(end);
-            }
-        }
-
-        return {
-            startDate,
-            repeat,
-            endDate: computedEnd,
-            scope,
-            weeks
-        };
+    function validDeploymentWindow() {
+        const config = computeRepeatConfig();
+        const start = parseDate(config.startDate);
+        const end = parseDate(config.endDate);
+        const days = start && end ? Math.round((Date.UTC(end.getFullYear(), end.getMonth(), end.getDate())
+            - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000) + 1 : 0;
+        const interval = Number(repeatIntervalInput?.value || 1);
+        return days >= 1 && days <= 366 && (config.repeat !== 'custom'
+            || (Number.isInteger(interval) && interval >= 1 && interval <= 52));
     }
 
     function buildDeploymentPayload() {
         const config = computeRepeatConfig();
-        const repeat = repeatSelect?.value || 'forever';
-
-        // Build the recurrence config object
-        const recurrenceConfig = {
-            repeat: repeat,
-            interval: repeat === 'custom' ? Number(repeatIntervalInput?.value || 1) : null,
-            unit: repeat === 'custom' ? (repeatUnitSelect?.value || 'weeks') : null,
-            endDate: config.endDate || null
-        };
-
-        return {
-            // New recurrence-based payload
-            recurrence: recurrenceConfig,
-            startDate: config.startDate,
-            selectedDate: config.startDate,
-            strategy: selectedStrategy,
-            // Keep old fields for backward compatibility
-            scope: config.scope,
-            weeks: config.weeks
-        };
+        return { startDate: config.startDate, selectedDate: config.startDate, strategy: selectedStrategy,
+            recurrence: { repeat: config.repeat,
+                interval: config.repeat === 'custom' ? Number(repeatIntervalInput?.value || 1) : null,
+                unit: config.repeat === 'custom' ? repeatUnitSelect?.value || 'week' : null,
+                endDate: config.endDate }, scope: config.scope, weeks: config.weeks };
     }
 
     function showApplyToast(message, undoAction, undoSeconds = 30) {
-        const existing = document.getElementById('schedule-apply-toast');
-        if (existing) existing.remove();
-
+        document.getElementById('schedule-apply-toast')?.remove();
+        if (undoTimeout) window.clearTimeout(undoTimeout);
         const toast = document.createElement('div');
         toast.id = 'schedule-apply-toast';
         toast.className = 'calendar-apply-toast';
-        toast.innerHTML = `
-            <div class="calendar-apply-toast-text">${message}</div>
-            <button type="button" class="calendar-apply-toast-undo">Undo</button>
-        `;
-
-        const undoButton = toast.querySelector('.calendar-apply-toast-undo');
-        undoButton?.addEventListener('click', () => {
-            if (undoTimeout) {
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        const text = document.createElement('span');
+        text.className = 'calendar-apply-toast-text';
+        text.textContent = message;
+        const undoButton = document.createElement('button');
+        undoButton.type = 'button';
+        undoButton.className = 'calendar-apply-toast-undo';
+        undoButton.textContent = deploymentMessage('undo');
+        const refreshButton = document.createElement('button');
+        refreshButton.type = 'button';
+        refreshButton.className = 'calendar-apply-toast-refresh';
+        refreshButton.textContent = deploymentMessage('refresh');
+        refreshButton.addEventListener('click', () => window.location.reload());
+        let expired = false;
+        undoButton.hidden = typeof undoAction !== 'function';
+        undoButton.addEventListener('click', async () => {
+            undoButton.disabled = true;
+            try {
+                await undoAction?.();
                 window.clearTimeout(undoTimeout);
                 undoTimeout = null;
+            } catch {
+                text.textContent = deploymentMessage('undoError');
+                undoButton.disabled = expired;
             }
-            toast.remove();
-            undoAction?.();
         });
+        toast.append(text, undoButton, refreshButton);
+        const host = scheduleDrawer?.classList.contains('open') ? scheduleDrawer : document.body;
+        host.appendChild(toast);
+        (undoButton.hidden ? refreshButton : undoButton).focus();
+        if (!undoButton.hidden) undoTimeout = window.setTimeout(() => {
+            expired = true;
+            undoButton.disabled = true;
+            text.textContent = deploymentMessage('undoExpired');
+            if (document.activeElement === undoButton) refreshButton.focus();
+            undoTimeout = null;
+        }, Math.max(1, undoSeconds) * 1000);
+    }
 
-        document.body.appendChild(toast);
-        undoTimeout = window.setTimeout(() => {
-            toast.remove();
+    function showDeploymentResult(scheduleId, data) {
+        const values = { added: Number(data.created || 0), replaced: Number(data.replaced || 0), skipped: Number(data.skipped || 0) };
+        const message = deploymentMessage('success').replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
+        const token = data.undoToken;
+        showApplyToast(message, token ? async () => {
+            const response = await fetch(`/api/schedules/${scheduleId}/deployment/undo`, {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', ...(csrfToken ? { [csrfHeader]: csrfToken } : {}) },
+                body: JSON.stringify({ undoToken: token })
+            });
+            if (!response.ok) throw new Error('Undo failed');
             window.location.reload();
-        }, Math.max(5, undoSeconds) * 1000);
+        } : null, Number(data.undoExpiresInSeconds || 30));
     }
 
     function ensureSelectedDayInVisibleRange() {
         const bounds = getVisibleDateBounds();
         if (!bounds) return;
         if (!selectedDay || selectedDay < bounds.start || selectedDay > bounds.end) {
-            selectedDay = bounds.start;
+            const today = toLocalIsoDate(new Date());
+            selectedDay = today >= bounds.start && today <= bounds.end ? today : bounds.start;
         }
         if (deployStartInput && !deployStartInput.value) {
             deployStartInput.value = selectedDay;
@@ -749,11 +685,11 @@ function initCalendarUx() {
         const skipped = Number(summary.skipped ?? 0);
         const conflicts = Number(summary.existingConflicts ?? conflictDates.length ?? 0);
 
-        impactSummary.innerHTML = `
-            This will add ${added} entries, replace ${replaced}, and skip ${skipped}.
-            <br/>${conflicts > 0 ? `${conflicts} day${conflicts === 1 ? '' : 's'} have conflicts.` : 'No conflicts detected.'}
-        `;
+        const values = { added, replaced, skipped, conflicts: conflictDates.length,
+            already: Number(summary.alreadyScheduled || 0), protected: Number(summary.protectedEntries || 0) };
+        impactSummary.textContent = deploymentMessage('impactSummary').replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
 
+        renderDeploymentPreview(impact);
         clearConflictHighlights();
         conflictDates.forEach((dateIso) => {
             const card = document.querySelector(`.calendar-day-card[data-date="${dateIso}"]`);
@@ -763,7 +699,7 @@ function initCalendarUx() {
         });
 
         if (impactApplyButton) {
-            impactApplyButton.disabled = false;
+            impactApplyButton.disabled = deploymentInFlight || (added === 0 && replaced === 0);
             impactApplyButton.dataset.hasImpact = 'true';
             impactApplyButton.textContent = `Deploy "${getSelectedScheduleName()}"`;
         }
@@ -773,90 +709,96 @@ function initCalendarUx() {
 
     async function requestImpact(payloadOverride = null) {
         if (!selectedScheduleId) return null;
+        if (!payloadOverride && !validDeploymentWindow()) {
+            invalidateImpact();
+            if (impactSummary) impactSummary.textContent = deploymentMessage('invalidWindow');
+            return null;
+        }
+        const scheduleId = selectedScheduleId;
         const payload = payloadOverride || buildDeploymentPayload();
-
-        const res = await fetch(`/api/schedules/${selectedScheduleId}/deployment/impact`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(csrfToken ? { [csrfHeader]: csrfToken } : {})
-            },
-            body: JSON.stringify(payload)
-        });
-
+        const fingerprint = JSON.stringify(payload);
+        const revision = ++impactRevision;
+        if (impactApplyButton) impactApplyButton.disabled = true;
+        let res;
+        try {
+            res = await fetch(`/api/schedules/${scheduleId}/deployment/impact`, {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', ...(csrfToken ? { [csrfHeader]: csrfToken } : {}) },
+                body: fingerprint
+            });
+        } catch (error) {
+            if (revision !== impactRevision || selectedScheduleId !== scheduleId) return null;
+            throw error;
+        }
+        if (revision !== impactRevision || selectedScheduleId !== scheduleId) return null;
         if (!res.ok) throw new Error('Impact request failed');
         const impact = await res.json();
+        if (revision !== impactRevision || selectedScheduleId !== scheduleId
+            || (!payloadOverride && fingerprint !== JSON.stringify(buildDeploymentPayload()))) return null;
+        reviewedDeployment = { scheduleId, fingerprint };
         renderImpact(impact);
         return impact;
     }
 
     async function applyDeployment(options = {}) {
         if (!selectedScheduleId) return null;
+        if (deploymentInFlight || !validDeploymentWindow()) return null;
+        const scheduleId = selectedScheduleId;
         const payload = options.payload || buildDeploymentPayload();
-        if (selectedStrategy === 'replace') {
-            const proceed = window.confirm('Replace will remove existing entries in the selected window. Continue?');
+        const fingerprint = JSON.stringify(payload);
+        if (reviewedDeployment?.scheduleId !== scheduleId || reviewedDeployment?.fingerprint !== fingerprint) {
+            const impact = await requestImpact(payload);
+            if (!impact || selectedScheduleId !== scheduleId || fingerprint !== JSON.stringify(options.payload || buildDeploymentPayload())) return null;
+        }
+        if (payload.strategy === 'replace') {
+            const proceed = window.confirm(deploymentMessage('replaceHelp'));
             if (!proceed) return;
         }
 
-        const res = await fetch(`/api/schedules/${selectedScheduleId}/deployment/apply`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(csrfToken ? { [csrfHeader]: csrfToken } : {})
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) throw new Error('Apply failed');
-        const data = await res.json();
-
-        const created = Number(data.created || 0);
-        const replaced = Number(data.replaced || 0);
-        const skipped = Number(data.skipped || 0);
-        if (impactSummary) {
-            impactSummary.textContent = `Applied successfully: ${created} added, ${replaced} replaced, ${skipped} skipped.`;
-        }
-
-        clearPreview();
-        clearConflictHighlights();
-
-        if (options.onSuccess) {
-            options.onSuccess(data);
-        }
-
-        if (options.suppressReload) {
-            return data;
-        }
-
-        if (data.undoToken) {
-            const token = data.undoToken;
-            const undoSeconds = Number(data.undoExpiresInSeconds || 30);
-            showApplyToast(
-                `Schedule deployed. ${created} added, ${replaced} replaced, ${skipped} skipped.`,
-                () => {
-                    fetch(`/api/schedules/${selectedScheduleId}/deployment/undo`, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(csrfToken ? { [csrfHeader]: csrfToken } : {})
-                        },
-                        body: JSON.stringify({ undoToken: token })
-                    }).then((undoRes) => {
-                        if (!undoRes.ok) throw new Error('Undo failed');
-                        window.location.reload();
-                    }).catch((error) => {
-                        console.error(error);
-                    });
+        if (deploymentInFlight) return null;
+        deploymentInFlight = true;
+        scheduleDrawer?.setAttribute("aria-busy", "true");
+        invalidateImpact();
+        updateScheduleSelectionUi();
+        try {
+            const res = await fetch(`/api/schedules/${scheduleId}/deployment/apply`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(csrfToken ? { [csrfHeader]: csrfToken } : {})
                 },
-                undoSeconds
-            );
-        } else {
-            window.location.reload();
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error('Apply failed');
+            const data = await res.json();
+
+            const created = Number(data.created || 0);
+            const replaced = Number(data.replaced || 0);
+            const skipped = Number(data.skipped || 0);
+            if (impactSummary) {
+                impactSummary.textContent = `Applied successfully: ${created} added, ${replaced} replaced, ${skipped} skipped.`;
+            }
+
+            clearPreview();
+            clearConflictHighlights();
+
+            if (options.onSuccess) {
+                options.onSuccess(data);
+            }
+
+            if (data.undoToken || options.suppressReload) {
+                showDeploymentResult(scheduleId, data);
+            } else {
+                window.location.reload();
+            }
+            return data;
+        } finally {
+            deploymentInFlight = false;
+            scheduleDrawer?.removeAttribute("aria-busy");
+            updateScheduleSelectionUi();
         }
-        return data;
     }
 
     function setScopeBadge(entryCount, conflictCount = 0, replacedCount = 0) {
@@ -873,11 +815,12 @@ function initCalendarUx() {
     }
 
     function updateContextHeader() {
+        syncScopeInputs();
         const pane = getCurrentPane();
         const entryCount = pane.querySelectorAll('.calendar-item').length;
         const config = computeRepeatConfig();
         const repeatLabels = {
-            forever: 'Forever',
+            forever: repeatSelect?.querySelector('[value=forever]')?.textContent || '',
             daily: 'Daily',
             weekly: 'Weekly',
             monthly: 'Monthly',
@@ -886,13 +829,20 @@ function initCalendarUx() {
         };
         const repeatLabel = repeatLabels[config.repeat] || 'Custom';
         const scopeLabel = selectedScope === 'day' ? 'Selected day' : selectedScope === 'custom' ? 'Custom range' : 'Visible range';
-        const endText = config.repeat === 'forever' || !config.endDate
+        const endText = !config.endDate
             ? ''
             : ` | Ends ${formatDateLabel(config.endDate)}`;
 
         if (contextSummary) {
             contextSummary.textContent = `${scopeLabel} | Starts ${formatDateLabel(config.startDate)} | ${repeatLabel}${endText}`;
         }
+        const bounds = getVisibleDateBounds();
+        const rangeLabel = document.getElementById('schedule-context-range');
+        const selectedLabel = document.getElementById('schedule-context-selected-day');
+        const existingLabel = document.getElementById('schedule-context-existing');
+        if (rangeLabel && bounds) rangeLabel.textContent = `${formatDateLabel(bounds.start)} – ${formatDateLabel(bounds.end)}`;
+        if (selectedLabel) selectedLabel.textContent = formatDateLabel(selectedDay);
+        if (existingLabel) existingLabel.textContent = String(entryCount);
         setScopeBadge(entryCount);
     }
 
@@ -900,9 +850,19 @@ function initCalendarUx() {
         if (repeatCustomRow) {
             repeatCustomRow.hidden = repeatSelect?.value !== 'custom';
         }
-        if (repeatEndRow) {
-            repeatEndRow.hidden = repeatSelect?.value === 'forever';
+        if (repeatEndRow) repeatEndRow.hidden = false;
+        if (repeatSelect?.value === 'forever') {
+            const config = computeRepeatConfig();
+            const end = parseDate(config.startDate);
+            if (end) {
+                end.setFullYear(end.getFullYear() + 1);
+                end.setDate(end.getDate() - 1);
+                selectedScope = 'custom';
+                if (deployStartInput) deployStartInput.value = config.startDate;
+                if (repeatEndInput) repeatEndInput.value = toLocalIsoDate(end);
+            }
         }
+        syncScopeInputs();
         invalidateImpact();
         updateContextHeader();
         refreshImpactIfReady();
@@ -917,7 +877,7 @@ function initCalendarUx() {
     }
 
     function saveFavourites(ids) {
-        localStorage.setItem(favouriteStorageKey, JSON.stringify(ids));
+        try { localStorage.setItem(favouriteStorageKey, JSON.stringify(ids)); } catch { /* Selection remains usable when storage is unavailable. */ }
     }
 
     function applyFavouriteUi() {
@@ -1079,38 +1039,12 @@ function initCalendarUx() {
 
     scopeButtons.forEach((button) => {
         button.addEventListener('click', () => {
-            selectedScope = button.getAttribute('data-schedule-scope') || 'visible';
-            scopeButtons.forEach((candidate) => candidate.classList.toggle('is-active', candidate === button));
-            if (customScopeRow) {
-                customScopeRow.hidden = selectedScope !== 'custom';
-            }
-            if (selectedScope === 'custom') {
-                if (scopeStartInput?.value) deployStartInput.value = scopeStartInput.value;
-                if (scopeEndInput?.value) repeatEndInput.value = scopeEndInput.value;
-            }
-            if (selectedScope === 'day' && selectedDay && deployStartInput) {
-                deployStartInput.value = selectedDay;
-            }
+            selectedScope = button.dataset.scheduleScope || 'visible';
+            syncScopeInputs();
             invalidateImpact();
             updateContextHeader();
             refreshImpactIfReady();
         });
-    });
-
-    scopeStartInput?.addEventListener('change', () => {
-        if (selectedScope !== 'custom') return;
-        if (deployStartInput) deployStartInput.value = scopeStartInput.value || deployStartInput.value;
-        invalidateImpact();
-        updateContextHeader();
-        refreshImpactIfReady();
-    });
-
-    scopeEndInput?.addEventListener('change', () => {
-        if (selectedScope !== 'custom') return;
-        if (repeatEndInput) repeatEndInput.value = scopeEndInput.value || repeatEndInput.value;
-        invalidateImpact();
-        updateContextHeader();
-        refreshImpactIfReady();
     });
 
     document.addEventListener('click', (event) => {
@@ -1180,6 +1114,7 @@ function initCalendarUx() {
         event.preventDefault();
         event.stopPropagation();
         selectedDay = card.getAttribute('data-date');
+        invalidateImpact();
         if (deployStartInput && selectedDay) {
             deployStartInput.value = selectedDay;
         }
@@ -1187,6 +1122,7 @@ function initCalendarUx() {
     }, true);
 
     deployStartInput?.addEventListener('change', () => {
+        if (selectedScope === 'day') selectedDay = deployStartInput.value;
         invalidateImpact();
         updateContextHeader();
         refreshImpactIfReady();
@@ -1251,7 +1187,7 @@ function initCalendarUx() {
             if (impact) {
                 renderProjectedLayout(selectedScheduleId, impact);
             }
-            showPreviewConfirm();
+            if (impact) showPreviewConfirm();
         }).catch((error) => {
             console.error(error);
             if (impactSummary) {
@@ -1275,44 +1211,13 @@ function initCalendarUx() {
         applyDeployment({
             payload: pendingPreviewPayload,
             suppressReload: true,
-            onSuccess: (data) => {
-                const created = Number(data.created || 0);
-                const replaced = Number(data.replaced || 0);
-                const skipped = Number(data.skipped || 0);
-                const undoToken = data.undoToken;
-                const undoSeconds = Number(data.undoExpiresInSeconds || 30);
-                
-                if (undoToken) {
-                    showApplyToast(
-                        `Schedule deployed. ${created} added, ${replaced} replaced, ${skipped} skipped.`,
-                        () => {
-                            fetch(`/api/schedules/${pendingPreviewScheduleId}/deployment/undo`, {
-                                method: 'POST',
-                                credentials: 'same-origin',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    ...(csrfToken ? { [csrfHeader]: csrfToken } : {})
-                                },
-                                body: JSON.stringify({ undoToken: undoToken })
-                            }).then((undoRes) => {
-                                if (!undoRes.ok) throw new Error('Undo failed');
-                                window.location.reload();
-                            }).catch((error) => {
-                                console.error(error);
-                            });
-                        },
-                        undoSeconds
-                    );
-                } else {
-                    showApplyToast(`Schedule deployed. ${created} added, ${replaced} replaced, ${skipped} skipped.`, null, 5);
-                }
+            onSuccess: () => {
+                hidePreviewConfirm();
+                clearPreview();
+                clearConflictHighlights();
+                collapseMonthView();
+                openScheduleDrawer();
             }
-        }).then(() => {
-            hidePreviewConfirm();
-            clearPreview();
-            clearConflictHighlights();
-            collapseMonthView();
-            openScheduleDrawer();
         }).catch((error) => {
             console.error(error);
             if (impactSummary) {
@@ -1327,15 +1232,17 @@ function initCalendarUx() {
             selectedStrategy = strategy;
             strategyButtons.forEach((candidate) => {
                 candidate.classList.toggle('is-active', candidate === button);
+                candidate.setAttribute('aria-pressed', String(candidate === button));
             });
             if (impactApplyButton) {
                 impactApplyButton.disabled = true;
                 impactApplyButton.dataset.hasImpact = 'false';
             }
+            invalidateImpact();
             const help = document.getElementById('schedule-strategy-help');
             if (help) {
                 if (strategy === 'replace') {
-                    help.textContent = 'Overwrites existing items in the selected window.';
+                    help.textContent = deploymentMessage('replaceHelp');
                 } else if (strategy === 'skip') {
                     help.textContent = 'Skips days that already have scheduled items.';
                 } else {
@@ -1346,6 +1253,11 @@ function initCalendarUx() {
     });
 
     function invalidateImpact() {
+        impactRevision++;
+        reviewedDeployment = null;
+        clearPreview();
+        clearConflictHighlights();
+        if (impactSummary) impactSummary.textContent = deploymentMessage('reviewNeeded');
         if (impactApplyButton) {
             impactApplyButton.disabled = true;
             impactApplyButton.dataset.hasImpact = 'false';
@@ -1382,8 +1294,14 @@ function initCalendarUx() {
 
     simRunButton?.addEventListener('click', () => {
         if (!selectedScheduleId || !simEnableToggle?.checked) return;
-        const weeks = Math.max(1, Math.min(12, Number(simWeeksInput?.value || 6)));
-
+        const weeks = Number(simWeeksInput?.value || 6);
+        if (!Number.isInteger(weeks) || weeks < 1 || weeks > 12 || !validDeploymentWindow()) {
+            if (impactSummary) impactSummary.textContent = deploymentMessage('invalidWindow');
+            return;
+        }
+        invalidateImpact();
+        const revision = ++impactRevision;
+        const scheduleId = selectedScheduleId;
         const payload = {
             ...buildDeploymentPayload(),
             scope: 'weeks',
@@ -1391,7 +1309,11 @@ function initCalendarUx() {
             strategy: selectedStrategy
         };
 
-        fetch(`/api/schedules/${selectedScheduleId}/deployment/impact`, {
+        const simulationEnd = parseDate(payload.startDate);
+        simulationEnd.setDate(simulationEnd.getDate() + weeks * 7 - 1);
+        payload.recurrence.endDate = toLocalIsoDate(simulationEnd);
+
+        fetch(`/api/schedules/${scheduleId}/deployment/impact`, {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -1403,7 +1325,8 @@ function initCalendarUx() {
             if (!res.ok) throw new Error('Simulation failed');
             return res.json();
         }).then((impact) => {
-            renderProjectedLayout(selectedScheduleId, impact);
+            if (revision !== impactRevision || selectedScheduleId !== scheduleId || !simEnableToggle?.checked) return;
+            renderProjectedLayout(scheduleId, impact);
             if (impactSummary) {
                 const summary = impact.summary || {};
                 impactSummary.innerHTML = `

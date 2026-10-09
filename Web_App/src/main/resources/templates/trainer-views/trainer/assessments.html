@@ -1,0 +1,19 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.assessment.history}, null, ~{::content}, null)}">
+    <div th:fragment="content" class="client-workspace-v2 assessment-workspace-v2">
+        <nav class="client-workspace-nav" th:attr="aria-label=#{ui.assessment.history}"><a th:href="@{/trainer/clients}" th:text="#{ui.02985}">Clients</a></nav>
+        <header class="detail-header"><h1 class="detail-title" th:text="#{ui.assessment.history}">Private assessment history</h1><p class="detail-subtitle" th:text="#{ui.00224}">This assessment is private and only visible to you.</p></header>
+        <p th:if="${#lists.isEmpty(assessments)}" class="detail-empty assessment-history-empty" th:text="#{ui.assessment.empty}">No private assessments yet. Open a coached client to add one.</p>
+        <div class="assigned-schedule-days">
+            <article th:each="assessment : ${assessments}" class="detail-card">
+                <h2 class="detail-section-title" th:text="${clientsById[assessment.clientId]?.fullName}"></h2>
+                <dl class="assessment-scores">
+                    <div><dt th:text="#{ui.00225}"></dt><dd th:text="${assessment.reliabilityScore != null ? assessment.reliabilityScore : '—'}"></dd></div>
+                    <div><dt th:text="#{ui.00227}"></dt><dd th:text="${assessment.communicationScore != null ? assessment.communicationScore : '—'}"></dd></div>
+                </dl>
+                <p class="plan-coaching-note" th:text="${assessment.privateNotes}"></p>
+                <time th:if="${assessment.updatedAt != null}" th:attr="datetime=${assessment.updatedAt}" th:text="${#temporals.format(assessment.updatedAt, 'dd MMM yyyy')}"></time>
+                <div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/trainer/clients/{id}/assessment(id=${assessment.clientId})}" th:text="#{ui.00138}">Edit</a></div>
+            </article>
+        </div>
+    </div>
+</th:block>

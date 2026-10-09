@@ -9,6 +9,8 @@ import uk.ac.cf._5.group14.One_To_One.MerchOrders.MerchOrderService;
 import uk.ac.cf._5.group14.One_To_One.MerchOrders.MerchOrderItemRepository;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -27,6 +29,8 @@ import java.util.UUID;
 public class MerchProductServiceImpl implements MerchProductService {
 
     private static final long MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+    private static final long MAX_IMAGE_PIXELS = 16_000_000;
+    private static final int MAX_IMAGE_DIMENSION = 8192;
 
     private final MerchProductRepository productRepo;
     private final MerchOrderService orderService;
@@ -41,6 +45,31 @@ public class MerchProductServiceImpl implements MerchProductService {
         this.orderService = orderService;
         this.orderItemRepository = orderItemRepository;
         this.uploadRoot = Paths.get(uploadRoot).toAbsolutePath().normalize();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countActiveProducts() { return productRepo.countByActiveTrue(); }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getActiveCategories() {
+        return productRepo.findActiveCategories().stream().filter(value -> !value.isBlank()).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<MerchProduct> searchCatalogue(String search, String category, boolean inStock, int page) {
+        if (page < 1 || (search != null && search.length() > 120) || (category != null && category.length() > 100)) {
+            throw new IllegalArgumentException("Invalid catalogue filters.");
+        }
+        String term = search == null || search.isBlank() ? null : search.trim().replace("!", "!!").replace("%", "!%").replace("_", "!_");
+        String type = category == null || category.isBlank() ? null : category;
+        long count = productRepo.countCatalogue(term, type, inStock);
+        int pages = (int) Math.max(1, Math.min(Integer.MAX_VALUE, (count + 19) / 20));
+        int current = Math.min(page, pages);
+        var request = org.springframework.data.domain.PageRequest.of(current - 1, 20);
+        return new org.springframework.data.domain.PageImpl<>(productRepo.findCatalogue(term, type, inStock, request), request, count);
     }
 
     @Override
@@ -91,6 +120,7 @@ public class MerchProductServiceImpl implements MerchProductService {
 
     @Override
     public boolean decrementStock(Long productId, int qty) {
+        if (productId == null || qty < 1) return false;
         return productRepo.decrementStock(productId, qty) == 1;
     }
 
@@ -152,7 +182,24 @@ public class MerchProductServiceImpl implements MerchProductService {
             throw new IllegalArgumentException("Unsupported image type. Use PNG, JPG, or WEBP.");
         }
 
-        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(uploadedBytes));
+        BufferedImage decoded;
+        // Check metadata before allocating pixel buffers for compressed uploads.
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(uploadedBytes))) {
+            var readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) throw new IllegalArgumentException("Unsupported image data.");
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                int width = reader.getWidth(0), height = reader.getHeight(0);
+                if (width < 1 || height < 1 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION
+                    || (long) width * height > MAX_IMAGE_PIXELS) {
+                    throw new IllegalArgumentException("Image dimensions are too large. Use at most 16 million pixels and 8192 pixels per side.");
+                }
+                decoded = reader.read(0);
+            } finally {
+                reader.dispose();
+            }
+        }
         if (decoded == null || decoded.getWidth() <= 0 || decoded.getHeight() <= 0) {
             throw new IllegalArgumentException("Unsupported image data. Use a valid PNG, JPG, or WEBP image.");
         }

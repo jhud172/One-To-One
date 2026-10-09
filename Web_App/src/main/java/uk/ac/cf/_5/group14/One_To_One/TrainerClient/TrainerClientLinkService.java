@@ -70,6 +70,7 @@ public class TrainerClientLinkService {
         User client = userRepository.findByIdForUpdate(clientUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
 
+        requireEnabledClient(client);
         if (clientHasActiveTrainer(clientUserId)) {
             throw new TrainerClientLinkException(
                     TrainerClientLinkException.Reason.CLIENT_ALREADY_HAS_ACTIVE_TRAINER,
@@ -82,12 +83,12 @@ public class TrainerClientLinkService {
         if (trainer.getRole() != Role.TRAINER) {
             throw new IllegalArgumentException("User is not a trainer");
         }
-        if (!trainer.isTrainerVerified()) {
-            throw new TrainerClientLinkException(
-                    TrainerClientLinkException.Reason.TRAINER_NOT_VERIFIED,
-                    ERROR_TRAINER_NOT_VERIFIED
-            );
-        }
+        requireVerifiedTrainer(trainer);
+        TrainerClientLink existingRequest = trainerClientLinkRepository
+                .findFirstByTrainerUserIdAndClientUserIdAndStatusOrderByUpdatedAtDesc(
+                        trainerUserId, clientUserId, TrainerClientLinkStatus.REQUESTED)
+                .orElse(null);
+        if (existingRequest != null) return existingRequest;
 
         TrainerClientLink link = new TrainerClientLink(clientUserId, trainerUserId, TrainerClientLinkStatus.REQUESTED);
         link.setRequestedAt(Instant.now());
@@ -112,6 +113,12 @@ public class TrainerClientLinkService {
         }
         requireVerifiedTrainer(trainer);
 
+        // Read pending state only after acquiring the client lock, including withdrawals.
+        User client = userRepository.findByIdForUpdate(clientUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+
+        requireEnabledClient(client);
+
         TrainerClientLink link = trainerClientLinkRepository
                 .findFirstByTrainerUserIdAndClientUserIdAndStatusOrderByUpdatedAtDesc(
                         trainerUserId,
@@ -126,26 +133,14 @@ public class TrainerClientLinkService {
             throw new IllegalStateException("Only requested links can be accepted");
         }
 
-        // Lock the client row so two trainers can't accept concurrently.
-        User client = userRepository.findByIdForUpdate(link.getClientUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
-
         List<TrainerClientLink> activeLinks = trainerClientLinkRepository
                 .findByClientUserIdAndStatusOrderByUpdatedAtDesc(link.getClientUserId(), TrainerClientLinkStatus.ACTIVE);
 
-        Instant now = Instant.now();
-        for (TrainerClientLink active : activeLinks) {
-            if (!active.getId().equals(link.getId())) {
-                active.setStatus(TrainerClientLinkStatus.ENDED);
-                active.setEndedAt(now);
-                trainerClientLinkRepository.save(active);
-                messagingService.ensureThreadForLink(active);
-
-                userRepository.findById(active.getTrainerUserId()).ifPresent(oldTrainer -> {
-                    notificationService.create(oldTrainer, NotificationType.SYSTEM, "Client Update", client.getFullName() + " started working with another trainer.");
-                });
-            }
+        if (!activeLinks.isEmpty()) {
+            throw new TrainerClientLinkException(TrainerClientLinkException.Reason.CLIENT_ALREADY_HAS_ACTIVE_TRAINER,
+                    ERROR_CLIENT_ALREADY_HAS_ACTIVE_TRAINER);
         }
+        Instant now = Instant.now();
 
         link.setStatus(TrainerClientLinkStatus.ACTIVE);
         link.setActivatedAt(now);
@@ -157,6 +152,39 @@ public class TrainerClientLinkService {
     }
 
     @Transactional
+    public void declineRequest(Long trainerUserId, Long clientUserId) {
+        User trainer = userRepository.findById(trainerUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
+        if (trainer.getRole() != Role.TRAINER) throw new AccessDeniedException("Trainer access required");
+        requireVerifiedTrainer(trainer);
+        userRepository.findByIdForUpdate(clientUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        TrainerClientLink request = trainerClientLinkRepository
+                .findFirstByTrainerUserIdAndClientUserIdAndStatusOrderByUpdatedAtDesc(
+                        trainerUserId, clientUserId, TrainerClientLinkStatus.REQUESTED)
+                .orElseThrow(() -> new IllegalArgumentException("Pending request not found"));
+        request.setStatus(TrainerClientLinkStatus.ENDED);
+        request.setEndedAt(Instant.now());
+        request = trainerClientLinkRepository.save(request);
+        messagingService.ensureThreadForLink(request);
+    }
+
+    @Transactional
+    public void withdrawRequest(Long clientUserId, Long trainerUserId) {
+        User client = userRepository.findByIdForUpdate(clientUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        if (client.getRole() != Role.CLIENT || !client.isEnabled()) throw new AccessDeniedException("Client access required");
+        TrainerClientLink request = trainerClientLinkRepository
+                .findFirstByTrainerUserIdAndClientUserIdAndStatusOrderByUpdatedAtDesc(
+                        trainerUserId, clientUserId, TrainerClientLinkStatus.REQUESTED)
+                .orElseThrow(() -> new IllegalArgumentException("Pending request not found"));
+        request.setStatus(TrainerClientLinkStatus.ENDED);
+        request.setEndedAt(Instant.now());
+        trainerClientLinkRepository.save(request);
+        messagingService.ensureThreadForLink(request);
+    }
+
+    @Transactional
     public void pauseLink(Long trainerUserId, Long clientUserId) {
         User trainer = userRepository.findById(trainerUserId)
             .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
@@ -164,6 +192,9 @@ public class TrainerClientLinkService {
             throw new AccessDeniedException("User is not a trainer");
         }
         requireVerifiedTrainer(trainer);
+
+        userRepository.findByIdForUpdate(clientUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
         TrainerClientLink link = trainerClientLinkRepository
                 .findFirstByTrainerUserIdAndClientUserIdAndStatusOrderByUpdatedAtDesc(
                         trainerUserId,
@@ -182,6 +213,30 @@ public class TrainerClientLinkService {
     }
 
     @Transactional
+    public void resumeLink(Long trainerUserId, Long clientUserId) {
+        User trainer = userRepository.findById(trainerUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
+        if (trainer.getRole() != Role.TRAINER) throw new AccessDeniedException("User is not a trainer");
+        requireVerifiedTrainer(trainer);
+        User client = userRepository.findByIdForUpdate(clientUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        requireEnabledClient(client);
+        TrainerClientLink link = trainerClientLinkRepository
+                .findFirstByTrainerUserIdAndClientUserIdAndStatusOrderByUpdatedAtDesc(
+                        trainerUserId, clientUserId, TrainerClientLinkStatus.PAUSED)
+                .orElseThrow(() -> new IllegalArgumentException("Paused link not found"));
+        if (!trainerUserId.equals(link.getTrainerUserId())) throw new AccessDeniedException("Cannot resume another trainer's link");
+        if (trainerClientLinkRepository.existsByClientUserIdAndStatus(clientUserId, TrainerClientLinkStatus.ACTIVE)) {
+            throw new TrainerClientLinkException(TrainerClientLinkException.Reason.CLIENT_ALREADY_HAS_ACTIVE_TRAINER,
+                    "Client already has an active trainer");
+        }
+        link.setStatus(TrainerClientLinkStatus.ACTIVE);
+        link.setPausedAt(null);
+        link = trainerClientLinkRepository.save(link);
+        messagingService.ensureThreadForLink(link);
+    }
+
+    @Transactional
     public void endLink(Long trainerUserId, Long clientUserId) {
         User trainer = userRepository.findById(trainerUserId)
             .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
@@ -189,6 +244,8 @@ public class TrainerClientLinkService {
             throw new AccessDeniedException("User is not a trainer");
         }
         requireVerifiedTrainer(trainer);
+        userRepository.findByIdForUpdate(clientUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
         TrainerClientLink link = trainerClientLinkRepository
                 .findFirstByTrainerUserIdAndClientUserIdAndStatusInOrderByUpdatedAtDesc(
                         trainerUserId,
@@ -231,6 +288,16 @@ public class TrainerClientLinkService {
         }
         requireVerifiedTrainer(trainer);
 
+        String label = trimToNull(customLabel);
+        String auditNotes = trimToNull(notes);
+        if (newPhase == null || (label != null && label.length() > 120)
+                || (auditNotes != null && auditNotes.length() > 800)) {
+            throw new IllegalArgumentException("Choose a phase; labels allow 120 characters and notes 800");
+        }
+        User client = userRepository.findByIdForUpdate(clientUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        requireEnabledClient(client);
+
         TrainerClientLink link = trainerClientLinkRepository
                 .findFirstByTrainerUserIdAndClientUserIdAndStatusOrderByUpdatedAtDesc(
                         trainerUserId,
@@ -245,12 +312,12 @@ public class TrainerClientLinkService {
         change.setOldPhase(oldPhase);
         change.setOldLabel(link.getCoachingPhaseLabel());
         change.setNewPhase(newPhase);
-        change.setNewLabel(trimToNull(customLabel));
-        change.setNotes(trimToNull(notes));
+        change.setNewLabel(label);
+        change.setNotes(auditNotes);
         coachingPhaseChangeRepository.save(change);
 
         link.setCoachingPhase(newPhase);
-        link.setCoachingPhaseLabel(trimToNull(customLabel));
+        link.setCoachingPhaseLabel(label);
         if (link.getCoachingPhaseStartedAt() == null || oldPhase != newPhase) {
             link.setCoachingPhaseStartedAt(Instant.now());
         }
@@ -264,6 +331,12 @@ public class TrainerClientLinkService {
         }
         String trimmed = value.trim();
         return trimmed.isBlank() ? null : trimmed;
+    }
+
+    private void requireEnabledClient(User client) {
+        if (client.getRole() != Role.CLIENT || !client.isEnabled()) {
+            throw new AccessDeniedException("Only an enabled client can start or resume coaching");
+        }
     }
 
     private void requireVerifiedTrainer(User trainer) {

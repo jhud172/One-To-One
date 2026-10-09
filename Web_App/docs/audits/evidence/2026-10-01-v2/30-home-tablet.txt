@@ -1,0 +1,291 @@
+- banner:
+  - link "One To One Logo One To One":
+    - /url: /
+    - img "One To One Logo"
+    - generic: One To One
+  - link "Development":
+    - /url: /dev-mode
+    - generic: Development
+  - generic "Choose display language":
+    - generic: EN
+  - link "Log in":
+    - /url: /login
+    - generic: Log in
+  - button "Open navigation":
+    - generic: Toggle navigation
+- main:
+  - link "Skip to main content":
+    - /url: "#home-main"
+  - paragraph: Training that stays with you
+  - region "Find the right coach. Keep showing up.":
+    - paragraph: For people ready to make training stick
+    - heading "Find the right coach. Keep showing up." [level=1]:
+      - text: Find the right coach.
+      - emphasis: Keep showing up.
+    - paragraph: Join One To One for a verified trainer, a plan built around your life and progress you can actually see—so every return has a purpose.
+    - generic "Start with One To One":
+      - link "Join as a client":
+        - /url: /signup
+        - generic: Join as a client
+      - link "Explore verified trainers":
+        - /url: /explore
+        - generic: Explore verified trainers
+    - generic "Why clients choose One To One":
+      - text: UK verified trainers
+      - text: Your plan, feedback and progress in one place
+    - generic: ONE TO ONE / CONNECTED BY DESIGN
+    - button "Interactive 3D One To One sculpture. Move your pointer or use arrow keys to rotate. Press Enter to unfold the connections."
+    - paragraph: Move your pointer or use arrow keys to rotate. Press Enter to open connections.
+    - button "Open connections":
+    - paragraph: YOUR CONNECTED WORLD
+    - heading [level=2]: A world built around you.
+    - paragraph: Four connections. One continuous journey, from your first plan to your next breakthrough.
+    - navigation:
+      - button [pressed]:
+        - generic: "01"
+        - strong: Trainer
+        - generic: Find your person
+      - button:
+        - generic: "02"
+        - strong: Gym
+        - generic: Find your place
+      - button:
+        - generic: "03"
+        - strong: Workout
+        - generic: Make your move
+      - button:
+        - generic: "04"
+        - strong: Activity
+        - generic: Build momentum
+    - paragraph: 01 / YOUR TRAINER
+    - heading [level=3]: A person behind your plan.
+    - paragraph: A verified trainer shapes your sessions and follows your progress. One active coaching relationship, with everything in context.
+    - paragraph: One active coach. A shared direction.
+    - generic: Real people. Shared purpose.
+    - button: Explore the next connection
+    - paragraph: Sample journey · no account or data saved
+    - generic: Make it yours
+    - button: Pause motion
+    - button: Reset view
+    - status: Live 3D · yours to explore
+    - link "Continue to see how membership works":
+      - /url: "#platform-preview"
+      - generic: Why it works
+  - region "A reason to return every time you train.":
+    - paragraph: Your coaching rhythm
+    - heading "A reason to return every time you train." [level=2]
+    - paragraph: "Open One To One and know what matters now: today’s session, your coach’s latest guidance and the progress your consistency is creating."
+    - generic "Why members keep coming back":
+      - article:
+        - generic: "01"
+        - strong: Know what to do today
+        - generic: Your next session, target effort and priorities are ready before you arrive.
+      - article:
+        - generic: "02"
+        - strong: Stay connected between sessions
+        - generic: Share how training felt and receive guidance while it is still useful.
+      - article:
+        - generic: "03"
+        - strong: See progress build over time
+        - generic: Follow adherence, strength trends and milestones that make returning worthwhile.
+    - generic "Interactive programme demo. Use the tabs and session controls to explore.":
+      - generic: "11"
+      - strong: Your performance space
+      - generic: Strength foundation · Week 4
+      - tablist "Programme preview range":
+        - tab "Today" [selected]
+        - tab "Week"
+        - tab "Progress"
+      - generic: Synced with coach
+      - button "Reset demo"
+      - complementary "Preview navigation":
+        - button "Open overview":
+          - generic: Overview
+        - button "Open programme":
+          - generic: Programme
+        - button "Open progress":
+          - generic: Progress
+        - button "Open coach check-in":
+          - generic: Coach
+      - tabpanel "Today":
+        - paragraph: Sunday · Session 12
+        - heading "Lower strength" [level=3]
+        - generic: Readiness
+        - strong: 86%
+        - progressbar "Session progress"
+        - list:
+          - strong: Movement preparation
+          - generic: 8 minutes · completed
+          - generic: 08:14
+          - generic: "02"
+          - strong: Back squat
+          - generic: 4 sets · 6 reps · RPE 7
+          - generic: In progress
+          - generic: "03"
+          - strong: Romanian deadlift
+          - generic: 3 sets · 8 reps
+          - generic: Up next
+        - button "Start session 32 min remaining":
+          - generic: Start session
+          - generic: 32 min remaining
+        - button "Complete Back squat" [disabled]
+        - paragraph: Start the session, then complete each exercise to update your live plan.
+    - link "Continue to the One To One trust standard":
+      - /url: "#home-standard"
+      - generic: Why you can trust it
+  - region "Trust you can check. Progress you can keep.":
+    - paragraph: The One To One promise
+    - heading "Trust you can check. Progress you can keep." [level=2]:
+      - text: Trust you can check.
+      - emphasis: Progress you can keep.
+    - generic: 01 — 03
+    - paragraph: Stay because your trainer is verified, your coaching history stays connected and every improvement remains visible to you.
+    - link "Explore our standards":
+      - /url: /about
+      - text: Explore our standards
+    - link "Meet verified trainers":
+      - /url: /explore
+    - generic "Interactive trust proof":
+      - generic: One To One
+      - strong: Trust layer
+      - generic: Protected record
+      - tabpanel "01 Verified before visible Credentials, identity and professional details are checked before a trainer can coach. View proof":
+        - figure "AM Alex Morgan Strength coach · Cardiff":
+          - img "Coach Alex Morgan in a training studio"
+          - generic: AM
+          - paragraph:
+            - strong: Alex Morgan
+            - generic: Strength coach · Cardiff
+        - text: Coach verification
+        - heading "Reviewed by people. Backed by evidence." [level=3]:
+          - text: Reviewed by people.
+          - text: Backed by evidence.
+        - term: Identity
+        - definition: Matched
+        - term: Qualification
+        - definition: Level 3 PT
+        - term: Insurance
+        - definition: Current
+        - paragraph:
+          - generic: Verified
+          - text: Ready to coach
+      - generic: Evidence first
+      - generic: One private record
+      - generic: Clear accountability
+    - tablist "Explore the One To One standard":
+      - tab "01 Verified before visible Credentials, identity and professional details are checked before a trainer can coach. View proof" [selected]:
+        - generic: "01"
+        - strong: Verified before visible
+        - generic: Credentials, identity and professional details are checked before a trainer can coach.
+        - generic: View proof
+      - tab "02 One shared coaching record Programmes, sessions, goals and conversations stay connected in one place. View record":
+        - generic: "02"
+        - strong: One shared coaching record
+        - generic: Programmes, sessions, goals and conversations stay connected in one place.
+        - generic: View record
+      - tab "03 Progress both sides can see You know what comes next. Your coach knows where their attention will help most. View progress":
+        - generic: "03"
+        - strong: Progress both sides can see
+        - generic: You know what comes next. Your coach knows where their attention will help most.
+        - generic: View progress
+    - link "Continue to ways to join One To One":
+      - /url: "#roles"
+      - generic: Choose how to join
+  - region "Built around your goals, and the people behind them.":
+    - paragraph: One platform. Three reasons to join.
+    - heading "Built around your goals, and the people behind them." [level=2]:
+      - text: Built around your goals,
+      - emphasis: and the people behind them.
+    - text: Choose your place
+    - paragraph: Start as a client, grow your coaching business as a trainer or connect your whole gym—without splitting the relationship across different tools.
+    - tablist "Choose how you want to use One To One":
+      - tab "01 Client Train with clarity" [selected]:
+        - generic: "01"
+        - strong: Client
+        - generic: Train with clarity
+      - tab "02 Trainer Grow with context":
+        - generic: "02"
+        - strong: Trainer
+        - generic: Grow with context
+      - tab "03 Gym owner Connect your coaching floor":
+        - generic: "03"
+        - strong: Gym owner
+        - generic: Connect your coaching floor
+    - tabpanel "01 Client Train with clarity":
+      - img "A client checking her training plan between strength sets"
+      - text: 01 / Client membership
+      - heading "Join for a plan you will actually come back to." [level=3]
+      - paragraph: Match with a verified trainer, know what to do next and keep every useful win visible between sessions.
+      - list:
+        - listitem: A trainer you can trust
+        - listitem: A plan shaped around your life
+        - listitem: Feedback and progress in one place
+      - link "Join as a client":
+        - /url: /signup
+        - text: Join as a client
+      - complementary "Client progress snapshot":
+        - generic: This week
+        - strong: 3 / 4
+        - generic: sessions complete
+        - progressbar: 75%
+        - generic: Next coach check-in
+        - generic: Today · 16:30
+    - paragraph: Make the next session count
+    - generic: Ready when you are
+    - heading "Start with one session. Stay for progress you can see." [level=2]
+    - paragraph: Join free, meet verified trainers and return whenever you need your next session, your coach’s guidance or proof that your work is adding up.
+    - generic "Choose how to begin":
+      - link "01 Build your personal coaching space Join as a client":
+        - /url: /signup
+        - generic: "01"
+        - generic: Build your personal coaching space
+        - strong: Join as a client
+      - link "02 Compare verified professionals Browse trainers first":
+        - /url: /explore
+        - generic: "02"
+        - generic: Compare verified professionals
+        - strong: Browse trainers first
+    - generic: Not sure where to begin?
+    - link "Talk to support":
+      - /url: /support
+      - text: Talk to support
+    - generic: Verified trainers · Connected coaching · Visible progress
+  - link:
+    - /url: "#home-main"
+    - generic: To the top
+- contentinfo:
+  - link "One To One Train with purpose. Coach with clarity.":
+    - /url: /
+    - generic: One To One
+    - generic: Train with purpose. Coach with clarity.
+  - paragraph: Verified coaching. Structured progress. One trusted platform.
+  - navigation "Footer navigation":
+    - paragraph: Explore
+    - list:
+      - link "About":
+        - /url: /about
+      - link "Trainers":
+        - /url: /explore
+      - link "Pricing":
+        - /url: /pricing
+      - link "FAQ":
+        - /url: /faq
+      - link "Log in":
+        - /url: /login
+  - paragraph: Ready when you are
+  - paragraph: Find your fit.
+  - link "Get started":
+    - /url: /signup
+    - generic: Get started
+    - generic: →
+  - paragraph: © 2026 Crystal Productions. One To One.
+  - paragraph: Verified trainers · Secure platform payments
+  - navigation "Legal":
+    - link "Privacy":
+      - /url: /policies/privacy
+    - link "Terms":
+      - /url: /policies/terms
+    - link "Payments":
+      - /url: /policies/payments
+- button "Open Charlie"
+- text: Add photo Send message

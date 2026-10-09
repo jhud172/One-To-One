@@ -713,7 +713,7 @@
     </div><!-- end profile-page-layout -->
 
     <!-- OPTIONS DRAWER -->
-    <div id="options-drawer-root" class="profile-settings-drawer" aria-hidden="true">
+    <div id="options-drawer-root" class="profile-settings-drawer" aria-hidden="true" inert>
         <div class="profile-settings-overlay" id="options-overlay" aria-hidden="true"></div>
         <aside class="profile-settings-panel" id="options-panel" role="dialog" aria-modal="true" aria-label="Options" th:attr="aria-label=#{ui.00724}">
             <div class="profile-settings-panel-header">
@@ -723,6 +723,7 @@
                     </svg>
                     <h2 class="text-base font-bold text-slate-900 dark:text-white" th:text="#{ui.00724}">Options</h2>
                 </div>
+                <button type="button" id="close-options-drawer" class="profile-btn-secondary" th:text="#{ui.00857}">Close</button>
             </div>
 
             <div class="profile-settings-panel-body space-y-8">
@@ -735,7 +736,7 @@
                             <div class="profile-theme-picker" id="theme-picker">
                                 <button type="button" class="profile-theme-option"
                                         data-theme="LIGHT"
-                                        th:attr="aria-pressed=${userSettings != null and userSettings.theme.toString() == 'LIGHT' ? 'true' : 'false'}"
+                                        th:attr="aria-pressed=${userSettings != null and userSettings.theme.toString() == 'LIGHT' ? 'true' : 'false'},aria-label=#{ui.00813}"
                                         aria-label="Light mode">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -745,7 +746,7 @@
                                 </button>
                                 <button type="button" class="profile-theme-option"
                                         data-theme="SYSTEM"
-                                        th:attr="aria-pressed=${userSettings != null and userSettings.theme.toString() == 'SYSTEM' ? 'true' : 'false'}"
+                                        th:attr="aria-pressed=${userSettings != null and userSettings.theme.toString() == 'SYSTEM' ? 'true' : 'false'},aria-label=#{ui.00317}"
                                         aria-label="System default">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -755,7 +756,7 @@
                                 </button>
                                 <button type="button" class="profile-theme-option"
                                         data-theme="DARK"
-                                        th:attr="aria-pressed=${userSettings != null and userSettings.theme.toString() == 'DARK' ? 'true' : 'false'}"
+                                        th:attr="aria-pressed=${userSettings != null and userSettings.theme.toString() == 'DARK' ? 'true' : 'false'},aria-label=#{ui.00815}"
                                         aria-label="Dark mode">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -949,6 +950,26 @@
                     </div>
                 </div>
 
+                <section class="profile-settings-panel-section profile-recent-purchases" aria-labelledby="profile-recent-purchases-title">
+                    <h3 id="profile-recent-purchases-title" class="profile-settings-panel-section-title" th:text="#{ui.orders.recentPurchases}">Recent purchases</h3>
+                    <p class="profile-settings-panel-section-subtitle" th:text="#{ui.orders.recentPurchaseCount(${orderCount})}"></p>
+                    <a th:href="@{/orders}" class="profile-orders-link" th:text="#{ui.02199}">Your Orders</a>
+                    <p th:if="${allOrders == null or #lists.isEmpty(allOrders)}" class="profile-settings-panel-section-subtitle" th:text="#{ui.00899}">No purchases yet.</p>
+                    <ol th:if="${allOrders != null and !#lists.isEmpty(allOrders)}" class="profile-recent-orders">
+                        <li th:each="order : ${allOrders}" class="profile-recent-order" th:attr="data-order-id=${order.id}">
+                            <div class="profile-recent-order-heading">
+                                <a th:href="@{/orders(search=${order.id})}" class="profile-orders-link"><span th:text="#{ui.00901}">Order</span> <span dir="ltr" th:text="'#' + ${order.id}"></span></a>
+                                <span dir="ltr" th:text="'£' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}"></span>
+                            </div>
+                            <time th:datetime="${order.createdAt}" th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy HH:mm')}"></time>
+                            <ul class="profile-recent-order-items">
+                                <li th:each="item : ${order.items}" dir="auto" th:text="${#strings.isEmpty(item.productNameSnapshot)} ? #{ui.orders.itemUnavailable} : ${item.productNameSnapshot}"></li>
+                            </ul>
+                            <p th:if="${order.paymentProvider == 'SIMULATED'}" class="profile-settings-panel-section-subtitle" th:text="#{ui.orders.demoDelivery}"></p>
+                        </li>
+                    </ol>
+                </section>
+
                 <div class="profile-settings-group">
                     <h3 class="profile-settings-category-title" th:text="#{ui.00853}">Password</h3>
                     <div class="profile-settings-panel-section">
@@ -962,7 +983,7 @@
     </div><!-- end options drawer -->
 
     <!-- SETTINGS DRAWER -->
-    <div id="settings-drawer-root" class="profile-settings-drawer" aria-hidden="true">
+    <div id="settings-drawer-root" class="profile-settings-drawer" aria-hidden="true" inert>
         <div class="profile-settings-overlay" id="settings-overlay" aria-hidden="true"></div>
         <aside class="profile-settings-panel" id="settings-panel" role="dialog" aria-modal="true" aria-label="Settings" th:attr="aria-label=#{ui.00725}">
             <!-- Header -->
@@ -1096,7 +1117,6 @@
                                             th:text="${#temporals.format(recentExportRequests[0].requestedAt, 'dd MMM yyyy')}">-</span>
                     </div>
                 </div>
-                </div>
 
                 <!-- Danger zone -->
                 <div class="profile-settings-panel-section mt-4">
@@ -1122,7 +1142,7 @@
     </div><!-- end settings drawer -->
 
     <!-- PURCHASES DRAWER -->
-    <div id="purchases-drawer-root" class="profile-settings-drawer" aria-hidden="true">
+    <div id="purchases-drawer-root" class="profile-settings-drawer" aria-hidden="true" inert>
         <div class="profile-settings-overlay" id="purchases-overlay" aria-hidden="true"></div>
         <aside class="profile-settings-panel" id="purchases-panel" role="dialog" aria-modal="true" aria-label="Purchases & Subscriptions" th:attr="aria-label=#{ui.00886}">
             <!-- Header -->
@@ -1260,62 +1280,6 @@
                            class="profile-btn-small bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800/50 inline-flex items-center" th:text="#{ui.00896}">
                             Get Premium
                         </a>
-                    </div>
-                </div>
-
-                <!-- All Purchases -->
-                <div class="profile-settings-panel-section">
-                    <h3 class="profile-settings-panel-section-title" th:text="#{ui.00897}">All Purchases</h3>
-                    <p class="profile-settings-panel-section-subtitle" th:text="#{ui.00898}">View all your orders and transactions.</p>
-
-                    <div th:if="${allOrders == null or #lists.isEmpty(allOrders)}"
-                         class="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-6 text-center dark:border-slate-800 dark:bg-slate-900/30">
-                        <p class="text-sm text-slate-500 dark:text-slate-400" th:text="#{ui.00899}">No purchases yet.</p>
-                        <a th:href="@{/merch}" class="mt-2 inline-block text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400" th:text="#{ui.00900}">Browse shop</a>
-                    </div>
-
-                    <!-- Grouped purchases display -->
-                    <div th:if="${allOrders != null and !#lists.isEmpty(allOrders)}" class="mt-4 space-y-4">
-                        <!-- Group orders by product/description for collapsible view -->
-                        <div th:with="groupedOrders=${@profileController.groupOrdersByProduct(allOrders)}">
-                            <div th:each="group : ${groupedOrders}" class="border border-slate-200/70 rounded-xl overflow-hidden dark:border-slate-800">
-                                <!-- Group header (clickable) -->
-                                <button type="button" class="purchase-group-toggle w-full flex items-center justify-between gap-3 bg-white px-4 py-3 hover:bg-slate-50 dark:bg-slate-950/40 dark:hover:bg-slate-900/50 transition-colors">
-                                    <div class="flex-1 text-left">
-                                        <div class="flex items-baseline gap-2">
-                                            <span class="font-semibold text-slate-900 dark:text-white" th:text="${group.productName}">1 Month Premium</span>
-                                            <span class="text-xs text-slate-500 dark:text-slate-400" th:text="'(' + ${group.count} + ' purchase' + (${group.count} > 1 ? 's' : '') + ')'">3 purchases</span>
-                                        </div>
-                                        <span class="text-sm text-emerald-600 dark:text-emerald-400 font-medium" th:text="'£' + ${#numbers.formatDecimal(group.totalAmount, 1, 2)}">£29.97</span>
-                                    </div>
-                                    <svg class="h-5 w-5 text-slate-400 transition-transform purchase-group-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </button>
-                                <!-- Group details (collapsible) -->
-                                <div class="purchase-group-content hidden border-t border-slate-200/70 dark:border-slate-800">
-                                    <div th:each="order : ${group.orders}" 
-                                         class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b last:border-b-0 border-slate-200/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-900/20">
-                                        <div class="flex flex-col gap-1">
-                                            <div class="flex items-baseline gap-2">
-                                                <span class="text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.00901}">Order</span>
-                                                <span class="font-mono text-sm font-medium text-slate-900 dark:text-white" th:text="'#' + ${order.id}">1</span>
-                                            </div>
-                                            <span class="text-xs text-slate-500 dark:text-slate-400"
-                                                  th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy HH:mm')}">Date</span>
-                                        </div>
-                                        <div class="flex items-center gap-3">
-                                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold border"
-                                                  th:classappend="${order.status.name() == 'CONFIRMED' or order.status.name() == 'DELIVERED'} ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-300' :
-                                                                  (${order.status.name().startsWith('CANCEL')} ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800/50 dark:text-rose-300' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400')"
-                                                  th:text="${#strings.replace(order.status.name(), '_', ' ')}">CONFIRMED</span>
-                                            <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400"
-                                                  th:text="'£' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">£0.00</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -1513,7 +1477,7 @@
 </div><!-- end content fragment -->
 
 <th:block th:fragment="pageScripts">
-<script th:src="@{/js/profile/profile-page.js(v='20260315a')}"></script>
+<script th:src="@{/js/profile/profile-page.js(v=${uiCssVersion})}"></script>
 <script th:src="@{/js/profile/phone-country-input.js}"></script>
 </th:block>
 </th:block>

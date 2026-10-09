@@ -11,6 +11,8 @@ public class TrainerScheduleTemplatePreviewItem {
     private final LocalTime timeWindowStart;
     private final LocalTime timeWindowEnd;
     private final boolean duplicate;
+    private final String exerciseName;
+    private final String notes;
 
     public TrainerScheduleTemplatePreviewItem(LocalDate date,
                                               TrainerScheduleTemplateEntryType type,
@@ -18,13 +20,24 @@ public class TrainerScheduleTemplatePreviewItem {
                                               LocalTime timeWindowStart,
                                               LocalTime timeWindowEnd,
                                               boolean duplicate) {
+        this(date, type, title, timeWindowStart, timeWindowEnd, duplicate, null, null);
+    }
+
+    public TrainerScheduleTemplatePreviewItem(LocalDate date, TrainerScheduleTemplateEntryType type, String title,
+                                              LocalTime timeWindowStart, LocalTime timeWindowEnd, boolean duplicate,
+                                              String exerciseName, String notes) {
         this.date = date;
         this.type = type;
         this.title = title;
         this.timeWindowStart = timeWindowStart;
         this.timeWindowEnd = timeWindowEnd;
         this.duplicate = duplicate;
+        this.exerciseName = exerciseName;
+        this.notes = notes;
     }
+
+    public String getExerciseName() { return exerciseName; }
+    public String getNotes() { return notes; }
 
     public LocalDate getDate() {
         return date;

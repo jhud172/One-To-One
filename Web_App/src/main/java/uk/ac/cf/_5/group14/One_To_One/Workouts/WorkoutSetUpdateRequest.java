@@ -10,4 +10,6 @@ public class WorkoutSetUpdateRequest {
     private Integer reps;
     private String notes;
     private Boolean completed;
+    // Existing API callers keep patch semantics; the player submits all current values.
+    private boolean replaceValues;
 }

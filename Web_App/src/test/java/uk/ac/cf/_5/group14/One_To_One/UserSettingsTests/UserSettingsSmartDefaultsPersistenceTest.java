@@ -6,6 +6,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import uk.ac.cf._5.group14.One_To_One.UserSettings.UserSettings;
+import uk.ac.cf._5.group14.One_To_One.UserSettings.ThemePreference;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import uk.ac.cf._5.group14.One_To_One.UserSettings.UserSettingsRepository;
 import uk.ac.cf._5.group14.One_To_One.UserSettings.UserSettingsService;
 import uk.ac.cf._5.group14.One_To_One.UserSettings.UserSettingsServiceImpl;
@@ -29,6 +31,24 @@ class UserSettingsSmartDefaultsPersistenceTest {
 
     @Autowired
     private UserSettingsService userSettingsService;
+
+    @Autowired
+    private TestEntityManager entityManager;
+
+    @Test
+    void demoAppearanceChoiceSurvivesSubsequentSettingsReads() {
+        User user = userRepository.findByUsername("demo").orElseThrow();
+        userSettingsService.update(user, "en", ThemePreference.DARK, false);
+        entityManager.flush();
+        entityManager.clear();
+
+        User reloaded = userRepository.findByUsername("demo").orElseThrow();
+        assertThat(userSettingsService.getOrCreate(reloaded).getTheme()).isEqualTo(ThemePreference.DARK);
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(userSettingsRepository.findById(reloaded.getId()).orElseThrow().getTheme())
+                .isEqualTo(ThemePreference.DARK);
+    }
 
     @Test
     void updateSmartDefaultsPersistsValues() {

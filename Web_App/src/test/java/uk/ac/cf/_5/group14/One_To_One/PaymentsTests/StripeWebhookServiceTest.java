@@ -62,7 +62,7 @@ class StripeWebhookServiceTest {
                 """;
 
         when(paymentProviderService.verifyCheckoutSession("cs_test_123"))
-                .thenReturn(new PaymentSubscriptionVerification(true, "Stripe", "cus_1", "sub_1", Instant.parse("2026-04-27T00:00:00Z"), "Subscription activated."));
+                .thenReturn(new PaymentSubscriptionVerification(true, "Stripe", "cus_1", "sub_1", Instant.parse("2026-04-27T00:00:00Z"), "Subscription activated.", 9L, uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformPlan.MONTHLY));
 
         StripeWebhookHandlingResult result = service.handleWebhook(payload, signature("whsec_test", payload, currentTimestamp()));
 

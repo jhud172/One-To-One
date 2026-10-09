@@ -17,9 +17,14 @@ class SecureSessionStore(context: Context) {
 
     fun token(): String? {
         val encrypted = preferences.getString(KEY_TOKEN, null) ?: return null
+        if (preferences.getString(KEY_TOKEN_SERVER, null) != baseUrl()) {
+            clearSession()
+            return null
+        }
         return try {
             decrypt(encrypted)
         } catch (_: Exception) {
+            clearSession()
             null
         }
     }
@@ -27,6 +32,7 @@ class SecureSessionStore(context: Context) {
     fun saveSession(token: String, user: MobileUser) {
         preferences.edit()
             .putString(KEY_TOKEN, encrypt(token))
+            .putString(KEY_TOKEN_SERVER, baseUrl())
             .putLong(KEY_USER_ID, user.id)
             .putString(KEY_EMAIL, user.email)
             .putString(KEY_USERNAME, user.username)
@@ -52,6 +58,7 @@ class SecureSessionStore(context: Context) {
     fun clearSession() {
         preferences.edit()
             .remove(KEY_TOKEN)
+            .remove(KEY_TOKEN_SERVER)
             .remove(KEY_USER_ID)
             .remove(KEY_EMAIL)
             .remove(KEY_USERNAME)
@@ -64,11 +71,13 @@ class SecureSessionStore(context: Context) {
     fun baseUrl(): String {
         val configuredUrl = BuildConfig.ONE_TO_ONE_BASE_URL.trimEnd('/')
         val savedUrl = preferences.getString(KEY_BASE_URL, null).orEmpty().trimEnd('/')
-        return when {
+        val selectedUrl = when {
             savedUrl.isBlank() -> configuredUrl
             savedUrl.isLocalDevelopmentUrl() -> configuredUrl
             else -> savedUrl
         }
+        return runCatching { validatedApiBaseUrl(selectedUrl, BuildConfig.DEBUG) }
+            .getOrElse { validatedApiBaseUrl(configuredUrl, BuildConfig.DEBUG) }
     }
 
     private fun encrypt(value: String): String {
@@ -117,6 +126,7 @@ class SecureSessionStore(context: Context) {
         private const val IV_LENGTH = 12
         private const val KEY_ALIAS = "one_to_one_mobile_session_key"
         private const val KEY_TOKEN = "token"
+        private const val KEY_TOKEN_SERVER = "token_server"
         private const val KEY_USER_ID = "user_id"
         private const val KEY_EMAIL = "email"
         private const val KEY_USERNAME = "username"
@@ -128,6 +138,16 @@ class SecureSessionStore(context: Context) {
 }
 
 private fun String.isLocalDevelopmentUrl(): Boolean =
-    contains("10.0.2.2") ||
-        contains("localhost", ignoreCase = true) ||
-        contains("127.0.0.1")
+    runCatching { java.net.URI(this).host?.lowercase(java.util.Locale.ROOT) in setOf("10.0.2.2", "localhost", "127.0.0.1", "[::1]") }.getOrDefault(false)
+
+internal fun validatedApiBaseUrl(value: String, allowLocalDevelopment: Boolean): String {
+    val endpoint = java.net.URI(value.trim().trimEnd('/')).normalize()
+    val scheme = endpoint.scheme?.lowercase(java.util.Locale.ROOT)
+    require(!endpoint.host.isNullOrBlank() && endpoint.userInfo == null && endpoint.query == null && endpoint.fragment == null) {
+        "Use a server URL without credentials, query parameters or fragments."
+    }
+    require(scheme == "https" || (scheme == "http" && allowLocalDevelopment && endpoint.toString().isLocalDevelopmentUrl())) {
+        "Use HTTPS for the server. Local HTTP is available only in debug builds."
+    }
+    return endpoint.toString().trimEnd('/')
+}

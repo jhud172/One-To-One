@@ -5,7 +5,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.List;
 
 public interface WorkoutService {
-    void saveWorkout(SaveWorkoutDTO dto);
+    Workout saveWorkout(SaveWorkoutDTO dto);
 
     void deleteWorkout(Long workoutId);
 

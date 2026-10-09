@@ -1,35 +1,31 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const dialogs = Array.from(document.querySelectorAll("[data-share-dialog]"));
-    if (dialogs.length === 0) {
-        return;
-    }
-
-    dialogs.forEach((dialog) => {
-        const key = dialog.getAttribute("data-share-dialog");
-        if (!key) {
-            return;
-        }
-
-        document.querySelectorAll(`[data-share-dialog-open="${key}"]`).forEach((button) => {
-            button.addEventListener("click", () => {
-                if (typeof dialog.showModal === "function") {
-                    dialog.showModal();
-                }
-            });
-        });
-
-        document.querySelectorAll(`[data-share-dialog-close="${key}"]`).forEach((button) => {
-            button.addEventListener("click", () => {
-                if (typeof dialog.close === "function") {
-                    dialog.close();
-                }
-            });
-        });
-
-        dialog.addEventListener("click", (event) => {
-            if (event.target === dialog && typeof dialog.close === "function") {
-                dialog.close();
-            }
+(function () {
+    'use strict';
+    const origins = new WeakMap();
+    document.querySelectorAll('details[data-share-dialog]').forEach((target) => {
+        const summary = target.querySelector('summary');
+        summary?.addEventListener('click', () => origins.set(target, summary));
+        target.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || !target.open) return;
+            event.preventDefault();
+            event.stopPropagation();
+            target.open = false;
+            const origin = origins.get(target);
+            (origin?.isConnected ? origin : target.querySelector('summary'))?.focus();
         });
     });
-});
+    document.querySelectorAll('[data-share-dialog-open]').forEach((trigger) => {
+        const target = document.getElementById(trigger.dataset.shareDialogOpen);
+        if (!target || target.tagName !== 'DETAILS') return;
+        trigger.setAttribute('aria-controls', target.id);
+        trigger.setAttribute('aria-expanded', String(target.open));
+        target.addEventListener('toggle', () => trigger.setAttribute('aria-expanded', String(target.open)));
+        trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            target.open = true;
+            origins.set(target, trigger);
+            target.scrollIntoView({ block: 'nearest' });
+            const control = target.querySelector('select') || target.querySelector('summary');
+            control?.focus();
+        });
+    });
+}());

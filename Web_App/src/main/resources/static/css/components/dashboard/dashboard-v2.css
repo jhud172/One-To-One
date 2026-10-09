@@ -1,0 +1,152 @@
+/* Coaching workspaces: one primary area, secondary context and quiet surfaces. */
+/* Native links and readable sections are the baseline, including failed script loads. */
+body.version-two .cd-dashboard-page:not([data-dashboard-shell-ready="true"]) :is(.cd-dashboard-flyout__panel, .cd-dashboard-drawer-backdrop) {
+    display: none;
+}
+body.version-two .cd-dashboard-page:not([data-dashboard-shell-ready="true"]) .cd-dashboard-rail {
+    display: block;
+}
+body.version-two [data-action-hub]:not([data-action-enhanced="true"]) .cd-action-slider__track,
+body.version-two [data-goal-slider]:not([data-goal-enhanced="true"]) .cd-goal-slider__viewport {
+    display: block;
+    height: auto;
+    transform: none;
+    transition: none;
+}
+body.version-two [data-action-hub]:not([data-action-enhanced="true"]) .cd-action-view,
+body.version-two [data-goal-slider]:not([data-goal-enhanced="true"]) .cd-goal-section {
+    min-width: 0;
+    width: 100%;
+    scroll-margin-top: 6rem;
+}
+body.version-two [data-goal-slider]:not([data-goal-enhanced="true"]) .cd-goal-section + .cd-goal-section,
+body.version-two [data-action-hub]:not([data-action-enhanced="true"]) .cd-action-view + .cd-action-view {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--v2-border);
+}
+body.version-two .cd-action-view__fallback-title {
+    margin-bottom: 0.75rem;
+    color: var(--v2-ink);
+    font-weight: 650;
+}
+body.version-two [data-action-enhanced="true"] .cd-action-view__fallback-title,
+body.version-two .cd-week-panel:not([data-week-enhanced="true"]) [data-week-preview-panel],
+body.version-two [data-countdown-enabled]:not([data-countdown-ready="true"]) :is(.cd-action-card__countdown, #recommendedUpcomingTimer) {
+    display: none;
+}
+body.version-two .cd-dashboard-flyout__handle,
+body.version-two .cd-week-day-button,
+body.version-two .cd-segmented__button {
+    text-decoration: none;
+}
+body.version-two .app-dashboard { padding-top: 1.75rem; }
+body.version-two .app-dashboard {
+    --dashboard-title: var(--v2-ink);
+    --dashboard-text: var(--v2-ink);
+    --dashboard-muted: var(--v2-muted);
+    --dashboard-subtle: var(--v2-muted);
+    --dashboard-accent: var(--v2-accent);
+    --dashboard-accent-strong: var(--v2-accent);
+    --dashboard-blue: var(--v2-connection);
+    --dashboard-surface: var(--v2-surface);
+    --dashboard-surface-subtle: var(--v2-raised);
+    --dashboard-border: var(--v2-border);
+    --dashboard-control-border: var(--v2-control-border);
+    --dashboard-focus: var(--v2-focus);
+}
+body.version-two .trainer-client-priorities { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+body.version-two .trainer-priority { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem 1rem; align-items: center; padding: 1.25rem; border: 1px solid var(--v2-border); border-inline-start: 3px solid var(--v2-accent); border-radius: var(--v2-radius-panel); background: var(--v2-surface); color: var(--v2-ink); transition: border-color var(--motion-duration-micro) var(--motion-ease-standard); }
+body.version-two .trainer-priority:hover { border-color: var(--v2-accent); }
+body.version-two .trainer-priority--requests { border-inline-start-color: var(--v2-connection); }
+body.version-two .trainer-priority__label { font-weight: 700; }
+body.version-two .trainer-priority__count { grid-column: 2; grid-row: 1 / 3; color: var(--v2-accent); font-size: 2.25rem; line-height: 1; font-variant-numeric: tabular-nums; }
+body.version-two .trainer-priority--requests .trainer-priority__count { color: var(--v2-connection); }
+body.version-two .trainer-priority__action { color: var(--v2-muted); font-size: 0.875rem; }
+body.version-two .trainer-priority--messages { border-inline-start-color: var(--v2-connection); }
+body.version-two .app-dashboard--trainer { animation: none; }
+body.version-two .trainer-dashboard-tools { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+body.version-two .trainer-dashboard-tools .dashboard-action { width: auto; font-size: .875rem; padding: .5rem .75rem; }
+body.version-two .trainer-review-queue { padding: clamp(1rem, 3vw, 1.75rem); margin-bottom: 1.5rem; scroll-margin-top: 7rem; }
+body.version-two .trainer-review-queue .dashboard-section-header { gap: 1rem; align-items: start; flex-wrap: wrap; }
+body.version-two .trainer-review-queue .dashboard-section-header > div { flex: 1 1 18rem; min-width: 0; }
+body.version-two .trainer-review-queue__eyebrow { color: var(--v2-accent); font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: .5rem; }
+body.version-two .trainer-review-queue__waiting { color: var(--v2-ink); background: var(--v2-raised); border-inline-start: 3px solid var(--v2-connection); border-radius: var(--v2-radius-control); padding: .75rem 1rem; margin-block: 1rem; }
+body.version-two .trainer-review-list { list-style: none; padding: 0; margin: 0; }
+body.version-two .trainer-review-list__row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1rem; border-top: 1px solid var(--v2-border); }
+body.version-two .trainer-review-list__row > div { min-width: 0; overflow-wrap: anywhere; }
+body.version-two .trainer-review-list__row p { color: var(--v2-muted); font-size: .875rem; margin-top: .25rem; }
+body.version-two .trainer-review-list__row .dashboard-action { flex-shrink: 0; width: auto; }
+body.version-two .trainer-personal-day { margin-bottom: 1.5rem; }
+body.version-two .trainer-personal-day > summary { color: var(--v2-ink); font-weight: 650; cursor: pointer; padding: 1rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-control); background: var(--v2-surface); min-height: 44px; }
+body.version-two .trainer-personal-day[open] > summary { margin-bottom: 1rem; }
+body.version-two .trainer-personal-day > summary:focus-visible,
+body.version-two .trainer-priority:focus-visible { outline: 3px solid var(--v2-focus); outline-offset: 3px; }
+@media (min-width: 1000px) { body.version-two .trainer-client-priorities { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 420px) { body.version-two .trainer-review-list__row { flex-wrap: wrap; } }
+@media (max-width: 640px) { body.version-two .trainer-review-queue .dashboard-section-header > div { flex: 0 1 auto; } }
+body.version-two .trainer-week .dashboard-day { min-height: 8.5rem; padding: 1rem; background: var(--v2-surface); border: 1px solid var(--v2-border); box-shadow: none; }
+body.version-two .trainer-week .dashboard-day:hover { border-color: var(--v2-accent); transform: none; }
+body.version-two .trainer-week .trainer-day--today { background: var(--v2-accent-soft); border-color: var(--v2-accent); }
+body.version-two .trainer-week .animate-pulse { animation: none; }
+body.version-two .cd-dashboard-page::before {
+    background: radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--v2-accent) 8%, transparent), transparent 36%), var(--v2-page);
+    opacity: 1;
+}
+body.version-two .cd-dashboard-page[data-dashboard-immersive="true"][data-dashboard-period="evening"]::before {
+    background: radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--v2-connection) 10%, transparent), transparent 36%), var(--v2-page);
+}
+body.version-two .cd-dashboard-page[data-dashboard-immersive="false"]::before { background: var(--v2-page); opacity: 1; }
+body.version-two .app-dashboard :is(.dashboard-surface, .cd-panel) {
+    background: var(--v2-surface);
+    border: 1px solid var(--v2-border);
+    border-radius: var(--v2-radius-panel);
+    box-shadow: var(--v2-shadow-panel);
+}
+body.version-two .app-dashboard :is(.dashboard-surface--featured, .cd-action-hub) { border-top: 3px solid var(--v2-accent); }
+body.version-two .app-dashboard :is(.dashboard-metric, .stat-pulse-card) { background: transparent; border: 0; border-inline-start: 1px solid var(--v2-border); border-radius: 0; box-shadow: none; }
+body.version-two .app-dashboard :is(.dashboard-metric, .stat-pulse-card):hover { transform: none; box-shadow: none; }
+body.version-two .app-dashboard :is(.cd-rail-card, .cd-coach-metric, .cd-coach-update) { background: transparent; border: 0; box-shadow: none; }
+body.version-two .app-dashboard .cd-coach-metric { border-inline-start: 1px solid var(--v2-border); border-radius: 0; }
+body.version-two .app-dashboard .cd-coach-spotlight { background: var(--v2-surface); }
+body.version-two .app-dashboard .cd-action-hub__route { padding: 0; background: transparent; border: 0; border-radius: 0; }
+body.version-two .app-dashboard .cd-action-hub__route-label { display: none; }
+body.version-two .app-dashboard .cd-action-card { background: var(--v2-raised); color: var(--v2-ink); border: 1px solid var(--v2-border); border-radius: 1rem; box-shadow: none; }
+body.version-two .app-dashboard .cd-action-card--primary { background: var(--v2-accent-soft); border-inline-start: 3px solid var(--v2-accent); }
+body.version-two .app-dashboard .cd-action-card:hover { transform: none; border-color: var(--v2-accent); box-shadow: none; }
+body.version-two .app-dashboard :is(.cd-action-card__title, .cd-action-card__highlight, .cd-coach-metric__value, .cd-coach-update__title, .cd-context-panel__title) { color: var(--v2-ink); }
+body.version-two .app-dashboard :is(.cd-action-card__text, .cd-action-card__highlight-label, .cd-action-card__countdown-label, .cd-action-hub__route-copy, .cd-coach-metric__meta, .cd-coach-update__copy, .cd-coach-update__meta, .cd-context-panel__body, .cd-context-panel__meta) { color: var(--v2-muted); }
+body.version-two .app-dashboard :is(.cd-action-card__eyebrow, .cd-action-card__cta, .cd-coach-metric__label, .cd-coach-update__label, .cd-context-panel__label) { color: var(--v2-accent); }
+body.version-two .app-dashboard .cd-action-card__countdown-value { color: var(--v2-ink); font-variant-numeric: tabular-nums; }
+body.version-two .app-dashboard .cd-segmented { background: var(--v2-raised); border-color: var(--v2-border); }
+body.version-two .app-dashboard .cd-segmented__button { color: var(--v2-muted); }
+body.version-two .app-dashboard .cd-segmented__button.is-active { background: var(--v2-surface); color: var(--v2-accent); box-shadow: var(--v2-shadow-panel); }
+body.version-two .app-dashboard :is(.cd-button-chip--solid, .dashboard-action--primary) { background: var(--v2-accent); color: var(--v2-on-accent); border-color: var(--v2-accent); box-shadow: none; }
+body.version-two .app-dashboard :is(.cd-button-chip--solid, .dashboard-action--primary):hover { background: var(--v2-accent-hover); color: var(--v2-on-accent); transform: none; }
+body.version-two .app-dashboard .cd-context-panel { background: var(--v2-raised); border-color: var(--v2-border); }
+@media (max-width: 640px) {
+    body.version-two .app-dashboard { padding-top: 1rem; }
+    body.version-two .app-dashboard .cd-panel { padding: 1rem; }
+    body.version-two .app-dashboard .cd-action-card__highlight { font-size: 2rem; }
+    body.version-two .trainer-client-priorities { gap: 0.75rem; }
+    body.version-two .trainer-priority { grid-template-columns: 1fr; padding: 1rem; gap: 0.5rem; }
+    body.version-two .trainer-priority__count { grid-column: auto; grid-row: auto; font-size: 2rem; }
+    body.version-two .trainer-priority__label { font-size: 0.875rem; }
+    body.version-two .trainer-personal-metrics .dashboard-metric { padding: 0.75rem; }
+    body.version-two .trainer-personal-metrics .dashboard-metric__label { text-transform: none; letter-spacing: 0; font-size: 0.875rem; }
+    body.version-two .trainer-personal-metrics svg { display: none; }
+    body.version-two .trainer-week .dashboard-day { min-height: 7rem; }
+}
+
+.gym-operations-overview { padding: clamp(1.25rem, 3vw, 2rem); }
+.gym-operations-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.gym-operations-metrics > div { padding: 1rem; background: var(--v2-raised); border-radius: var(--v2-radius-control); }
+.gym-operations-metrics dt { color: var(--v2-muted); font-size: 0.875rem; }
+.gym-operations-metrics dd { font-size: 2rem; font-weight: 650; color: var(--v2-ink); margin: 0; }
+.gym-operations-next { margin-block-start: 1rem; }
+.gym-operational-calendar { margin-block: 1.5rem; }
+.gym-operational-calendar > summary { min-height: 44px; cursor: pointer; padding: 1rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-control); color: var(--v2-ink); background: var(--v2-surface); font-weight: 650; }
+.gym-operational-calendar[open] > summary { margin-block-end: 1rem; }
+.gym-operational-calendar > summary:focus-visible { outline: 2px solid var(--v2-focus); outline-offset: 3px; }
+.gym-operations-overview a { color: var(--v2-accent); text-decoration: underline; }
+@media (max-width: 600px) { .gym-operations-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

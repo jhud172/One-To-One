@@ -544,10 +544,6 @@
   }
 
   @media (max-width: 640px) {
-    .quick-actions-fab-premium {
-      display: flex !important;
-    }
-
     .quick-actions-panel-premium {
       inset: 0;
       width: 100vw;

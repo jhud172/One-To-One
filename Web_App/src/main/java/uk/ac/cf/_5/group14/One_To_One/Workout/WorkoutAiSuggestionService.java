@@ -21,6 +21,7 @@ public class WorkoutAiSuggestionService {
     }
 
     public List<String> generateSuggestions(String promptContext) {
+        if (!chatService.isAvailable()) throw new IllegalStateException("Suggestion provider unavailable");
         String prompt = "You are a fitness coach. Return ONLY valid JSON (no markdown) as an array of exactly 5 short exercise ideas. "
                 + "Keep each idea under 40 characters. No numbering.";
 
@@ -34,18 +35,19 @@ public class WorkoutAiSuggestionService {
         );
 
         ChatResponse resp = chatService.chat(messages);
-        String raw = resp == null ? "" : (resp.reply() == null ? "" : resp.reply());
+        if (resp == null || !resp.successful()) throw new IllegalStateException("Suggestions not confirmed");
+        String raw = resp.reply() == null ? "" : resp.reply();
 
         List<String> parsed = tryParseJsonArray(raw);
         if (parsed == null || parsed.isEmpty()) {
-            return fallbackSuggestions();
+            throw new IllegalStateException("Suggestions not confirmed");
         }
 
         List<String> trimmed = new ArrayList<>();
         for (String item : parsed) {
             if (item == null) continue;
             String t = item.trim();
-            if (!t.isBlank()) {
+            if (!t.isBlank() && t.length() <= 200 && !trimmed.contains(t)) {
                 trimmed.add(t);
             }
             if (trimmed.size() >= 5) {
@@ -53,17 +55,12 @@ public class WorkoutAiSuggestionService {
             }
         }
 
-        if (trimmed.size() < 5) {
-            List<String> fallback = fallbackSuggestions();
-            for (String item : fallback) {
-                if (trimmed.size() >= 5) break;
-                if (!trimmed.contains(item)) {
-                    trimmed.add(item);
-                }
-            }
-        }
-
+        if (trimmed.isEmpty()) throw new IllegalStateException("Suggestions not confirmed");
         return trimmed;
+    }
+
+    public boolean isAvailable() {
+        return chatService.isAvailable();
     }
 
     private List<String> tryParseJsonArray(String raw) {
@@ -112,13 +109,4 @@ public class WorkoutAiSuggestionService {
         return null;
     }
 
-    private List<String> fallbackSuggestions() {
-        return List.of(
-                "Incline push-ups",
-                "Bodyweight squats",
-                "Plank hold",
-                "Dumbbell rows",
-                "Glute bridges"
-        );
-    }
 }

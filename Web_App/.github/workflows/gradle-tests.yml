@@ -31,11 +31,11 @@ jobs:
       - name: Install frontend tooling
         run: npm ci
 
-      - name: Rebuild CSS
-        run: npm run build:css
+      - name: Rebuild frontend assets
+        run: npm run build:frontend && npm run test:3d
 
-      - name: Verify generated CSS is committed
-        run: git diff --exit-code -- src/main/resources/static/css/app.css
+      - name: Verify generated frontend assets are committed
+        run: git diff --exit-code -- src/main/resources/static/css/app.css src/main/resources/static/css/bundles src/main/resources/static/js/public/logo-experience.bundle.js src/main/resources/static/js/public/logo-experience.bundle.js.LEGAL.txt
 
       - name: Run tests
         run: ./gradlew test

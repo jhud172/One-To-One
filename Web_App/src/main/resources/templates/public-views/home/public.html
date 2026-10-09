@@ -5,21 +5,17 @@
     <th:block th:fragment="pageStyles">
         <link rel="stylesheet" th:href="@{/css/components/misc/public-sections.css(v=${assetVersion})}">
         <link rel="stylesheet" th:href="@{/css/components/misc/home-public.css(v=${assetVersion})}">
+        <link rel="stylesheet" th:href="@{/css/components/misc/logo-experience.css(v=${assetVersion})}">
+        <link rel="stylesheet" th:href="@{/css/components/misc/home-cosmos.css(v=${assetVersion})}">
+        <link rel="stylesheet" th:href="@{/css/components/misc/home-v2.css(v=${assetVersion})}">
     </th:block>
 
-    <div th:fragment="content" class="public-journey home-experience">
+    <div th:fragment="content" class="public-journey home-experience home-cosmos">
         <a href="#home-main" class="home-skip-link" th:text="#{home.002.skip}">Skip to main content</a>
         <th:block th:replace="~{universal-fragments/dev/dev-mode :: homeGuestNotice}"></th:block>
 
-        <div id="opening-overlay" sec:authorize="!isAuthenticated()" aria-hidden="true">
-            <div class="opening-mark">
-                <span class="opening-mark__halo"></span>
-                <img th:src="@{/img/brand/logo.png}" alt="" class="opening-mark__logo">
-                <p th:text="#{home.003.opening}">Training that stays with you</p>
-            </div>
-        </div>
-
         <section id="home-main" class="home-hero" data-public-hero data-home-chapter aria-labelledby="home-hero-title">
+            <div class="cosmos-horizon" aria-hidden="true"><span></span></div>
             <div class="home-hero__atmosphere" aria-hidden="true">
                 <span class="home-hero__grid"></span>
                 <span class="home-hero__glow home-hero__glow--one"></span>
@@ -28,6 +24,7 @@
 
             <div class="home-shell home-hero__layout">
                 <div class="home-hero__copy">
+                    <p class="home-brand-wordmark" th:attr="aria-label=#{logo.brandName}"><th:block th:text="#{logo.brandFirst}">One</th:block> <span th:text="#{logo.brandLink}">To</span> <th:block th:text="#{logo.brandFirst}">One</th:block><span class="home-brand-connection" aria-hidden="true">.</span></p>
                     <p class="home-kicker"><span></span><th:block th:text="#{home.004.hero.kicker}">For people ready to make training stick</th:block></p>
                     <h1 id="home-hero-title"><span th:text="#{home.005.hero.title.first}">Find the right coach.</span> <em th:text="#{home.006.hero.title.emphasis}">Keep showing up.</em></h1>
                     <p class="home-hero__lead" th:text="#{home.007.hero.lead}">Join One To One for a verified trainer, a plan built around your life and progress you can actually see—so every return has a purpose.</p>
@@ -49,56 +46,7 @@
                     </div>
                 </div>
 
-                <div class="home-hero__visual" data-home-depth data-brand-interaction>
-                    <div class="brand-field" aria-hidden="true">
-                        <span class="brand-field__aurora"></span>
-                        <span class="brand-field__mesh"></span>
-                        <span class="brand-field__scan"></span>
-                        <span class="brand-field__aperture brand-field__aperture--outer"></span>
-                        <span class="brand-field__aperture brand-field__aperture--inner"></span>
-                        <span class="brand-field__node brand-field__node--one"></span>
-                        <span class="brand-field__node brand-field__node--two"></span>
-                        <span class="brand-field__node brand-field__node--three"></span>
-                    </div>
-
-                    <div class="brand-object" data-brand-object role="img" tabindex="0" th:attr="aria-label=#{home.014.hero.brand.label}">
-                        <span class="brand-object__flare" aria-hidden="true"></span>
-                        <span class="brand-object__floor" aria-hidden="true"></span>
-
-                        <span class="brand-object__assembly brand-sculpture" data-brand-sculpture>
-                            <span class="brand-sculpture__volume brand-sculpture__volume--mark"
-                                  data-brand-volume data-brand-slices="34" data-brand-depth="124" aria-hidden="true">
-                                <img th:src="@{/img/logo.png}" alt="" class="brand-sculpture__front" draggable="false">
-                            </span>
-                            <span class="brand-sculpture__volume brand-sculpture__volume--wordmark"
-                                  data-brand-volume data-brand-slices="26" data-brand-depth="92" aria-hidden="true">
-                                <img th:src="@{/img/logo.png}" alt="" class="brand-sculpture__front" draggable="false">
-                            </span>
-                            <span class="brand-sculpture__shine brand-sculpture__shine--mark" aria-hidden="true"></span>
-                            <span class="brand-sculpture__shine brand-sculpture__shine--wordmark" aria-hidden="true"></span>
-                            <span class="brand-sculpture__rim brand-sculpture__rim--cool" aria-hidden="true"></span>
-                            <span class="brand-sculpture__rim brand-sculpture__rim--warm" aria-hidden="true"></span>
-                            <img th:src="@{/img/logo.png}" th:alt="#{home.015.hero.brand.alt}" alt="One To One"
-                                 class="brand-sculpture__accessible-face" fetchpriority="high" draggable="false">
-                        </span>
-
-                        <span class="brand-object__render-fallback" aria-hidden="true"></span>
-                        <span class="brand-object__reflection" aria-hidden="true"></span>
-
-                        <template data-brand-slice-template>
-                            <img th:src="@{/img/logo.png}" alt="" class="brand-sculpture__slice" aria-hidden="true" draggable="false">
-                        </template>
-                    </div>
-
-                    <div class="coach-signal coach-signal--verified">
-                        <span class="coach-signal__icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3 3 7-7"/></svg></span>
-                        <span><strong th:text="#{home.016.hero.signal.verified.title}">Trainer matched</strong><small th:text="#{home.017.hero.signal.verified.copy}">Verified for you</small></span>
-                    </div>
-                    <div class="coach-signal coach-signal--live">
-                        <span class="coach-signal__pulse"></span>
-                        <span><strong th:text="#{home.018.hero.signal.live.title}">Next session ready</strong><small th:text="#{home.019.hero.signal.live.copy}">Built around your week</small></span>
-                    </div>
-                </div>
+                <th:block th:replace="~{public-views/home/fragments/logo-experience :: experience}"></th:block>
             </div>
 
             <a href="#platform-preview" class="home-scroll-cue" data-home-chapter-next data-home-to-top-trigger th:attr="aria-label=#{home.020.hero.scroll.label}">
@@ -108,6 +56,7 @@
         </section>
 
         <section id="platform-preview" class="home-product" data-public-section data-home-chapter aria-labelledby="home-product-title">
+            <div class="cosmos-world cosmos-world--home-product" aria-hidden="true"><span></span></div>
             <div class="home-shell">
                 <div class="home-section-intro home-section-intro--split">
                     <div>
@@ -132,6 +81,7 @@
                     </article>
                 </div>
 
+                <p class="v2-preview-label" th:text="#{v2.preview.label}">Illustrative preview</p>
                 <div class="product-stage" data-product-stage tabindex="0"
                      th:attr="aria-label=#{home.035.product.demo.label},
                               data-i18n-note-required=#{home.119.product.dynamic.note.required},
@@ -244,6 +194,7 @@
         </section>
 
         <section id="home-standard" class="home-standard" data-public-section data-home-chapter aria-labelledby="home-standard-title">
+            <div class="cosmos-world cosmos-world--home-standard" aria-hidden="true"><span></span></div>
             <div class="home-shell" data-standard-controller>
                 <header class="home-standard__heading">
                     <div>
@@ -268,7 +219,7 @@
                                 <img th:src="@{/img/brand/tab_logo.png}" src="/img/brand/tab_logo.png" alt="">
                                 <span><small th:text="#{ui.01376}">One To One</small><strong th:text="#{home.149.standard.proof.layer}">Trust layer</strong></span>
                             </div>
-                            <span class="standard-proof__live"><i></i><th:block th:text="#{home.150.standard.proof.record}">Protected record</th:block></span>
+                            <span class="standard-proof__live" th:text="#{v2.preview.label}">Illustrative preview</span>
                         </header>
 
                         <div class="standard-proof__viewport">
@@ -362,6 +313,7 @@
         </section>
 
         <section id="roles" class="home-workspaces" data-public-section data-home-chapter aria-labelledby="home-workspaces-title">
+            <div class="cosmos-world cosmos-world--home-workspaces" aria-hidden="true"><span></span></div>
             <div class="home-shell">
                 <header class="home-workspaces__intro">
                     <div>
@@ -496,6 +448,7 @@
     </div>
 
     <th:block th:fragment="pageScripts">
+        <script th:src="@{/js/public/logo-experience.bundle.js(v=${assetVersion})}" defer></script>
         <script th:src="@{/js/public/public-page.js(v=${assetVersion})}" defer></script>
         <script th:src="@{/js/public/public-sections.js(v=${assetVersion})}" defer></script>
     </th:block>

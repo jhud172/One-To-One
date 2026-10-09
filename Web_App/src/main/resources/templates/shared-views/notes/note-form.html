@@ -4,14 +4,14 @@
 <div th:fragment="styles">
 </div>
 
-<div th:fragment="content">
+<div th:fragment="content" class="notes-workspace-v2">
     <div class="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
 
 
         <div class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900" th:text="${note != null and note.id != null} ? 'Edit Note' : 'New Note'">New Note</h1>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900" th:text="${note != null and note.id != null} ? #{ui.02165} : #{ui.02115}">New Note</h1>
                     <p class="mt-1 text-sm text-slate-600" th:text="#{ui.02130}">Use the toolbar to format your note.</p>
                 </div>
                 <div class="flex gap-2">
@@ -22,9 +22,18 @@
                 </div>
             </div>
 
+            <p th:if="${noteInvalid == true and noteConflict != true}" class="notes-save-error" role="alert" th:text="#{ui.notes.invalid}"></p>
+            <section th:if="${noteConflict}" class="notes-save-error" role="alert">
+                <p th:text="#{ui.notes.conflict}"></p>
+                <h2 th:text="#{ui.notes.savedContent}"></h2>
+                <p dir="auto" th:text="${currentNote.title}"></p>
+                <article class="notes-rich-content" th:utext="${currentNote.content}"></article>
+                <p th:text="#{ui.notes.reviewHint}"></p>
+            </section>
             <form th:action="${note != null and note.id != null} ? @{/notes/{id}/edit(id=${note.id})} : @{/notes/folders/{id}/new(id=${folder.id})}"
-                  method="post" id="noteForm" class="mt-6 space-y-6">
+                  method="post" id="noteForm" th:attr="data-link-prompt=#{ui.02161},data-invalid=#{ui.notes.invalid}" class="mt-6 space-y-6">
 
+            <input type="hidden" name="revision" th:value="${noteRevision != null ? noteRevision : note.revision}">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                 <div>
@@ -33,22 +42,9 @@
                            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10" th:placeholder="#{ui.00583}">
                 </div>
 
-                <div>
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-sm font-medium text-slate-700" th:text="#{ui.02131}">Colour</span>
-                        <input type="hidden" name="noteColour" id="noteColour" value="slate">
-                    </div>
-
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        <button type="button" class="chip rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10 [&.active]:bg-slate-900 [&.active]:text-white" data-note-colour="slate" th:text="#{ui.02132}">Slate</button>
-                        <button type="button" class="chip rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10 [&.active]:bg-slate-900 [&.active]:text-white" data-note-colour="purple" th:text="#{ui.02133}">Purple</button>
-                        <button type="button" class="chip rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10 [&.active]:bg-slate-900 [&.active]:text-white" data-note-colour="cyan" th:text="#{ui.02134}">Cyan</button>
-                        <button type="button" class="chip rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10 [&.active]:bg-slate-900 [&.active]:text-white" data-note-colour="green" th:text="#{ui.02135}">Green</button>
-                        <button type="button" class="chip rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10 [&.active]:bg-slate-900 [&.active]:text-white" data-note-colour="pink" th:text="#{ui.02136}">Pink</button>
-                    </div>
-                </div>
-
-                <div class="rounded-lg border border-slate-200 bg-slate-50 p-2" role="toolbar" aria-label="Note formatting toolbar" th:attr="aria-label=#{ui.02137}">
+                <fieldset class="notes-colour-choices"><legend th:text="#{ui.02131}"></legend><label><input type="radio" name="noteColour" value="slate" th:checked="${note == null or note.colour == 'slate'}"><span th:text="#{ui.02132}"></span></label><label><input type="radio" name="noteColour" value="purple" th:checked="${note == null or note.colour == 'purple'}"><span th:text="#{ui.02133}"></span></label><label><input type="radio" name="noteColour" value="cyan" th:checked="${note == null or note.colour == 'cyan'}"><span th:text="#{ui.02134}"></span></label><label><input type="radio" name="noteColour" value="green" th:checked="${note == null or note.colour == 'green'}"><span th:text="#{ui.02135}"></span></label><label><input type="radio" name="noteColour" value="pink" th:checked="${note == null or note.colour == 'pink'}"><span th:text="#{ui.02136}"></span></label><label><input type="radio" name="noteColour" value="orange" th:checked="${note != null and note.colour == 'orange'}"><span th:text="#{ui.notes.orange}"></span></label><label><input type="radio" name="noteColour" value="red" th:checked="${note != null and note.colour == 'red'}"><span th:text="#{ui.notes.red}"></span></label></fieldset>
+                <div><label for="noteFolder" th:text="#{ui.01937}"></label><select id="noteFolder" name="folderId" required><option th:each="destination : ${folders}" th:value="${destination.id}" th:selected="${folder.id == destination.id}" th:text="${destination.name}"></option></select></div>
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-2" id="noteFormattingToolbar" hidden role="toolbar" aria-label="Note formatting toolbar" th:attr="aria-label=#{ui.02137}">
                     <div class="flex flex-wrap items-center gap-2">
                         <button type="button" class="tool inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50" data-cmd="bold" title="Bold (Ctrl+B)" th:title="#{ui.02138}"><b th:text="#{ui.02139}">B</b></button>
                         <button type="button" class="tool inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50" data-cmd="italic" title="Italic (Ctrl+I)" th:title="#{ui.02140}"><i th:text="#{ui.02141}">I</i></button>
@@ -90,13 +86,14 @@
                     </div>
                 </div>
 
-                <div id="editorShell" class="rounded-lg border border-slate-200 bg-white shadow-sm">
+                <div id="editorShell" hidden class="rounded-lg border border-slate-200 bg-white shadow-sm">
                     <div class="editor notes-prewrap min-h-80 p-4 text-sm leading-6 text-slate-800 focus:outline-none"
-                         id="editor" contenteditable="true" spellcheck="true" data-placeholder="Write your note…"
+                         id="editor" role="textbox" aria-multiline="true" th:attr="aria-label=#{ui.02167}" contenteditable="true" spellcheck="true" data-placeholder="Write your note…"
                          th:utext="${note != null ? note.content : ''}"></div>
                 </div>
 
-            <input type="hidden" name="content" id="contentHtml">
+            <input type="hidden" name="content" id="contentHtml" th:value="${note != null ? note.content : ''}">
+            <div id="notesNativeContent"><label for="plainContent" th:text="#{ui.02167}"></label><textarea id="plainContent" name="plainContent" rows="12" maxlength="20000" th:text="${notePlainText}"></textarea><p th:text="#{ui.notes.plainHint}"></p></div>
 
                 <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <button class="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10" type="submit" th:text="#{ui.00109}">Save</button>
@@ -108,7 +105,7 @@
 </div>
 
 <div th:fragment="pageScripts">
-    <script src="/js/notes/note-editor.js" defer></script>
+    <script th:src="@{/js/notes/note-editor.js(v=${uiCssVersion})}" defer></script>
 </div>
 
 </th:block>

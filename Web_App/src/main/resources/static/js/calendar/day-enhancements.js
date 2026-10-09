@@ -343,6 +343,34 @@
         }
     }
 
+    function updateCompletionFeedback(root, total, remaining, tasksLeft, workoutsLeft) {
+        const format = (copy, values) => (copy || '').replace(/\{(\d+)\}/g,
+            (match, index) => values[Number(index)] ?? match);
+        const summary = root.querySelector('[data-progress-summary]');
+        const breakdown = root.querySelector('[data-progress-breakdown]');
+        if (summary) summary.textContent = total === 0 ? root.dataset.emptyCopy
+            : remaining > 0 ? format(root.dataset.remainingCopy, [remaining]) : root.dataset.completeCopy;
+        if (breakdown) breakdown.textContent = format(root.dataset.breakdownCopy, [tasksLeft, workoutsLeft]);
+        const ring = document.querySelector('.day-progress-ring-wrap');
+        if (ring) {
+            const done = total - remaining;
+            const percentage = total ? Math.floor(done * 100 / total) : 0;
+            const day = document.getElementById('day-main-content');
+            const status = total === 0 ? 'empty' : remaining === 0 ? 'complete' : done > 0
+                ? (day.dataset.date === day.dataset.today ? 'active' : 'partial')
+                : day.dataset.date < day.dataset.today ? 'unfinished' : 'planned';
+            ring.setAttribute('aria-label', format(ring.dataset.summaryCopy, [done, total, percentage]));
+            ring.querySelector('.ring-pct').textContent = `${percentage}%`;
+            ring.querySelector('.ring-label').textContent = ring.getAttribute('data-status-' + status);
+            const circle = ring.querySelector('.ring-progress');
+            circle.setAttribute('stroke-dashoffset', String(314.159 * (1 - percentage / 100)));
+            circle.classList.remove('ring-gold', 'ring-blue', 'ring-emerald', 'ring-red', 'ring-default');
+            circle.classList.add(({complete: 'ring-gold', active: 'ring-blue', partial: 'ring-emerald',
+                unfinished: 'ring-red'})[status] || 'ring-default');
+        }
+        document.dispatchEvent(new Event('calendar:completion-change'));
+    }
+
     function refreshMainCompletionProgress() {
         const root = document.querySelector('[data-main-progress]');
         const fill = document.getElementById('day-main-progress-fill');
@@ -361,7 +389,7 @@
 
         const total = totalTasks + totalWorkouts;
         const done = doneTasks + doneWorkouts;
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        const pct = total > 0 ? Math.floor((done / total) * 100) : 0;
         const tasksLeft = Math.max(totalTasks - doneTasks, 0);
         const workoutsLeft = Math.max(totalWorkouts - doneWorkouts, 0);
         const remaining = tasksLeft + workoutsLeft;
@@ -387,14 +415,7 @@
             summaryChip.textContent = done + '/' + total + ' completed (' + pct + '%)';
         }
 
-        const tooltip = root.querySelector('.day-main-progress-tooltip');
-        if (tooltip) {
-            tooltip.innerHTML = '<p class="font-semibold">'
-                + (remaining > 0 ? remaining + ' items left to complete today' : 'Completion reached for this day')
-                + '</p><p class="text-xs mt-1">'
-                + tasksLeft + ' tasks left · ' + workoutsLeft + ' workouts left'
-                + '</p>';
-        }
+        updateCompletionFeedback(root, total, remaining, tasksLeft, workoutsLeft);
 
         const overviewProgress = document.getElementById('overview-progress-copy');
         if (overviewProgress) {
@@ -438,7 +459,7 @@
             } else if (workoutsLeft > 0) {
                 overviewNext.textContent = 'Complete your next workout block.';
             } else {
-                overviewNext.textContent = 'Everything planned is complete.';
+                overviewNext.textContent = total === 0 ? root.dataset.emptyCopy : root.dataset.completeCopy;
             }
         }
 
@@ -630,10 +651,11 @@
 
     // ==================== Section Tabs ====================
     function initTabs() {
-        const tabNav = document.querySelector('[role="tablist"][aria-label="Day view sections"]');
+        const tabNav = document.getElementById('day-section-navigation');
         if (!tabNav) return;
 
-        const tabs = Array.from(tabNav.querySelectorAll('[role="tab"]'));
+        const tabs = Array.from(tabNav.querySelectorAll('[data-tab-target]'));
+        if (!tabs.length) return;
         const panels = tabs.map(t => document.getElementById('tab-panel-' + t.dataset.tabTarget));
         const pill = document.getElementById('day-tab-pill');
 
@@ -650,49 +672,42 @@
         function activateTab(tab, pushHash) {
             const currentIndex = tabs.findIndex(t => t.classList.contains('is-active'));
             const newIndex = tabs.indexOf(tab);
-            const slideDirection = newIndex > currentIndex ? 'left' : 'right';
-            
+            const direction = newIndex > currentIndex ? 'left' : 'right';
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             tabs.forEach((t, i) => {
-                const isActive = t === tab;
-                t.setAttribute('aria-selected', isActive ? 'true' : 'false');
-                t.setAttribute('tabindex', isActive ? '0' : '-1');
-                t.classList.toggle('is-active', isActive);
-                
-                if (panels[i]) {
-                    if (isActive) {
-                        // Slide in new panel
-                        panels[i].classList.remove('hidden');
-                        panels[i].classList.add('tab-slide-in-' + (slideDirection === 'left' ? 'left' : 'right'));
-                        
-                        // Remove animation classes after animation completes
-                        setTimeout(() => {
-                            panels[i].classList.remove('tab-slide-in-left', 'tab-slide-in-right');
-                        }, 300);
-                    } else if (panels[i].classList.contains('hidden') === false) {
-                        // Slide out old panel
-                        panels[i].classList.add('tab-slide-out-' + (slideDirection === 'left' ? 'right' : 'left'));
-                        
-                        setTimeout(() => {
-                            panels[i].classList.add('hidden');
-                            panels[i].classList.remove('tab-slide-out-left', 'tab-slide-out-right');
-                        }, 300);
-                    }
+                const active = t === tab;
+                t.setAttribute('role', 'tab');
+                t.setAttribute('aria-selected', String(active));
+                t.tabIndex = active ? 0 : -1;
+                t.classList.toggle('is-active', active);
+                const panel = panels[i];
+                if (!panel) return;
+                panel.setAttribute('role', 'tabpanel');
+                panel.hidden = !active;
+                panel.inert = !active;
+                panel.setAttribute('aria-hidden', String(!active));
+                panel.classList.toggle('hidden', !active);
+                panel.classList.remove('tab-slide-in-left', 'tab-slide-in-right',
+                    'tab-slide-out-left', 'tab-slide-out-right');
+                if (active && !reduceMotion && pushHash !== false) {
+                    panel.classList.add('tab-slide-in-' + direction);
                 }
             });
             updatePill(tab);
-            // URL hash persistence
-            const hash = tab.dataset.tabTarget;
-            if (hash && pushHash !== false) {
+            if (pushHash !== false) {
                 try {
-                    history.replaceState(null, '', '#' + hash);
-                } catch(e) {
-                    // history API may fail in sandboxed iframes; safe to ignore
+                    history.replaceState(null, '', '#' + tab.dataset.tabTarget);
+                } catch (error) {
+                    // Native destinations remain available if history is restricted.
                 }
             }
         }
 
         tabs.forEach(tab => {
-            tab.addEventListener('click', () => activateTab(tab));
+            tab.addEventListener('click', (event) => {
+                event.preventDefault();
+                activateTab(tab);
+            });
 
             // Arrow key navigation
             tab.addEventListener('keydown', (e) => {
@@ -736,20 +751,13 @@
         const shortcutsBtn = document.getElementById('day-shortcuts-btn');
         if (shortcutsBtn) shortcutsBtn.addEventListener('click', showKeyboardHelp);
 
-        // Empty-state alias buttons
-        document.querySelectorAll('[data-open-add-task-alias]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const addBtn = document.getElementById('open-add-task');
-                if (addBtn) addBtn.click();
-            });
-        });
-
         // Stat pill navigation: clicking "Tasks left" / "Workouts left" switches to the relevant tab
         document.querySelectorAll('[data-stat-tab-target]').forEach((btn) => {
             const target = btn.getAttribute('data-stat-tab-target');
             const tab = target ? tabs.find(t => t.dataset.tabTarget === target) : null;
             if (!tab) return;
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
                 activateTab(tab);
                 tab.focus();
                 tab.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -757,11 +765,11 @@
         });
 
         // Check URL hash for initial tab
-        const hash = location.hash.replace('#', '');
+        const hash = location.hash.replace('#', '').replace(/^tab-panel-/, '');
         const hashTab = hash ? tabs.find(t => t.dataset.tabTarget === hash) : null;
-        if (hashTab) {
-            activateTab(hashTab, false);
-        }
+        activateTab(hashTab || tabs[0], false);
+        tabNav.setAttribute('role', 'tablist');
+        document.getElementById('day-main-content').dataset.dayTabsEnhanced = 'true';
 
         // Initialize pill position after paint
         requestAnimationFrame(() => {
@@ -820,6 +828,8 @@
                 applyFilter();
             });
         });
+        const controls = document.querySelector('[data-task-filter-controls]');
+        if (controls) controls.dataset.enhanced = 'true';
     }
 
     function initTaskRowInteractions() {
@@ -997,9 +1007,9 @@
 
             untimedWorkouts.forEach((w) => {
                 const doneClass = w.completed ? ' is-done' : '';
-                html += `<div class="timeline-event timeline-event--workout timeline-event--untimed${doneClass}" data-open-workout-drawer data-workout-id="${escapeHtml(w.id)}" draggable="true" data-draggable-item data-item-type="${escapeHtml(w.kind || 'workout')}" data-item-id="${escapeHtml(w.id)}" data-item-time="" role="listitem" title="Drag to schedule">`
+                html += `<a href="${escapeHtml(w.url)}" class="timeline-event timeline-event--workout timeline-event--untimed${doneClass}" data-open-workout-drawer data-workout-kind="${w.kind === 'occurrence' ? 'occurrence' : 'session'}" data-workout-id="${escapeHtml(w.id)}" draggable="true" data-draggable-item data-item-type="${escapeHtml(w.kind || 'workout')}" data-item-id="${escapeHtml(w.id)}" data-item-time="" title="Drag to schedule">`
                     + `<svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`
-                    + `<span class="font-medium">${escapeHtml(w.title)}</span><span class="ml-auto text-[10px] opacity-70">Untimed</span></div>`;
+                    + `<span class="font-medium">${escapeHtml(w.title)}</span><span class="ml-auto text-[10px] opacity-70">Untimed</span></a>`;
             });
 
             html += '</div></div>';
@@ -1043,13 +1053,13 @@
                 return wh === h;
             }).forEach((w) => {
                 const doneClass = w.completed ? ' is-done' : '';
-                const clickable = ` data-open-workout-drawer data-workout-id="${escapeHtml(w.id)}" title="Open workout details"`;
+                const clickable = ` href="${escapeHtml(w.url)}" data-open-workout-drawer data-workout-kind="${w.kind === 'occurrence' ? 'occurrence' : 'session'}" data-workout-id="${escapeHtml(w.id)}" title="Open workout details"`;
                 const draggable = ` draggable="true" data-draggable-item data-item-type="${escapeHtml(w.kind || 'workout')}" data-item-id="${escapeHtml(w.id)}" data-item-time="${escapeHtml(w.time || '')}"`;
-                html += `<div class="timeline-event timeline-event--workout${doneClass}" role="listitem"${clickable}${draggable} style="cursor: grab;">
+                html += `<a class="timeline-event timeline-event--workout${doneClass}"${clickable}${draggable}>
                     <svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     <span class="font-medium">${escapeHtml(w.title)}</span>
                     <span class="ml-auto text-[10px] opacity-70">${escapeHtml((w.time || '').slice(0, 5))}</span>
-                </div>`;
+                </a>`;
             });
 
             html += `</div></div>`;
@@ -1230,8 +1240,10 @@
                 source.setAttribute(attr, newTime);
             }
 
-            const card = document.querySelector('[data-workout-card][data-workout-id="' + itemId + '"]');
+            const kind = itemType === 'occurrence' ? 'occurrence' : 'session';
+            const card = document.querySelector('[data-workout-card][data-workout-kind="' + kind + '"][data-workout-id="' + itemId + '"]');
             if (card) {
+                card.dataset.workoutTime = newTime;
                 const sub = card.querySelector('p.text-xs');
                 if (sub) sub.textContent = newTime;
             }
@@ -1288,6 +1300,13 @@
                 if (source) {
                     const attr = itemType === 'occurrence' ? 'data-occurrence-time' : 'data-workout-time';
                     source.setAttribute(attr, prevTime);
+                }
+                const kind = itemType === 'occurrence' ? 'occurrence' : 'session';
+                const card = document.querySelector('[data-workout-card][data-workout-kind="' + kind + '"][data-workout-id="' + itemId + '"]');
+                if (card) {
+                    card.dataset.workoutTime = prevTime;
+                    const sub = card.querySelector('p.text-xs');
+                    if (sub) sub.textContent = prevTime || document.getElementById('day-main-content')?.dataset.noFixedTime || '';
                 }
             }
             buildTimeline();
@@ -1521,52 +1540,56 @@
         document.addEventListener('click', (e) => {
             const btn = e.target && e.target.closest ? e.target.closest('[data-quick-complete]') : null;
             if (!btn) return;
+            const taskId = btn.getAttribute('data-task-id');
+            const date = btn.getAttribute('data-task-date');
+            const csrf = getCsrf();
+            if (!taskId || !date || !csrf) return;
             e.preventDefault();
             e.stopPropagation();
 
-            const taskId = btn.getAttribute('data-task-id');
-            const date = btn.getAttribute('data-task-date');
-            if (!taskId || !date) return;
-
-            const csrf = getCsrf();
-            if (!csrf) return;
-
-            const taskItem = btn.closest('[data-task-item]');
-            const isDone = btn.classList.contains('is-done');
-            const originalStatus = taskItem ? (taskItem.getAttribute('data-task-status') || 'todo') : 'todo';
+            const taskItem = document.querySelector('[data-task-item][data-task-id="' + taskId + '"]');
+            if (!taskItem || taskItem.dataset.completionPending === 'true') return;
+            const isDone = taskItem.dataset.taskCompleted === 'true';
+            const originalStatus = taskItem.dataset.taskStatus || 'todo';
+            const pendingStatus = originalStatus === 'late' ? 'late'
+                : taskItem.dataset.taskPendingStatus || 'todo';
+            taskItem.dataset.taskPendingStatus = pendingStatus;
+            taskItem.dataset.completionPending = 'true';
             const newDone = !isDone;
+            const feedback = document.getElementById('day-completion-feedback');
+            if (feedback) feedback.classList.add('hidden');
+            const matchingButtons = () => Array.from(document.querySelectorAll(
+                '[data-quick-complete][data-task-id="' + taskId + '"]'));
+            matchingButtons().forEach(button => { button.disabled = true; });
 
-            // Optimistic UI update
-            btn.classList.toggle('is-done', newDone);
-            btn.setAttribute('aria-pressed', newDone ? 'true' : 'false');
-            if (taskItem) {
-                taskItem.setAttribute('data-task-status', newDone ? 'done' : originalStatus);
-                taskItem.setAttribute('data-task-completed', newDone ? 'true' : 'false');
-                taskItem.classList.toggle('bg-green-50', newDone);
-                taskItem.classList.toggle('dark:bg-green-950/20', newDone);
+            function applyCompletionState(done, status) {
+                const pending = status || pendingStatus;
+                taskItem.dataset.taskStatus = done ? 'done' : pending;
+                taskItem.dataset.taskCompleted = String(done);
+                taskItem.classList.toggle('bg-green-50', done);
+                taskItem.classList.toggle('dark:bg-green-950/20', done);
                 const chip = taskItem.querySelector('[data-testid="task-status-chip"]');
-                if (chip) chip.textContent = chipLabel(newDone, originalStatus);
-                // Flash animation on completion
-                if (newDone) {
-                    taskItem.classList.remove('just-completed');
-                    void taskItem.offsetWidth;
-                    taskItem.classList.add('just-completed');
-                    taskItem.addEventListener('animationend', () => taskItem.classList.remove('just-completed'), { once: true });
-                }
+                if (chip) chip.textContent = chipLabel(done, pending);
+                matchingButtons().forEach(button => {
+                    button.classList.toggle('is-done', done);
+                    button.setAttribute('aria-pressed', String(done));
+                    button.setAttribute('aria-label', 'Mark task ' + taskItem.dataset.taskTitle
+                        + (done ? ' incomplete' : ' complete'));
+                    button.title = done ? 'Mark incomplete' : 'Mark complete';
+                });
+                const hiddenTaskModel = document.getElementById('task-drawer-content-' + taskId);
+                if (hiddenTaskModel) hiddenTaskModel.dataset.taskCompleted = String(done);
+                refreshMainCompletionProgress();
+                updateTimedFocusCard();
             }
 
-            // Also sync timeline quick-complete button for the same task
-            document.querySelectorAll(`.timeline-qc-btn[data-task-id="${taskId}"]`).forEach(tlBtn => {
-                tlBtn.classList.toggle('is-done', newDone);
-            });
-
-            const hiddenTaskModel = document.getElementById('task-drawer-content-' + taskId);
-            if (hiddenTaskModel) {
-                hiddenTaskModel.setAttribute('data-task-completed', newDone ? 'true' : 'false');
+            applyCompletionState(newDone);
+            if (newDone) {
+                taskItem.classList.remove('just-completed');
+                void taskItem.offsetWidth;
+                taskItem.classList.add('just-completed');
+                taskItem.addEventListener('animationend', () => taskItem.classList.remove('just-completed'), { once: true });
             }
-
-            refreshMainCompletionProgress();
-            updateTimedFocusCard();
 
             const body = new URLSearchParams();
             body.append('taskId', taskId);
@@ -1591,6 +1614,7 @@
                     throw new Error('Toggle failed');
                 }
 
+                applyCompletionState(payload.completed === true);
                 const openTaskId = document.getElementById('task-drawer-body')?.getAttribute('data-open-task-id');
                 if (openTaskId && openTaskId === String(taskId)) {
                     const drawerBody = document.getElementById('task-drawer-body');
@@ -1611,22 +1635,15 @@
                 }
             })
             .catch(() => {
-                // Revert on network/server error
-                btn.classList.toggle('is-done', isDone);
-                btn.setAttribute('aria-pressed', isDone ? 'true' : 'false');
-                if (taskItem) {
-                    taskItem.setAttribute('data-task-status', originalStatus);
-                    taskItem.setAttribute('data-task-completed', isDone ? 'true' : 'false');
-                    taskItem.classList.toggle('bg-green-50', isDone);
-                    taskItem.classList.toggle('dark:bg-green-950/20', isDone);
-                    const chip = taskItem.querySelector('[data-testid="task-status-chip"]');
-                    if (chip) chip.textContent = chipLabel(isDone, originalStatus);
+                applyCompletionState(isDone, originalStatus);
+                if (feedback) {
+                    feedback.textContent = feedback.dataset.errorCopy;
+                    feedback.classList.remove('hidden');
                 }
-                document.querySelectorAll(`.timeline-qc-btn[data-task-id="${taskId}"]`).forEach(tlBtn => {
-                    tlBtn.classList.toggle('is-done', isDone);
-                });
-                refreshMainCompletionProgress();
-                updateTimedFocusCard();
+            })
+            .finally(() => {
+                delete taskItem.dataset.completionPending;
+                matchingButtons().forEach(button => { button.disabled = false; });
             });
         });
     }
@@ -2032,7 +2049,7 @@
 
         const total = totalTasks + totalWorkouts;
         const done = doneTasks + doneWorkouts;
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        const pct = total > 0 ? Math.floor((done / total) * 100) : 0;
         const tasksLeft = Math.max(totalTasks - doneTasks, 0);
         const workoutsLeft = Math.max(totalWorkouts - doneWorkouts, 0);
         const remaining = tasksLeft + workoutsLeft;
@@ -2059,14 +2076,7 @@
             summaryChip.textContent = labelText;
         }
 
-        const tooltip = root.querySelector('.day-main-progress-tooltip');
-        if (tooltip) {
-            tooltip.innerHTML = '<p class="font-semibold">'
-                + (remaining > 0 ? remaining + ' items left to complete today' : 'Completion reached for this day')
-                + '</p><p class="text-xs mt-1">'
-                + tasksLeft + ' tasks left | ' + workoutsLeft + ' workouts left'
-                + '</p>';
-        }
+        updateCompletionFeedback(root, total, remaining, tasksLeft, workoutsLeft);
 
         const overviewProgress = document.getElementById('overview-progress-copy');
         if (overviewProgress) {
@@ -2110,7 +2120,7 @@
             } else if (workoutsLeft > 0) {
                 overviewNext.textContent = 'Complete your next workout block.';
             } else {
-                overviewNext.textContent = 'Everything planned is complete.';
+                overviewNext.textContent = total === 0 ? root.dataset.emptyCopy : root.dataset.completeCopy;
             }
         }
 

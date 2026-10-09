@@ -1,0 +1,22 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="historyList">
+<form method="get" class="assistant-history-search">
+    <label for="historySearch" th:text="#{ui.01867}"></label>
+    <div><input id="historySearch" type="search" name="q" maxlength="120" dir="auto" th:value="${searchQuery}">
+        <button class="assistant-history-action" type="submit" th:text="#{ui.00260}"></button>
+        <a th:if="${!#strings.isEmpty(searchQuery)}" class="assistant-history-action" th:href="@{${historyPagingPath}}" th:text="#{ui.charlie.archive.clearSearch}"></a></div>
+</form>
+<p th:if="${#lists.isEmpty(threads)}" class="assistant-history-empty" th:text="#{ui.charlie.historyEmpty}"></p>
+<ul class="assistant-history-list">
+    <li th:each="item : ${threads}" th:attr="data-history-thread=${item.id}">
+        <a th:href="@{/chatv2/history/thread/{id}(id=${item.id}, q=${searchQuery}, returnPage=${historyPagination.number + 1},collection=${historyCollectionId})}"><span dir="auto" th:text="${item.title}"></span></a>
+        <div class="assistant-history-tags">
+            <span th:if="${item.pinned}" class="assistant-history-meta" th:text="#{ui.charlie.archive.pinned}"></span>
+            <span th:if="${item.archived}" class="assistant-history-meta" th:text="#{ui.00592}"></span>
+            <span th:if="${item.type.name() == 'TRAINER_CLIENT'}" class="assistant-history-meta" th:text="#{ui.charlie.archive.coaching}"></span>
+        </div>
+        <time class="assistant-history-meta" dir="ltr" th:text="${historyThreadDates[item.id]}" th:datetime="${item.updatedAt}"></time>
+        <p th:if="${item.folder != null}" class="assistant-history-meta" dir="auto" th:text="${item.folder.name}"></p>
+    </li>
+</ul>
+<th:block th:replace="~{shared-views/chat/fragments/history-pagination :: historyPagination}"></th:block>
+</th:block>

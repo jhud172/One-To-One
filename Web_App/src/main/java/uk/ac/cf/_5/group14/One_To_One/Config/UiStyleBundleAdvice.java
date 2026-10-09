@@ -10,7 +10,7 @@ import java.util.List;
 @ControllerAdvice
 public class UiStyleBundleAdvice {
 
-    static final String CSS_VERSION = "20260820p81";
+    static final String CSS_VERSION = "20261004v6m";
 
     private static final List<String> AUTH_PATHS = List.of(
             "/login", "/signup", "/forgot-password", "/reset-password"
@@ -22,13 +22,13 @@ public class UiStyleBundleAdvice {
             "/dashboard", "/client/dashboard", "/trainer/dashboard", "/gym/dashboard", "/admin/dashboard"
     );
     private static final List<String> TRAINING_PATHS = List.of(
-            "/workouts", "/workout", "/workout-session", "/workout-management",
-            "/workout-templates", "/schedules", "/exercise-log", "/trainer/library",
-            "/trainer/templates", "/client/assigned-plan", "/client/plan"
+            "/gym/admin", "/workouts", "/workout", "/save-workout", "/delete-workout", "/workout-session", "/workout-management",
+            "/workout-templates", "/schedules", "/exercise-log", "/exercise", "/trainer/library",
+            "/trainer/templates", "/trainer/clients", "/trainer/gyms", "/trainer/verification", "/trainer/assessments", "/trainer/profile", "/trainers", "/admin/moderation", "/checkins", "/client/trainers", "/client/assigned-plan", "/client/plan", "/health-record", "/health/blood-pressure", "/nutrition"
     );
     private static final List<String> CONTENT_PATHS = List.of(
             "/about", "/faq", "/pricing", "/notes", "/vault", "/merch",
-            "/admin/merch", "/chat", "/chatv2", "/inbox"
+            "/admin/merch", "/orders", "/chat", "/chatv2", "/inbox"
     );
     private static final List<String> GUEST_EXPERIENCE_EXACT_PATHS = List.of(
             "/about", "/faq", "/pricing", "/explore", "/merch", "/support",
@@ -53,9 +53,16 @@ public class UiStyleBundleAdvice {
         addWhenMatched(bundles, path, AUTH_PATHS, "/css/bundles/auth.css");
         addWhenMatched(bundles, path, PROFILE_PATHS, "/css/bundles/profile.css");
         addWhenMatched(bundles, path, DASHBOARD_PATHS, "/css/bundles/dashboard.css");
-        addWhenMatched(bundles, path, List.of("/calendar"), "/css/bundles/calendar.css");
+        if (matchesPath(path, "/calendar/focus")) {
+            bundles.add("/css/bundles/calendar-focus.css");
+        } else if (matchesPath(path, "/calendar/task")) {
+            bundles.add("/css/bundles/calendar-task.css");
+        } else {
+            addWhenMatched(bundles, path, List.of("/calendar"), "/css/bundles/calendar.css");
+        }
         addWhenMatched(bundles, path, TRAINING_PATHS, "/css/bundles/training.css");
         addWhenMatched(bundles, path, CONTENT_PATHS, "/css/bundles/content.css");
+        addWhenMatched(bundles, path, List.of("/admin/dashboard", "/admin/feedback", "/admin/gym-applications", "/admin/off-platform-payments", "/super-admin/verification"), "/css/bundles/admin.css");
         if (matchesGuestExperience(path)) {
             bundles.add("/css/bundles/guest.css");
         }

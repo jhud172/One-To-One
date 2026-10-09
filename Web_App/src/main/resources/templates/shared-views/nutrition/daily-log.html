@@ -1,134 +1,35 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02198}, null, ~{::content}, null)}">
-
-    <div th:fragment="content">
-        <div class="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100" th:text="#{ui.02174}">Daily nutrition log</h1>
-                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02175}">Track calories and macros for any day.</p>
-                </div>
-                <form method="get" action="/nutrition" class="flex items-center gap-2">
-                    <label class="sr-only" for="nutrition-date" th:text="#{ui.00660}">Date</label>
-                    <input id="nutrition-date" name="date" type="date" th:value="${selectedDate}"
-                           class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100" />
-                    <button type="submit" class="btn btn--secondary btn--md" th:text="#{ui.02176}">Go</button>
-                </form>
-            </div>
-
-            <div th:if="${saved}" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" th:text="#{ui.02177}">
-                Nutrition log saved.
-            </div>
-
-            <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[2fr,1fr]">
-                <section class="rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.01998}">Log details</h2>
-                    <form th:action="@{/nutrition}" th:object="${nutritionForm}" method="post" class="mt-4 space-y-5">
-                        <input th:if="${_csrf != null}" th:type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00660}">Date</label>
-                            <input type="date" th:field="*{date}"
-                                   class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100" />
-                            <p class="mt-1 text-sm text-red-600" th:errors="*{date}" th:if="${#fields.hasErrors('date')}"></p>
-                        </div>
-
-                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.02178}">Calories</label>
-                                <input type="number" min="0" max="20000" step="1" th:field="*{calories}"
-                                       placeholder="e.g., 2100"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"  th:placeholder="#{ui.02179}"/>
-                                <p class="mt-1 text-sm text-red-600" th:errors="*{calories}" th:if="${#fields.hasErrors('calories')}"></p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00364}">Protein (g)</label>
-                                <input type="number" min="0" max="1000" step="1" th:field="*{proteinGrams}"
-                                       placeholder="e.g., 140"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"  th:placeholder="#{ui.02180}"/>
-                                <p class="mt-1 text-sm text-red-600" th:errors="*{proteinGrams}" th:if="${#fields.hasErrors('proteinGrams')}"></p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00365}">Carbs (g)</label>
-                                <input type="number" min="0" max="1000" step="1" th:field="*{carbsGrams}"
-                                       placeholder="e.g., 200"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"  th:placeholder="#{ui.02181}"/>
-                                <p class="mt-1 text-sm text-red-600" th:errors="*{carbsGrams}" th:if="${#fields.hasErrors('carbsGrams')}"></p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.00366}">Fat (g)</label>
-                                <input type="number" min="0" max="1000" step="1" th:field="*{fatGrams}"
-                                       placeholder="e.g., 70"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"  th:placeholder="#{ui.02182}"/>
-                                <p class="mt-1 text-sm text-red-600" th:errors="*{fatGrams}" th:if="${#fields.hasErrors('fatGrams')}"></p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.02183}">Fibre (g, optional)</label>
-                                <input type="number" min="0" max="200" step="1" th:field="*{fibreGrams}"
-                                       placeholder="e.g., 30"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"  th:placeholder="#{ui.01975}"/>
-                                <p class="mt-1 text-sm text-red-600" th:errors="*{fibreGrams}" th:if="${#fields.hasErrors('fibreGrams')}"></p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.02184}">Water (ml, optional)</label>
-                                <input type="number" min="0" max="10000" step="50" th:field="*{waterMl}"
-                                       placeholder="e.g., 2000"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"  th:placeholder="#{ui.02185}"/>
-                                <p class="mt-1 text-sm text-red-600" th:errors="*{waterMl}" th:if="${#fields.hasErrors('waterMl')}"></p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200" th:text="#{ui.02186}">Notes (optional)</label>
-                            <textarea rows="4" th:field="*{notes}"
-                                      placeholder="Any highlights or reminders?"
-                                      class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100" th:placeholder="#{ui.02187}"></textarea>
-                            <p class="mt-1 text-sm text-red-600" th:errors="*{notes}" th:if="${#fields.hasErrors('notes')}"></p>
-                        </div>
-
-                        <button type="submit" class="btn btn--primary btn--md w-full" th:text="#{ui.02188}">Save log</button>
-                    </form>
-                </section>
-
-                <aside class="space-y-4">
-                    <div th:if="${hasEntry}" class="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/50">
-                        <h3 class="text-sm font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400" th:text="#{ui.02189}">Summary</h3>
-                        <dl class="mt-4 space-y-3 text-sm">
-                            <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                                <span th:text="#{ui.02178}">Calories</span>
-                                <span class="font-semibold text-slate-900 dark:text-white" th:text="${summary.calories}">0</span>
-                            </div>
-                            <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                                <span th:text="#{ui.02190}">Macro calories</span>
-                                <span class="font-semibold text-slate-900 dark:text-white" th:text="${summary.macroCalories}">0</span>
-                            </div>
-                            <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                                <span th:text="#{ui.02191}">Total macro grams</span>
-                                <span class="font-semibold text-slate-900 dark:text-white" th:text="${summary.totalMacroGrams}">0</span>
-                            </div>
-                            <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                                <span th:text="#{ui.02192}">Calorie delta</span>
-                                <span class="font-semibold text-slate-900 dark:text-white"
-                                      th:text="${summary.calorieDelta >= 0 ? '+' + summary.calorieDelta : summary.calorieDelta}">0</span>
-                            </div>
-                            <div class="pt-2 text-slate-600 dark:text-slate-300">
-                                <div class="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400" th:text="#{ui.00175}">Notes</div>
-                                <div class="mt-1 text-sm text-slate-700 dark:text-slate-200" th:text="${summary.notes != null ? summary.notes : 'None'}">None</div>
-                            </div>
-                        </dl>
-                    </div>
-
-                    <div th:if="${!hasEntry}" class="rounded-2xl border border-dashed border-slate-200 bg-white/60 p-5 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
-                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200" th:text="#{ui.02193}">No nutrition logged yet</h3>
-                        <p class="mt-2" th:text="#{ui.02194}">Start by entering your calories and macros for this day.</p>
-                        <ul class="mt-3 space-y-1 text-sm">
-                            <li th:text="#{ui.02195}">Use rounded values if you do not have exact numbers.</li>
-                            <li th:text="#{ui.02196}">Optional fields like fibre and water help add detail.</li>
-                            <li th:text="#{ui.02197}">Notes can capture meals, cravings, or habits to revisit later.</li>
-                        </ul>
-                    </div>
-                </aside>
-            </div>
-        </div>
-    </div>
-</th:block>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02198}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content" class="client-workspace-v2 personal-records-v2 nutrition-record-v2">
+<header class="detail-header"><div class="detail-header-content"><div><h1 class="detail-title" th:text="#{ui.02174}"></h1><p class="detail-subtitle" th:text="#{ui.02175}"></p></div></div><p th:if="${nutritionSaved}" role="status" class="checkin-feedback" th:text="#{ui.02177}"></p></header>
+<form method="get" th:action="@{/nutrition}" th:object="${nutritionDateFilter}" class="connection-search" data-nutrition-navigate>
+<label for="nutrition-date" th:text="#{ui.00660}"></label><div><input id="nutrition-date" type="date" required dir="ltr" th:field="*{date}" th:attr="aria-invalid=${nutritionPickerInvalid == true},aria-describedby=${nutritionPickerInvalid == true ? 'nutrition-picker-error nutrition-picker-draft' : null}"><button class="detail-btn-primary" type="submit" th:text="#{ui.02176}"></button></div>
+<div th:if="${nutritionPickerInvalid}" class="profile-editor-errors" role="alert"><p id="nutrition-picker-error" th:text="#{ui.nutrition.dateInvalid}"></p><p id="nutrition-picker-draft" class="personal-history-rejected" dir="auto" th:text="${nutritionPickerDraft}"></p><a href="#nutrition-date" th:text="#{ui.00660}"></a></div></form>
+<nav class="connection-actions" th:if="${previousDate != null or nextDate != null}" th:attr="aria-label=#{ui.nutrition.navigation}"><a th:if="${previousDate != null}" class="detail-btn-secondary" data-nutrition-navigate th:href="@{/nutrition(date=${previousDate})}" th:text="#{ui.01596}"></a><a th:if="${nextDate != null}" class="detail-btn-secondary" data-nutrition-navigate th:href="@{/nutrition(date=${nextDate})}" th:text="#{ui.01598}"></a></nav>
+<div class="personal-record-layout" th:unless="${nutritionPickerInvalid}"><section class="detail-section"><h2 class="detail-section-title" th:text="#{ui.01998}"></h2><p class="plan-coaching-note" id="nutrition-entry-hint" th:text="#{ui.nutrition.entryHint}"></p>
+<p th:if="${nutritionConflict}" class="checkin-feedback" role="alert" th:text="#{ui.nutrition.changed}"></p><h3 th:if="${nutritionConflict}" class="detail-card-title" th:text="#{ui.nutrition.draft}"></h3>
+<form method="post" th:action="@{/nutrition}" th:object="${nutritionForm}" class="profile-editor-form" aria-describedby="nutrition-entry-hint" data-nutrition-form th:attr="data-unsaved=#{ui.nutrition.unsaved},data-rejected=${nutritionRejected == true}"><input type="hidden" name="expectedRevision" th:value="${nutritionRevision}">
+<div th:if="${#fields.hasAnyErrors()}" id="nutrition-errors" role="alert" class="profile-editor-errors"><h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.nutrition.fieldInvalid}"></p><ul><li th:if="${#fields.hasErrors('date')}"><a href="#date" th:text="#{ui.00660}"></a></li><li th:if="${#fields.hasErrors('calories')}"><a href="#calories" th:text="#{ui.02178}"></a></li><li th:if="${#fields.hasErrors('proteinGrams')}"><a href="#proteinGrams" th:text="#{ui.00364}"></a></li><li th:if="${#fields.hasErrors('carbsGrams')}"><a href="#carbsGrams" th:text="#{ui.00365}"></a></li><li th:if="${#fields.hasErrors('fatGrams')}"><a href="#fatGrams" th:text="#{ui.00366}"></a></li><li th:if="${#fields.hasErrors('fibreGrams')}"><a href="#fibreGrams" th:text="#{ui.02183}"></a></li><li th:if="${#fields.hasErrors('waterMl')}"><a href="#waterMl" th:text="#{ui.02184}"></a></li><li th:if="${#fields.hasErrors('notes')}"><a href="#notes" th:text="#{ui.02186}"></a></li></ul></div><p id="nutrition-values-help" class="health-record-help" th:text="#{ui.nutrition.valuesHint}"></p><div class="profile-editor-fields"><div><label for="date" th:text="#{ui.00660}"></label><input id="date" type="date" dir="ltr" th:readonly="${selectedDate != null}" th:field="*{date}" required th:attr="aria-invalid=${#fields.hasErrors('date')},aria-describedby=${#fields.hasErrors('date') ? 'nutrition-date-help date-error nutrition-date-draft' : 'nutrition-date-help'}"><p id="nutrition-date-help" class="health-record-help" th:text="#{ui.nutrition.dateHint}"></p><p th:if="${nutritionDateDraft != null}" id="nutrition-date-draft" class="personal-history-rejected" dir="auto" th:text="${nutritionDateDraft}"></p><p id="date-error" class="profile-editor-errors" th:if="${#fields.hasErrors('date')}" th:text="#{ui.nutrition.dateInvalid}"></p></div>
+<div><label for="calories" th:text="#{ui.02178}"></label><input id="calories" type="text" dir="ltr" th:field="*{calories}" required inputmode="numeric" pattern="[0-9]+" maxlength="5" th:attr="aria-invalid=${#fields.hasErrors('calories')},aria-describedby=${#fields.hasErrors('calories') ? 'nutrition-values-help calories-error' : 'nutrition-values-help'}"><p class="health-record-help" dir="ltr">0–20000 kcal</p><p id="calories-error" class="profile-editor-errors" th:if="${#fields.hasErrors('calories')}" th:text="#{ui.nutrition.fieldInvalid}"></p></div>
+<div><label for="proteinGrams" th:text="#{ui.00364}"></label><input id="proteinGrams" type="text" dir="ltr" th:field="*{proteinGrams}" required inputmode="numeric" pattern="[0-9]+" maxlength="4" th:attr="aria-invalid=${#fields.hasErrors('proteinGrams')},aria-describedby=${#fields.hasErrors('proteinGrams') ? 'nutrition-values-help proteinGrams-error' : 'nutrition-values-help'}"><p class="health-record-help" dir="ltr">0–1000 g</p><p id="proteinGrams-error" class="profile-editor-errors" th:if="${#fields.hasErrors('proteinGrams')}" th:text="#{ui.nutrition.fieldInvalid}"></p></div>
+<div><label for="carbsGrams" th:text="#{ui.00365}"></label><input id="carbsGrams" type="text" dir="ltr" th:field="*{carbsGrams}" required inputmode="numeric" pattern="[0-9]+" maxlength="4" th:attr="aria-invalid=${#fields.hasErrors('carbsGrams')},aria-describedby=${#fields.hasErrors('carbsGrams') ? 'nutrition-values-help carbsGrams-error' : 'nutrition-values-help'}"><p class="health-record-help" dir="ltr">0–1000 g</p><p id="carbsGrams-error" class="profile-editor-errors" th:if="${#fields.hasErrors('carbsGrams')}" th:text="#{ui.nutrition.fieldInvalid}"></p></div>
+<div><label for="fatGrams" th:text="#{ui.00366}"></label><input id="fatGrams" type="text" dir="ltr" th:field="*{fatGrams}" required inputmode="numeric" pattern="[0-9]+" maxlength="4" th:attr="aria-invalid=${#fields.hasErrors('fatGrams')},aria-describedby=${#fields.hasErrors('fatGrams') ? 'nutrition-values-help fatGrams-error' : 'nutrition-values-help'}"><p class="health-record-help" dir="ltr">0–1000 g</p><p id="fatGrams-error" class="profile-editor-errors" th:if="${#fields.hasErrors('fatGrams')}" th:text="#{ui.nutrition.fieldInvalid}"></p></div>
+<div><label for="fibreGrams" th:text="#{ui.02183}"></label><input id="fibreGrams" type="text" dir="ltr" th:field="*{fibreGrams}" inputmode="numeric" pattern="[0-9]+" maxlength="3" th:attr="aria-invalid=${#fields.hasErrors('fibreGrams')},aria-describedby=${#fields.hasErrors('fibreGrams') ? 'nutrition-values-help fibreGrams-error' : 'nutrition-values-help'}"><p class="health-record-help" dir="ltr">0–200 g</p><p id="fibreGrams-error" class="profile-editor-errors" th:if="${#fields.hasErrors('fibreGrams')}" th:text="#{ui.nutrition.fieldInvalid}"></p></div>
+<div><label for="waterMl" th:text="#{ui.02184}"></label><input id="waterMl" type="text" dir="ltr" th:field="*{waterMl}" inputmode="numeric" pattern="[0-9]+" maxlength="5" th:attr="aria-invalid=${#fields.hasErrors('waterMl')},aria-describedby=${#fields.hasErrors('waterMl') ? 'nutrition-values-help waterMl-error' : 'nutrition-values-help'}"><p class="health-record-help" dir="ltr">0–10000 mL</p><p id="waterMl-error" class="profile-editor-errors" th:if="${#fields.hasErrors('waterMl')}" th:text="#{ui.nutrition.fieldInvalid}"></p></div>
+</div><div><label for="notes" th:text="#{ui.02186}"></label><textarea id="notes" dir="auto" rows="4" maxlength="1000" th:field="*{notes}" th:placeholder="#{ui.02187}" th:attr="aria-invalid=${#fields.hasErrors('notes')},aria-describedby=${#fields.hasErrors('notes') ? 'notes-error' : null}"></textarea><p id="notes-error" th:if="${#fields.hasErrors('notes')}" class="profile-editor-errors" th:text="#{ui.nutrition.fieldInvalid}"></p></div><button class="detail-btn-primary" type="submit" th:text="${nutritionConflict} ? #{ui.nutrition.reviewedSave} : #{ui.02188}"></button></form></section>
+<aside class="nutrition-record-sidebar"><section class="detail-section" th:if="${hasEntry}"><h2 class="detail-section-title" th:text="#{ui.nutrition.savedSummary}"></h2><time dir="ltr" th:text="${summary.date}" th:datetime="${summary.date}"></time><dl class="library-exercise-facts">
+<div><dt th:text="#{ui.02178}"></dt><dd dir="ltr"><span th:text="${summary.calories != null ? summary.calories : '—'}"></span> kcal</dd></div>
+<div><dt th:text="#{ui.00364}"></dt><dd dir="ltr"><span th:text="${summary.proteinGrams != null ? summary.proteinGrams : '—'}"></span> g</dd></div>
+<div><dt th:text="#{ui.00365}"></dt><dd dir="ltr"><span th:text="${summary.carbsGrams != null ? summary.carbsGrams : '—'}"></span> g</dd></div>
+<div><dt th:text="#{ui.00366}"></dt><dd dir="ltr"><span th:text="${summary.fatGrams != null ? summary.fatGrams : '—'}"></span> g</dd></div>
+<div><dt th:text="#{ui.02183}"></dt><dd dir="ltr"><span th:text="${summary.fibreGrams != null ? summary.fibreGrams : '—'}"></span> g</dd></div>
+<div><dt th:text="#{ui.02184}"></dt><dd dir="ltr"><span th:text="${summary.waterMl != null ? summary.waterMl : '—'}"></span> mL</dd></div>
+<div><dt th:text="#{ui.02190}"></dt><dd dir="ltr"><span th:text="${summary.macroCalories != null ? summary.macroCalories : '—'}"></span> kcal</dd></div>
+<div><dt th:text="#{ui.02192}"></dt><dd dir="ltr"><span th:text="${summary.calorieDelta != null ? summary.calorieDelta : '—'}"></span> kcal</dd></div>
+</dl><p class="plan-coaching-note" th:text="#{ui.nutrition.summaryHint}"></p><h3 class="detail-card-title" th:text="#{ui.00175}"></h3><p class="plan-coaching-note" dir="auto" th:if="${summary.notes != null}" th:text="${summary.notes}"></p><p class="plan-coaching-note" th:unless="${summary.notes != null}" th:text="#{ui.01640}"></p></section>
+<section class="detail-section detail-empty" th:unless="${hasEntry}"><h2 class="detail-card-title" th:text="#{ui.02193}"></h2><p th:text="#{ui.02194}"></p></section>
+<section class="detail-section nutrition-targets" th:if="${nutritionTargets != null}"><h2 class="detail-section-title" th:text="#{ui.00630}"></h2><p class="plan-coaching-note" th:text="#{ui.nutrition.targetsHint}"></p><dl class="library-exercise-facts">
+<div><dt th:text="#{ui.02178}"></dt><dd dir="ltr"><span th:text="${nutritionTargets.calories != null ? nutritionTargets.calories : '—'}"></span> kcal</dd></div>
+<div><dt th:text="#{ui.00364}"></dt><dd dir="ltr"><span th:text="${nutritionTargets.protein != null ? nutritionTargets.protein : '—'}"></span> g</dd></div>
+<div><dt th:text="#{ui.00365}"></dt><dd dir="ltr"><span th:text="${nutritionTargets.carbs != null ? nutritionTargets.carbs : '—'}"></span> g</dd></div>
+<div><dt th:text="#{ui.00366}"></dt><dd dir="ltr"><span th:text="${nutritionTargets.fat != null ? nutritionTargets.fat : '—'}"></span> g</dd></div>
+</dl></section></aside></div></div><th:block th:fragment="pageScripts"><script th:src="@{/js/health/nutrition.js(v=${assetVersion})}" defer></script></th:block></th:block>

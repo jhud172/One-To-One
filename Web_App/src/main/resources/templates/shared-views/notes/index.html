@@ -7,12 +7,24 @@
 
     <div th:fragment="content">
         <div id="notes-app"
-             class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
+             class="notes-workspace-v2 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
              th:attr="data-active-folder=${activeFolderId},
+                      data-active-page=${notesPage.number + 1}, data-page-label=#{ui.notes.page},
+                      data-previous=#{ui.library.previousPage}, data-next=#{ui.library.nextPage},
                       data-active-note=${activeNote != null ? activeNote.id : ''},
+                      data-active-revision=${activeNote != null ? activeNote.revision : ''},
+                      data-content=#{ui.02167}, data-toolbar=#{ui.02137}, data-bold=#{ui.02138}, data-italic=#{ui.02140},
+                      data-underline=#{ui.02142}, data-link=#{ui.02161}, data-quote=#{ui.02149}, data-code=#{ui.notes.code},
+                      data-clean=#{ui.02164}, data-numbered=#{ui.02156}, data-bullets=#{ui.02154}, data-heading=#{ui.02144},
+                      data-normal=#{ui.02145}, data-heading-one=#{ui.02146}, data-heading-two=#{ui.02147}, data-heading-three=#{ui.02148},
+                      data-conflict=#{ui.notes.conflict},
+                      data-active-colour=${activeNote != null ? activeNote.colour : 'slate'},
+                      data-empty=#{ui.02125}, data-untitled=#{ui.02126}, data-saved=#{preferences.saved},
+                      data-saving=#{ui.notes.saving}, data-failed=#{ui.notes.saveFailed}, data-unsaved=#{ui.notes.unsaved},
                       data-csrf-header=${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'},
                       data-csrf-token=${_csrf != null ? _csrf.token : ''}">
 
+            <header class="notes-workspace-header"><h1 th:text="#{ui.00175}"></h1><p th:text="#{ui.notes.entryHint}"></p><a class="notes-action" th:href="@{/vault}" th:text="#{ui.02280}"></a></header>
             <textarea id="notes-active-content" class="hidden" th:text="${activeNote != null ? activeNote.content : ''}"></textarea>
 
             <div class="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
@@ -21,59 +33,52 @@
 
                     <!-- Sidebar: folders -->
                     <aside class="border-b border-slate-200/70 bg-white/80 p-5 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/40 lg:border-b-0 lg:border-r">
+                        <details id="notesCollections" class="notes-collections" open><summary th:text="#{ui.01937}"></summary>
                         <div class="flex items-center justify-between">
                             <div>
                                 <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300" th:text="#{ui.01937}">Folders</h2>
                                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02121}">Organise your ideas.</p>
                             </div>
-                            <button id="addFolderBtn" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">+</button>
+
                         </div>
 
                         <div class="mt-4">
-                            <input id="folderSearch" type="text" placeholder="Search folders"
+                            <label class="sr-only" for="folderSearch" th:text="#{ui.02122}"></label><input id="folderSearch" type="text" placeholder="Search folders"
                                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"  th:placeholder="#{ui.02122}"/>
                         </div>
 
-                        <div id="newFolderRow" class="mt-3 hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                            <input id="newFolderName" type="text" placeholder="New folder name"
-                                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"  th:placeholder="#{ui.02106}"/>
-                            <div class="mt-2 flex items-center justify-end gap-2">
-                                <button id="cancelFolderBtn" type="button" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" th:text="#{ui.00125}">Cancel</button>
-                                <button id="createFolderBtn" type="button" class="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900" th:text="#{ui.01116}">Create</button>
-                            </div>
-                        </div>
-
+                        <p th:if="${notesFolderInvalid}" role="alert" class="notes-save-error" th:text="#{ui.notes.invalid}"></p><details id="newFolderRow" th:open="${notesFolderInvalid}" class="notes-folder-create"><summary th:text="#{ui.01944}"></summary><form id="notesFolderCreateForm" th:action="@{/notes/folders/new}" method="post"><label for="newFolderName" th:text="#{ui.02106}"></label><input id="newFolderName" name="name" type="text" maxlength="80" required th:value="${newFolderDraft}"><button id="createFolderBtn" class="notes-action" type="submit" th:text="#{ui.01116}"></button></form></details>
                         <nav class="mt-4 space-y-1" id="folderList">
-                            <button th:each="folder : ${folders}"
-                                    type="button"
+                            <a th:each="folder : ${folders}"
+                                    th:href="@{/notes(folderId=${folder.id})}"
                                     class="folder-item flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900/40"
                                     th:attr="data-folder-id=${folder.id}"
                                     th:classappend="${activeFolderId != null and activeFolderId == folder.id} ? ' bg-slate-900 text-white hover:bg-slate-900 dark:bg-slate-100 dark:text-slate-900' : ''">
                                 <span class="h-2.5 w-2.5 rounded-full ring-4 ring-slate-100 dark:ring-slate-900"
                                       th:classappend="${folder.colour} == 'slate' ? ' bg-slate-400' : (${folder.colour} == 'purple' ? ' bg-purple-400' : (${folder.colour} == 'cyan' ? ' bg-cyan-400' : (${folder.colour} == 'green' ? ' bg-emerald-400' : (${folder.colour} == 'pink' ? ' bg-pink-400' : (${folder.colour} == 'orange' ? ' bg-orange-400' : (${folder.colour} == 'red' ? ' bg-red-500' : ' bg-slate-300'))))))"></span>
-                                <span class="truncate" th:text="${folder.name}">Folder</span>
-                            </button>
+                                <span dir="auto" th:text="${folder.name}">Folder</span>
+                            </a>
                         </nav>
+                        <a id="notesFolderManage" class="notes-action" th:href="@{/notes/folders/{id}(id=${activeFolderId})}" th:text="#{ui.notes.manageFolder}"></a>
+                        </details>
                     </aside>
 
                     <!-- Notes list -->
                     <section class="border-b border-slate-200/70 bg-white/80 p-5 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/40 lg:border-b-0 lg:border-r">
+                        <details id="notesListCollection" class="notes-collections" open><summary th:text="#{ui.00175}"></summary>
                         <div class="flex items-center justify-between">
                             <div>
                                 <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300" th:text="#{ui.00175}">Notes</h2>
                                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02123}">Your latest drafts.</p>
                             </div>
-                            <button id="addNoteBtn" type="button" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900" th:text="#{ui.02124}">New</button>
+                            <a id="addNoteBtn" th:href="@{/notes/folders/{id}/new(id=${activeFolderId})}" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900" th:text="#{ui.02124}">New</a>
                         </div>
 
-                        <div class="mt-4">
-                            <input id="noteSearch" type="text" placeholder="Search notes" th:value="${q}"
-                                   class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"  th:placeholder="#{ui.02113}"/>
-                        </div>
+                        <form method="get" th:action="@{/notes}" class="notes-search" id="notesSearchForm"><input id="notesSearchFolder" type="hidden" name="folderId" th:value="${activeFolderId}"><label for="noteSearch" th:text="#{ui.02113}"></label><input id="noteSearch" name="q" type="search" maxlength="120" th:value="${q}"><button class="notes-action" type="submit" th:text="#{ui.00260}"></button></form>
 
                         <div class="mt-4 space-y-2" id="noteList">
-                            <button th:each="note : ${notes}"
-                                    type="button"
+                            <a th:each="note : ${notes}"
+                                    th:href="@{/notes/{id}(id=${note.id})}"
                                     class="note-item w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-950/50"
                                     th:attr="data-note-id=${note.id}"
                                     th:classappend="${activeNote != null and activeNote.id == note.id} ? ' ring-2 ring-slate-900/20 dark:ring-slate-100/30' : ''">
@@ -81,36 +86,48 @@
                                     <span class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${note.title}">Note</span>
                                     <span class="text-[10px] text-slate-400" th:text="${#temporals.format(note.updatedAt, 'dd MMM')}">Date</span>
                                 </div>
-                            </button>
+                            </a>
                             <div th:if="${notes == null or #lists.isEmpty(notes)}" class="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950/40" th:text="#{ui.02125}">No notes yet.</div>
                         </div>
+                        <th:block th:replace="~{shared-views/notes/fragments/pagination :: pagination}"></th:block>
+                        </details>
                     </section>
 
                     <!-- Editor -->
                     <section class="bg-white/90 p-6 backdrop-blur-sm dark:bg-slate-950/50">
                         <div class="flex flex-col gap-4">
                             <div class="flex flex-wrap items-center justify-between gap-3">
-                                <div class="min-w-0">
-                                    <input id="noteTitle" type="text" placeholder="Untitled note"
+                                <div class="min-w-0 notes-title-field">
+                                    <label class="sr-only" for="noteTitle" th:text="#{ui.00583}"></label><input id="noteTitle" type="text" maxlength="120" placeholder="Untitled note" readonly
                                            th:value="${activeNote != null ? activeNote.title : ''}"
                                            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"  th:placeholder="#{ui.02126}"/>
                                     <p id="noteMeta" class="mt-1 text-xs text-slate-500" th:text="${activeNote != null ? #temporals.format(activeNote.updatedAt, 'dd MMM yyyy HH:mm') : ''}"></p>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <button id="exportHtmlBtn" type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" th:text="#{ui.02127}">Export HTML</button>
-                                    <button id="deleteNoteBtn" type="button" class="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 shadow-sm hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-200" th:text="#{ui.00139}">Delete</button>
+                                    <a id="exportHtmlBtn" class="notes-action" th:href="${activeNote != null} ? @{/notes/export/{id}(id=${activeNote.id})} : @{/notes}" th:text="#{ui.02127}"></a>
+                                    <a id="notesNativeEdit" class="notes-action" th:href="${activeNote != null} ? @{/notes/{id}/edit(id=${activeNote.id})} : @{/notes}" th:text="#{ui.00138}"></a>
+                                    <form id="notesDeleteForm" method="post" th:action="${activeNote != null} ? @{/notes/{id}/delete(id=${activeNote.id})} : @{/notes}" th:attr="data-confirm=#{ui.notes.deleteNote}"><button id="deleteNoteBtn" class="notes-action notes-delete" type="submit" th:disabled="${activeNote == null}" th:text="#{ui.00139}"></button></form>
                                 </div>
                             </div>
 
-                            <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+                            <p id="notesRichFallback" th:text="#{ui.notes.richUnavailable}"></p>
+                            <div id="notesRichEditor" hidden class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
                                 <div id="editorToolbar" class="mb-3"></div>
                                 <div id="editor" class="rounded-xl bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100"></div>
                                 <input id="noteContent" type="hidden" />
                             </div>
 
-                            <div class="flex items-center gap-2 text-xs text-slate-500">
-                                <span id="saveStatus" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300" th:text="#{ui.02128}">Idle</span>
-                                <span class="text-slate-400" th:text="#{ui.02129}">Autosaves after 1s.</span>
+                            <section id="notesConflict" class="notes-save-error" hidden aria-live="polite">
+                                <p th:text="#{ui.notes.conflict}"></p>
+                                <button id="notesReviewSaved" class="notes-action" type="button" th:text="#{ui.notes.review}"></button>
+                                <p id="notesSavedTitle"></p>
+                                <label for="notesSavedContent" th:text="#{ui.notes.savedContent}"></label>
+                                <textarea id="notesSavedContent" rows="5" readonly></textarea>
+                                <button id="notesKeepDraft" class="notes-action" type="button" hidden th:text="#{ui.notes.keepDraft}"></button>
+                            </section>
+                            <div id="notesRichFeedback" hidden class="flex items-center gap-2 text-xs text-slate-500">
+                                <span id="saveStatus" role="status" aria-live="polite" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300" th:text="#{ui.02128}">Idle</span>
+                                <span class="text-slate-400" th:text="#{ui.02129}">Autosaves after 1s.</span><button id="notesRetry" class="notes-action" type="button" th:text="#{ui.notes.retry}"></button>
                             </div>
                         </div>
                     </section>
@@ -121,6 +138,6 @@
 
     <div th:fragment="pageScripts">
         <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
-        <script src="/js/notes/notes.js" defer></script>
+        <script th:src="@{/js/notes/notes.js(v=${uiCssVersion})}" defer></script>
     </div>
 </th:block>

@@ -7,9 +7,11 @@ import uk.ac.cf._5.group14.One_To_One.Users.User;
 public class SimulatedPaymentCardResolver {
 
     private final SavedPaymentMethodService savedPaymentMethodService;
+    private final PaymentCardExpiryValidator expiry;
 
-    public SimulatedPaymentCardResolver(SavedPaymentMethodService savedPaymentMethodService) {
+    public SimulatedPaymentCardResolver(SavedPaymentMethodService savedPaymentMethodService, PaymentCardExpiryValidator expiry) {
         this.savedPaymentMethodService = savedPaymentMethodService;
+        this.expiry = expiry;
     }
 
     public SimulatedPaymentCardSelection resolve(User user,
@@ -28,6 +30,7 @@ public class SimulatedPaymentCardResolver {
         if (selectedCardId != null) {
             SavedPaymentMethod saved = savedPaymentMethodService.findByIdForUser(selectedCardId, user.getId())
                     .orElseThrow(() -> new IllegalArgumentException("Saved card not found."));
+            expiry.validate(saved.getExpiryMonth(), saved.getExpiryYear());
             return new SimulatedPaymentCardSelection(
                     saved,
                     saved.getCardHolderName(),
@@ -41,6 +44,7 @@ public class SimulatedPaymentCardResolver {
         String lastFour = normalizeLastFour(newLastFour);
         short expiryMonth = normalizeMonth(newExpiryMonth);
         short expiryYear = normalizeYear(newExpiryYear);
+        expiry.validate(expiryMonth, expiryYear);
 
         if (saveCard) {
             SavedPaymentMethod saved = savedPaymentMethodService.addCard(

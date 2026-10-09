@@ -10,7 +10,9 @@ import java.util.Optional;
 
 @Repository("workoutPlayerSessionRepository")
 public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, Long> {
+    boolean existsByTemplate(WorkoutTemplate template);
     List<WorkoutSession> findByUserOrderByStartedAtDesc(User user);
     Optional<WorkoutSession> findByIdAndUser(Long id, User user);
+    Optional<WorkoutSession> findFirstByUserAndTemplateAndCompletedFalseOrderByStartedAtDescIdDesc(User user, WorkoutTemplate template);
     List<WorkoutSession> findByUserAndTemplateAndStartedAtBetween(User user, WorkoutTemplate template, LocalDateTime start, LocalDateTime end);
 }

@@ -13,4 +13,6 @@ public interface DailyNutritionLogRepository extends JpaRepository<DailyNutritio
     List<DailyNutritionLog> findByUserAndDateBetweenOrderByDateAsc(User user, LocalDate start, LocalDate end);
 
     Optional<DailyNutritionLog> findTopByUserOrderByDateDescIdDesc(User user);
+
+    Optional<DailyNutritionLog> findTopByUserAndDateLessThanEqualOrderByDateDescIdDesc(User user, LocalDate date);
 }

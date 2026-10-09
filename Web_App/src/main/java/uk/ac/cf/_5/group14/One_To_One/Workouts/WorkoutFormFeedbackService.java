@@ -1,12 +1,9 @@
 package uk.ac.cf._5.group14.One_To_One.Workouts;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import uk.ac.cf._5.group14.One_To_One.Config.DatabaseTableAvailability;
-import uk.ac.cf._5.group14.One_To_One.Operations.ExclusiveScheduledJob;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
 
 import java.io.IOException;
@@ -15,8 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -28,20 +23,17 @@ public class WorkoutFormFeedbackService {
     private final WorkoutSetLogRepository setLogRepository;
     private final WorkoutSetVideoRepository videoRepository;
     private final AiFormFeedbackRepository feedbackRepository;
-    private final DatabaseTableAvailability tableAvailability;
     private final Path uploadRoot;
 
     public WorkoutFormFeedbackService(WorkoutBuilderService workoutBuilderService,
                                       WorkoutSetLogRepository setLogRepository,
                                       WorkoutSetVideoRepository videoRepository,
                                       AiFormFeedbackRepository feedbackRepository,
-                                      DatabaseTableAvailability tableAvailability,
                                       @Value("${app.storage.workout-video-dir:uploads/workout-videos}") String uploadRoot) {
         this.workoutBuilderService = workoutBuilderService;
         this.setLogRepository = setLogRepository;
         this.videoRepository = videoRepository;
         this.feedbackRepository = feedbackRepository;
-        this.tableAvailability = tableAvailability;
         this.uploadRoot = Paths.get(uploadRoot).toAbsolutePath().normalize();
     }
 
@@ -80,7 +72,7 @@ public class WorkoutFormFeedbackService {
 
         WorkoutSetVideo video = new WorkoutSetVideo();
         video.setSetLog(setLog);
-        video.setStatus(VideoProcessingStatus.PENDING);
+        video.setStatus(VideoProcessingStatus.STORED);
         video.setPath("/uploads/workout-videos/user-" + user.getId() + "/session-" + sessionId + "/" + filename);
         try {
             return videoRepository.save(video);
@@ -104,11 +96,13 @@ public class WorkoutFormFeedbackService {
     }
 
     @Transactional(readOnly = true)
-    public AiFormFeedback getFeedback(WorkoutSetVideo video) {
-        if (video == null) {
-            return null;
+    public Map<Long, WorkoutSetVideo> listLatestVideos(User user, Long sessionId) {
+        var session = workoutBuilderService.getSession(user, sessionId);
+        var latest = new java.util.LinkedHashMap<Long, WorkoutSetVideo>();
+        for (var video : videoRepository.findBySetLogSessionOrderByCreatedAtDescIdDesc(session)) {
+            latest.putIfAbsent(video.getSetLog().getId(), video);
         }
-        return feedbackRepository.findByVideo(video).orElse(null);
+        return latest;
     }
 
     @Transactional(rollbackFor = IOException.class)
@@ -139,55 +133,10 @@ public class WorkoutFormFeedbackService {
         return resolveOwnedVideoPath(videoUrl, ownerUserId, sessionId);
     }
 
-    @Scheduled(fixedDelay = 30_000)
-    @ExclusiveScheduledJob(value = "workout-form-feedback", lockAtMostFor = "PT20M")
-    @Transactional
-    public void processPending() {
-        if (!tableAvailability.hasTable("workout_set_videos")) {
-            return;
-        }
-
-        List<WorkoutSetVideo> pending = videoRepository.findByStatusOrderByCreatedAtAsc(VideoProcessingStatus.PENDING);
-        for (WorkoutSetVideo video : pending) {
-            video.setStatus(VideoProcessingStatus.PROCESSING);
-            videoRepository.save(video);
-
-            AiFormFeedback feedback = new AiFormFeedback();
-            feedback.setVideo(video);
-            feedback.setRepCount(8);
-            feedback.setTempo("2-1-2");
-            feedback.setFlagsJson("{\"depth\":\"ok\",\"knees\":\"stable\",\"core\":\"braced\"}");
-            feedback.setConfidence(0.78);
-            feedback.setCreatedAt(Instant.now());
-            feedbackRepository.save(feedback);
-
-            video.setStatus(VideoProcessingStatus.COMPLETE);
-            videoRepository.save(video);
-        }
-    }
-
-    public Map<String, Object> buildFeedbackPayload(WorkoutSetVideo video, AiFormFeedback feedback) {
-        if (video == null) {
-            return Map.of("status", "NONE");
-        }
-        if (feedback == null) {
-            return Map.of(
-                    "status", video.getStatus().name(),
-                    "videoId", video.getId(),
-                    "videoUrl", video.getPath()
-            );
-        }
-        return Map.of(
-                "status", video.getStatus().name(),
-                "videoId", video.getId(),
-                "videoUrl", video.getPath(),
-                "feedback", Map.of(
-                        "repCount", feedback.getRepCount(),
-                        "tempo", feedback.getTempo(),
-                        "flags", feedback.getFlagsJson(),
-                        "confidence", feedback.getConfidence()
-                )
-        );
+    public Map<String, Object> buildFeedbackPayload(WorkoutSetVideo video) {
+        // No analysis provider exists. Historical placeholder scores must not be presented as results.
+        if (video == null) return Map.of("status", "NONE", "analysisAvailable", false);
+        return Map.of("status", "STORED", "videoId", video.getId(), "videoUrl", video.getPath(), "analysisAvailable", false);
     }
 
     private Path resolveOwnedVideoPath(String videoUrl, Long userId, Long sessionId) {

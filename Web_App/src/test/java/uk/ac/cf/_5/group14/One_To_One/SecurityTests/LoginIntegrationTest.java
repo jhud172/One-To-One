@@ -102,6 +102,32 @@ class LoginIntegrationTest {
     }
 
     @Test
+    void nativeRoleFormsHaveOneUsableCredentialSourceAndNoInactiveRequiredFields() throws Exception {
+        for (String role : new String[]{"client", "trainer", "gym"}) {
+            String html = mockMvc.perform(get("/login").param("role", role))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            Document document = Jsoup.parse(html);
+            assertThat(document.select(".auth-native-roles a")).hasSize(3);
+            boolean gym = "gym".equals(role);
+            assertThat(document.getElementById("username").hasAttr("disabled")).isEqualTo(gym);
+            assertThat(document.getElementById("password").hasAttr("disabled")).isEqualTo(gym);
+            assertThat(document.getElementById("gymUsername").hasAttr("disabled")).isEqualTo(!gym);
+            assertThat(document.getElementById("gymPassword").hasAttr("disabled")).isEqualTo(!gym);
+            assertThat(document.getElementById("trainerCodeFull").hasAttr("disabled")).isTrue();
+            assertThat(document.getElementById("gymSecretCodeFull").hasAttr("disabled")).isTrue();
+            var trainerCode = document.select("noscript input[name=trainerCode]");
+            var gymCode = document.select("noscript input[name=gymSecretCode]");
+            assertThat(trainerCode).hasSize("trainer".equals(role) ? 1 : 0);
+            assertThat(gymCode).hasSize(gym ? 1 : 0);
+            if (!trainerCode.isEmpty()) assertThat(trainerCode.first().attr("pattern")).isEqualTo("[A-Za-z0-9]{12}");
+            if (!gymCode.isEmpty()) {
+                assertThat(gymCode.first().attr("pattern")).isEqualTo("[0-9]{16}");
+                assertThat(gymCode.first().attr("type")).isEqualTo("password");
+            }
+        }
+    }
+
+    @Test
     void selectedRoleMustMatchTheAccountType() throws Exception {
         mockMvc.perform(post("/login")
                         .with(csrf())
@@ -143,6 +169,15 @@ class LoginIntegrationTest {
         assertThat(document.getElementById("gymUsername").val()).isEqualTo("gymadmin_demo");
         assertThat(document.selectFirst(".auth-code-fieldset").attr("aria-invalid")).isEqualTo("true");
         assertThat(document.selectFirst(".auth-code-fieldset").attr("aria-describedby")).contains("loginError");
+    }
+
+    @Test
+    void firstLoginKeepsTheRequestedDestinationWithoutACompulsoryTour() throws Exception {
+        jdbcTemplate.update("update users set has_seen_tutorial = false where username = ?", "demo");
+        mockMvc.perform(post("/login").with(csrf())
+                        .param("loginType", "client").param("username", "demo")
+                        .param("password", "Demo123!").param("next", "/goals"))
+                .andExpect(redirectedUrl("/goals"));
     }
 
     @Test

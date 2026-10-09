@@ -10,6 +10,8 @@ public interface NoteService {
 
     Note update(User user, Long noteId, String title, String content, Long newFolderId, String noteColour);
 
+    Note updateChecked(User user, Long noteId, String title, String content, Long newFolderId, String noteColour, String revision);
+
     void delete(User user, Long noteId);
 
     Note getNoteForUser(User user, Long noteId);
@@ -17,4 +19,6 @@ public interface NoteService {
     List<Note> getNotesForFolder(User user, Long folderId, String query);
 
     List<Note> search(User user, Long folderId, String query);
+
+    org.springframework.data.domain.Page<Note> searchPage(User user, Long folderId, String query, int page);
 }

@@ -18,10 +18,10 @@ public enum BpCategory {
 
     /** Classify based on systolic and diastolic. */
     public static BpCategory classify(int systolic, int diastolic) {
-        if (systolic < 90 || diastolic < 60) return LOW;
         if (systolic >= 180 || diastolic >= 120) return CRISIS;
         if (systolic >= 140 || diastolic >= 90)  return HIGH_STAGE2;
         if (systolic >= 130 || diastolic >= 80)  return HIGH_STAGE1;
+        if (systolic < 90 || diastolic < 60) return LOW;
         if (systolic >= 120 && diastolic < 80)   return ELEVATED;
         return NORMAL;
     }

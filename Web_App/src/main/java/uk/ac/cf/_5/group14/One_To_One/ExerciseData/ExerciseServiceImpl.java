@@ -43,6 +43,9 @@ public class ExerciseServiceImpl implements  ExerciseService {
 
         Set<Tag> preferredTags = userPreferenceRepository.getPreferredTags(user);
         Set<Tag> bannedTags = userPreferenceRepository.getBannedTags(user);
+        if (preferredTags.isEmpty()) {
+            return bannedTags.isEmpty() ? exerciseRepository.findAll() : exerciseRepository.getExercisesExcludingTags(bannedTags);
+        }
         // Method for retrieving a list of exercises based on the tags the user chose
         List<Exercise> suggestions = exerciseRepository.getFilteredSuggestedExercises(preferredTags, bannedTags);
 

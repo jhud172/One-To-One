@@ -69,7 +69,7 @@ public class WorkoutEditTest {
 
 
         when(authHelper.getAuthenticatedUser()).thenReturn(mockUser);
-        when(workoutRepository.findById(existingWorkoutId)).thenReturn(Optional.of(existingWorkout));
+        when(workoutRepository.findByIdAndUserId(existingWorkoutId, 10L)).thenReturn(Optional.of(existingWorkout));
         when(exerciseRepository.findAllById(dto.getExerciseIds())).thenReturn(newExercises);
 
 
@@ -101,14 +101,14 @@ public class WorkoutEditTest {
         dto.setName("Ghost Workout");
 
         when(authHelper.getAuthenticatedUser()).thenReturn(mockUser);
-        when(workoutRepository.findById(999L)).thenReturn(Optional.empty());
+        when(workoutRepository.findByIdAndUserId(999L, 10L)).thenReturn(Optional.empty());
 
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        org.springframework.web.server.ResponseStatusException exception = assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> {
             workoutService.saveWorkout(dto);
         });
 
-        assertEquals("Workout not found", exception.getMessage());
+        assertEquals(404, exception.getStatusCode().value());
         verify(workoutRepository, never()).save(any());
     }
 }

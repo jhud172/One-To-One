@@ -1,115 +1,49 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02743}, null, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="content" class="detail-container">
-        <!-- Header with key metadata at top -->
-        <div class="detail-header">
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(${programme.title}, null, ~{::content}, ~{::pageScripts})}">
+    <div th:fragment="content" class="client-workspace-v2 library-exercise-v2 programme-library-v2">
+        <header class="detail-header">
             <div class="detail-header-content">
-                <div class="detail-header-meta">
-                    <p class="detail-label" th:text="#{ui.02743}">Programme</p>
-                    <h1 class="detail-title" th:text="${programme.title}">Programme</h1>
-                    <p class="detail-subtitle" th:text="${programme.weeks != null ? (programme.weeks + ' weeks') : ''}">Weeks</p>
-                </div>
-                <!-- Primary actions - sticky on larger screens -->
-                <div class="detail-actions-sticky">
-                    <a th:href="@{/trainer/library/programmes}" class="detail-btn-secondary" th:text="#{ui.00571}">Back</a>
-                    <a th:href="@{/trainer/library/programmes/{id}/edit(id=${programme.id})}" class="detail-btn-primary" th:text="#{ui.00138}">Edit</a>
-                    <button type="button" class="detail-btn-secondary"
-                            data-share-dialog-open="shareDialog" th:text="#{ui.02697}">Share</button>
-                </div>
+                <div><h1 class="detail-title" dir="auto" th:text="${programme.title}"></h1><p class="detail-subtitle" th:text="${programme.weeks != null} ? #{ui.plan.weeks(${programme.weeks})} : #{ui.library.programmeDurationOpen}"></p><p class="detail-subtitle" th:text="#{ui.library.programmeSessions(${#lists.size(days)})}"></p></div>
+                <div class="detail-actions-sticky"><a class="detail-btn-secondary" th:href="@{/trainer/library/programmes(q=${query},page=${libraryPage})} + ${'#programme-' + programme.id}" th:text="#{ui.00241}"></a><a class="detail-btn-secondary" th:href="@{/trainer/library/programmes/{id}/edit(id=${programme.id},q=${query},page=${libraryPage})}" th:text="#{ui.00138}"></a><a href="#shareDialog" class="detail-btn-secondary" data-share-dialog-open="shareDialog" th:text="#{ui.02697}"></a></div>
             </div>
-        </div>
-
-        <!-- Structured content sections -->
-        <div class="detail-sections">
-            <div class="detail-grid-2">
-                <section class="detail-section">
-                    <h2 class="detail-section-title" th:text="#{ui.02744}">Programme days</h2>
-
-                    <div class="detail-section-content">
-                        <div th:if="${#lists.isEmpty(days)}" class="detail-empty" th:text="#{ui.02745}">No days yet.</div>
-
-                        <div th:if="${!#lists.isEmpty(days)}" class="detail-list">
-                            <div th:each="d : ${days}" class="detail-list-item">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="detail-list-item-title" th:text="${d.dayOfWeek}">Day</div>
-                                        <div class="detail-list-item-description"
-                                             th:text="${workoutsById[d.workoutId] != null ? workoutsById[d.workoutId].title : ('Workout #' + d.workoutId)}">Workout</div>
-                                        <div class="detail-list-item-meta" th:text="${'Order: ' + d.orderIndex}">Order</div>
-                                    </div>
-                                    <form method="post" th:action="@{/trainer/library/programmes/{pid}/days/{did}/delete(pid=${programme.id},did=${d.id})}">
-                                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                                        <button type="submit" class="detail-btn-destructive" th:text="#{ui.00801}">Remove</button>
-                                    </form>
-                                </div>
-                            </div>
+            <p class="library-instruction-sharing" th:text="#{ui.library.programmeCompositionHint}"></p>
+            <p th:if="${libraryProgrammeSaved}" class="checkin-feedback" role="status" th:text="#{ui.library.programmeSaved}"></p>
+            <p th:if="${libraryDaySaved}" class="checkin-feedback" role="status" th:text="#{ui.library.daySaved}"></p>
+            <p th:if="${libraryOrderSaved}" class="checkin-feedback" role="status" th:text="#{ui.library.orderSaved}"></p>
+            <p th:if="${libraryOrderError}" class="profile-editor-errors" role="alert" th:text="#{ui.library.orderError}"></p>
+        </header>
+        <div class="detail-sections workout-composition-sections">
+            <section class="detail-section" aria-labelledby="programme-sequence-title">
+                <h2 id="programme-sequence-title" class="detail-section-title" th:text="#{ui.library.programmeSequenceTitle}"></h2>
+                <p th:if="${#lists.isEmpty(days)}" class="detail-empty" th:text="#{ui.library.programmeEmptySequence}"></p>
+                <ol class="detail-list workout-item-list programme-day-list">
+                    <li th:each="day, position : ${days}" class="detail-list-item workout-sequence-item" th:id="${'programme-day-' + day.id}" tabindex="-1">
+                        <div><p class="workout-sequence-position" th:id="${'programme-position-' + day.id}" th:text="#{ui.library.sequenceStep(${position.count},${position.size})}"></p><h3 class="detail-card-title" dir="auto" th:id="${'programme-label-' + day.id}" th:text="${day.dayOfWeek}"></h3><a class="programme-session-workout" th:if="${workoutsById[day.workoutId] != null}" th:href="@{/trainer/library/workouts/{id}(id=${day.workoutId})}" dir="auto" th:text="${workoutsById[day.workoutId].title}"></a><p th:unless="${workoutsById[day.workoutId] != null}" th:text="#{ui.02748}"></p></div>
+                        <div class="connection-actions workout-sequence-actions">
+                            <form method="post" th:action="@{/trainer/library/programmes/{pid}/days/{did}/move(pid=${programme.id},did=${day.id},q=${query},page=${libraryPage})}">
+                                <button type="submit" name="direction" value="UP" class="detail-btn-secondary" th:disabled="${position.first}" th:id="${'move-up-' + day.id}" th:attr="aria-labelledby=${'move-up-' + day.id + ' programme-label-' + day.id + ' programme-position-' + day.id}" th:text="#{ui.library.moveEarlier}"></button>
+                                <button type="submit" name="direction" value="DOWN" class="detail-btn-secondary" th:disabled="${position.last}" th:id="${'move-down-' + day.id}" th:attr="aria-labelledby=${'move-down-' + day.id + ' programme-label-' + day.id + ' programme-position-' + day.id}" th:text="#{ui.library.moveLater}"></button>
+                            </form>
+                            <form method="post" th:action="@{/trainer/library/programmes/{pid}/days/{did}/delete(pid=${programme.id},did=${day.id},q=${query},page=${libraryPage})}"><button class="detail-btn-destructive" type="submit" th:id="${'remove-day-' + day.id}" th:attr="aria-labelledby=${'remove-day-' + day.id + ' programme-label-' + day.id + ' programme-position-' + day.id}" th:text="#{ui.00801}"></button></form>
                         </div>
-                    </div>
-
-                    <!-- Add Day Form -->
-                    <div class="detail-section-content border-t border-slate-200 dark:border-white/10 pt-4">
-                        <h3 class="detail-section-title mb-3" th:text="#{ui.02746}">Add day</h3>
-                        <form class="grid grid-cols-1 gap-3" method="post" th:action="@{/trainer/library/programmes/{id}/days(id=${programme.id})}" th:object="${dayForm}">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
-                            <div>
-                                <label class="detail-metadata-label" for="dayOfWeek" th:text="#{ui.02747}">Day of week</label>
-                                <input id="dayOfWeek" type="text" th:field="*{dayOfWeek}"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" />
-                            </div>
-
-                            <div>
-                                <label class="detail-metadata-label" for="workoutId" th:text="#{ui.02748}">Workout</label>
-                                <select id="workoutId" th:field="*{workoutId}"
-                                        class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
-                                    <option value="" selected th:text="#{ui.02749}">Select a workout…</option>
-                                    <option th:each="w : ${workouts}" th:value="${w.id}" th:text="${w.title}">Workout</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="detail-metadata-label" for="orderIndex" th:text="#{ui.02750}">Order index</label>
-                                <input id="orderIndex" type="number" min="0" th:field="*{orderIndex}"
-                                       class="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-sm text-slate-700 dark:text-white" />
-                            </div>
-
-                            <div class="flex items-center justify-end">
-                                <button type="submit" class="detail-btn-primary" th:text="#{ui.02591}">Add</button>
-                            </div>
-                        </form>
-                    </div>
-                </section>
-
-                <!-- Coaching Notes Section -->
-                <section class="detail-section">
-                    <h2 class="detail-section-title" th:text="#{ui.00239}">Coaching notes</h2>
-                    <div class="detail-section-content">
-                        <div th:if="${#lists.isEmpty(notes)}" class="detail-empty" th:text="#{ui.00240}">No notes.</div>
-                        <ul th:if="${!#lists.isEmpty(notes)}" class="detail-list">
-                            <li th:each="n : ${notes}" class="detail-list-item">
-                                <span class="detail-list-item-description" th:text="${n.noteText}">Note</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Delete Action -->
-                    <div class="detail-section-content border-t border-slate-200 dark:border-white/10 pt-4 flex items-center justify-end">
-                        <form method="post" th:action="@{/trainer/library/programmes/{id}/delete(id=${programme.id})}">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                            <button type="submit" class="detail-btn-destructive" th:text="#{ui.02751}">Delete Programme</button>
-                        </form>
-                    </div>
-                </section>
-            </div>
+                    </li>
+                </ol>
+                <form th:unless="${#lists.isEmpty(workouts)}" th:action="@{/trainer/library/programmes/{id}/days(id=${programme.id},q=${query},page=${libraryPage})}" method="post" th:object="${dayForm}" class="profile-editor-form workout-prescription-form" data-library-draft>
+                    <div th:if="${#fields.hasAnyErrors()}" id="day-errors" class="profile-editor-errors" role="alert"><h3 th:text="#{auth.form.fixErrors}"></h3><p th:text="#{ui.library.dayInvalid}"></p><ul><li th:if="${#fields.hasErrors('dayOfWeek')}"><a href="#dayOfWeek" th:text="#{ui.library.dayLabel}"></a></li><li th:if="${#fields.hasErrors('workoutId')}"><a href="#workoutId" th:text="#{ui.02748}"></a></li></ul></div>
+                    <fieldset><legend class="detail-section-title" th:text="#{ui.02746}"></legend><p id="day-help" th:text="#{ui.library.programmeSessionLabelHelp}"></p><div class="profile-editor-fields"><div class="profile-editor-bio"><label for="dayOfWeek" th:text="#{ui.library.dayLabel}"></label><input id="dayOfWeek" type="text" dir="auto" required maxlength="20" list="programme-day-suggestions" th:field="*{dayOfWeek}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('dayOfWeek')},aria-describedby=${#fields.hasErrors('dayOfWeek') ? 'day-help day-errors' : 'day-help'}"><datalist id="programme-day-suggestions"><option th:each="suggestion : ${daySuggestions}" th:value="${suggestion}"></option></datalist></div><div class="profile-editor-bio"><label for="workoutId" th:text="#{ui.02748}"></label><select id="workoutId" required th:field="*{workoutId}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('workoutId')},aria-describedby=${#fields.hasErrors('workoutId') ? 'day-help day-errors' : 'day-help'}"><option value="" th:text="#{ui.02749}"></option><option th:each="workout : ${workouts}" th:value="${workout.id}" dir="auto" th:text="${workout.title}"></option></select></div></div></fieldset>
+                    <button class="detail-btn-primary" type="submit" th:text="#{ui.02591}"></button>
+                </form>
+                <div th:if="${#lists.isEmpty(workouts)}" class="connection-empty"><p th:text="#{ui.02803}"></p><a class="detail-btn-secondary" th:href="@{/trainer/library/workouts/create}" th:text="#{ui.02798}"></a></div>
+            </section>
+            <section class="detail-section"><h2 class="detail-section-title" th:text="#{ui.00239}"></h2><p th:if="${#lists.isEmpty(notes)}" class="detail-empty" th:text="#{ui.00240}"></p><ul class="detail-list"><li th:each="note : ${notes}" class="detail-list-item plan-coaching-note" dir="auto" th:text="${note.noteText}"></li></ul></section>
         </div>
-        <th:block th:replace="~{trainer-views/trainer/fragments/library-share-dialog :: libraryShareDialog('shareDialog')}"></th:block>
+        <details class="detail-section workout-client-preview programme-client-preview">
+            <summary th:text="#{ui.library.clientPreview}"></summary><p class="detail-subtitle" th:text="#{ui.library.clientPreviewHelp}"></p>
+            <h2 class="detail-card-title" dir="auto" th:text="${programme.title}"></h2><p th:text="${programme.weeks != null} ? #{ui.plan.weeks(${programme.weeks})} : #{ui.library.programmeDurationOpen}"></p><p th:if="${#lists.isEmpty(days)}" class="detail-empty" th:text="#{ui.library.programmeEmptySequence}"></p>
+            <ol class="detail-list workout-preview-list"><li th:each="day : ${days}" class="detail-list-item"><h3 class="detail-card-title" dir="auto" th:text="${day.dayOfWeek}"></h3><p dir="auto" th:text="${workoutsById[day.workoutId] != null ? workoutsById[day.workoutId].title : #messages.msg('ui.02748')}"></p></li></ol>
+            <h3 class="detail-card-title" th:text="#{ui.00239}"></h3><p th:if="${#lists.isEmpty(notes)}" class="detail-empty" th:text="#{ui.00240}"></p><ul class="detail-list"><li th:each="note : ${notes}" class="detail-list-item plan-coaching-note" dir="auto" th:text="${note.noteText}"></li></ul>
+        </details>
+        <th:block th:replace="~{trainer-views/trainer/fragments/library-share-dialog :: libraryShareDialog('shareDialog', ${programme.title})}"></th:block>
+        <section class="detail-section library-resource-actions" aria-labelledby="resource-actions-title"><h2 id="resource-actions-title" class="detail-section-title" th:text="#{ui.library.resourceActions}"></h2><p id="programme-delete-help" class="detail-subtitle" th:text="#{ui.library.deleteProgrammeEffect}"></p><form method="post" th:attr="data-confirm=${#messages.msg('ui.02751') + ': ' + programme.title + '. ' + #messages.msg('ui.library.deleteProgrammeEffect')}" th:action="@{/trainer/library/programmes/{id}/delete(id=${programme.id},q=${query},page=${libraryPage})}"><button class="detail-btn-destructive" type="submit" aria-describedby="programme-delete-help" th:text="#{ui.02751}"></button></form></section>
     </div>
-
-
-
-    <div th:fragment="pageScripts">
-        <script th:src="@{/js/trainer/trainer-library-share-dialog.js}" defer></script>
-    </div>
-
+    <th:block th:fragment="pageScripts"><script th:src="@{/js/trainer/trainer-library-share-dialog.js(v=${assetVersion})}" defer></script><script th:src="@{/js/trainer/trainer-library-editor.js(v=${assetVersion})}" defer></script></th:block>
 </th:block>

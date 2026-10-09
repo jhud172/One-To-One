@@ -141,12 +141,6 @@ public class UserSettingsServiceImpl implements UserSettingsService {
                     return userSettingsRepository.save(newSettings);
                 });
 
-        // Keep demo accounts in light mode for consistent demos.
-        if (isDemoUser(user) && settings.getTheme() != ThemePreference.LIGHT) {
-            settings.setTheme(ThemePreference.LIGHT);
-            settings = userSettingsRepository.save(settings);
-        }
-
         String normalizedLanguage = normalizeLanguage(settings.getLanguage());
         if (!normalizedLanguage.equals(settings.getLanguage())) {
             settings.setLanguage(normalizedLanguage);

@@ -110,13 +110,22 @@
             const handle = getHandle(flyout);
             if (!key || !handle) return;
 
-            handle.addEventListener("click", () => {
+            handle.setAttribute("role", "button");
+            handle.setAttribute("aria-label", handle.dataset.panelLabel || handle.getAttribute("aria-label"));
+            handle.addEventListener("click", (event) => {
+                if (!mobileQuery.matches) return;
+                event.preventDefault();
                 if (activeFlyout === key) {
                     close(false);
                     handle.focus();
                     return;
                 }
                 open(key, handle);
+            });
+            handle.addEventListener("keydown", (event) => {
+                if (event.key !== " " || !mobileQuery.matches) return;
+                event.preventDefault();
+                handle.click();
             });
 
             flyout.querySelectorAll("[data-dashboard-flyout-close]").forEach((button) => {
@@ -138,6 +147,7 @@
         }
 
         sync();
+        page.dataset.dashboardShellReady = "true";
     }
 
     function initCardRevealAnimations() {
@@ -266,6 +276,9 @@
             const track = root.querySelector("[data-goal-slider-track]");
             const views = Array.from(root.querySelectorAll("[data-goal-view]"));
             if (!tabs.length || !track || !views.length) return;
+            root.querySelector(".cd-goal-slider__tabs")?.setAttribute("role", "tablist");
+            tabs.forEach((tab) => tab.setAttribute("role", "tab"));
+            views.forEach((view) => view.setAttribute("role", "tabpanel"));
 
             const setHeight = (view) => {
                 if (!view) return;
@@ -291,8 +304,16 @@
             };
 
             tabs.forEach((tab) => {
-                tab.addEventListener("click", () => setActive(tab.dataset.goalTab || "week"));
+                tab.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    setActive(tab.dataset.goalTab || "week");
+                });
                 tab.addEventListener("keydown", (event) => {
+                    if (event.key === " ") {
+                        event.preventDefault();
+                        tab.click();
+                        return;
+                    }
                     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
                     event.preventDefault();
                     const currentIndex = tabs.indexOf(tab);
@@ -307,6 +328,7 @@
             });
 
             const initial = tabs.find((tab) => tab.classList.contains("is-active"))?.dataset.goalTab || tabs[0].dataset.goalTab;
+            root.dataset.goalEnhanced = "true";
             setActive(initial);
             window.addEventListener("resize", () => {
                 const activeView = views.find((view) => view.classList.contains("is-active"));
@@ -320,8 +342,11 @@
             const tabs = Array.from(root.querySelectorAll("[data-action-tab]"));
             const views = Array.from(root.querySelectorAll("[data-action-view]"));
             const track = root.querySelector("[data-action-track]");
-            const segmented = root.querySelector("[role='tablist'][data-selected-tab]");
+            const segmented = root.querySelector("[data-selected-tab]");
             if (!tabs.length || views.length < 2 || !track) return;
+            segmented?.setAttribute("role", "tablist");
+            tabs.forEach((tab) => tab.setAttribute("role", "tab"));
+            views.forEach((view) => view.setAttribute("role", "tabpanel"));
 
             const setHeight = (view) => {
                 if (!view) return;
@@ -350,8 +375,16 @@
             };
 
             tabs.forEach((tab) => {
-                tab.addEventListener("click", () => activate(tab.dataset.actionTab || "recommended"));
+                tab.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    activate(tab.dataset.actionTab || "recommended");
+                });
                 tab.addEventListener("keydown", (event) => {
+                    if (event.key === " ") {
+                        event.preventDefault();
+                        tab.click();
+                        return;
+                    }
                     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
                     event.preventDefault();
                     const currentIndex = tabs.indexOf(tab);
@@ -366,6 +399,7 @@
             });
 
             const initial = tabs.find((tab) => tab.classList.contains("is-active"))?.dataset.actionTab || tabs[0].dataset.actionTab;
+            root.dataset.actionEnhanced = "true";
             activate(initial);
             window.addEventListener("resize", () => {
                 const activeView = views.find((view) => view.classList.contains("is-active"));
@@ -383,14 +417,15 @@
     }
 
     function initCountdowns() {
-        const cards = Array.from(document.querySelectorAll('[data-countdown-enabled="true"][data-countdown-target]'));
+        const cards = Array.from(document.querySelectorAll('[data-countdown-enabled="true"]'));
         if (!cards.length) return;
 
         const update = () => {
             const now = Date.now();
             cards.forEach((card) => {
-                const target = Date.parse(card.dataset.countdownTarget || "");
+                const target = Date.parse(card.dataset.countdownTarget || card.dataset.upcomingTarget || "");
                 if (Number.isNaN(target)) return;
+                card.dataset.countdownReady = "true";
                 const diff = target - now;
                 const output = card.querySelector("[data-countdown-output]");
                 if (output) output.textContent = formatCountdown(diff);
@@ -434,8 +469,16 @@
         const strip = document.querySelector("[data-week-strip]");
         const panel = document.querySelector("[data-week-preview-panel]");
         if (!strip || !panel) return;
+        strip.setAttribute("role", "tablist");
 
         const buttons = Array.from(strip.querySelectorAll("[data-week-day-button]"));
+        panel.id = "dashboard-week-preview";
+        panel.setAttribute("role", "tabpanel");
+        buttons.forEach((button, index) => {
+            button.setAttribute("role", "tab");
+            button.id = `dashboard-week-tab-${index}`;
+            button.setAttribute("aria-controls", panel.id);
+        });
         const title = document.getElementById("weekSelectedTitle");
         const summary = document.getElementById("weekSelectedSummary");
         const link = document.getElementById("weekOpenDayLink");
@@ -470,9 +513,11 @@
                 const active = candidate === button;
                 candidate.classList.toggle("is-active", active);
                 candidate.setAttribute("aria-selected", active ? "true" : "false");
+                candidate.tabIndex = active ? 0 : -1;
             });
 
             panel.classList.add("is-updating");
+            panel.setAttribute("aria-labelledby", button.id);
             const tasks = parseItems(button, "[data-week-day-tasks]");
             const workouts = parseItems(button, "[data-week-day-workouts]");
             const dateLabel = button.dataset.dayLabel || "Selected day";
@@ -488,6 +533,7 @@
                 setList(taskList, tasks, "No tasks selected");
                 setList(workoutList, workouts, "No workouts selected");
                 panel.classList.remove("is-updating");
+                strip.closest(".cd-week-panel").dataset.weekEnhanced = "true";
             }, prefersReducedMotion() ? 0 : 140);
 
             if (scrollIntoView) {
@@ -497,11 +543,25 @@
 
         buttons.forEach((button) => {
             button.addEventListener("click", (event) => {
+                event.preventDefault();
                 if (dragged) {
-                    event.preventDefault();
                     return;
                 }
                 activate(button, false);
+            });
+            button.addEventListener("keydown", (event) => {
+                if (event.key === " ") {
+                    event.preventDefault();
+                    button.click();
+                    return;
+                }
+                if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                event.preventDefault();
+                const index = buttons.indexOf(button);
+                const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1
+                    : (index + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+                activate(buttons[next], true);
+                buttons[next].focus();
             });
         });
 
@@ -518,7 +578,7 @@
             }
         });
 
-        activate(buttons.find((button) => button.getAttribute("aria-selected") === "true") || buttons[0], false);
+        activate(buttons.find((button) => button.dataset.daySelected === "true") || buttons[0], false);
     }
 
     function initTrainerTabs() {

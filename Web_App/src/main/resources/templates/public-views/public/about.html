@@ -22,19 +22,14 @@
                     </div>
                 </div>
 
-                <div class="guest-about__system" aria-hidden="true">
-                    <span class="guest-about__orbit guest-about__orbit--outer"></span>
-                    <span class="guest-about__orbit guest-about__orbit--inner"></span>
-                    <span class="guest-about__signal guest-about__signal--one"></span>
-                    <span class="guest-about__signal guest-about__signal--two"></span>
-                    <span class="guest-about__signal guest-about__signal--three"></span>
-                    <div class="guest-about__mark">
-                        <span class="guest-about__mark-half guest-about__mark-half--client"></span>
-                        <span class="guest-about__mark-half guest-about__mark-half--trainer"></span>
-                        <span class="guest-about__mark-person guest-about__mark-person--client"></span>
-                        <span class="guest-about__mark-person guest-about__mark-person--trainer"></span>
-                    </div>
-                </div>
+                <figure class="guest-about__coaching">
+                    <img th:src="@{/img/home/role-trainer.webp}" width="1440" height="901" alt="">
+                    <figcaption>
+                        <span th:text="#{v2.preview.label}">Illustrative preview</span>
+                        <strong th:text="#{ui.01537}">Build the connection</strong>
+                        <p th:text="#{ui.01538}">Clients can compare verified trainers before beginning one active coaching relationship.</p>
+                    </figcaption>
+                </figure>
             </div>
         </section>
 

@@ -1,4 +1,5 @@
 /* Shared UI foundations */
+@import "./design-tokens.css";
 @import "./interaction-tokens.css";
 @import "./shell-layout.css";
 @import "./accessibility.css";

@@ -38,26 +38,11 @@ public class ClientAssessmentService {
     public ClientAssessment saveAssessment(Long trainerId, Long clientId, 
                                           Integer reliabilityScore, Integer communicationScore, 
                                           String privateNotes) {
-        // Verify trainer
-        User trainer = userRepository.findById(trainerId)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
-        if (trainer.getRole() != Role.TRAINER) {
-            throw new IllegalArgumentException("User is not a trainer");
-        }
-
-        // Verify client exists
-        User client = userRepository.findById(clientId)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
-        if (client.getRole() != Role.CLIENT) {
-            throw new IllegalArgumentException("User is not a client");
-        }
-
-        // Verify trainer has/had a relationship with this client
-        boolean hasRelationship = linkRepository.existsByTrainerUserIdAndClientUserIdAndStatus(trainerId, clientId, TrainerClientLinkStatus.ACTIVE)
-                || linkRepository.existsByTrainerUserIdAndClientUserIdAndStatus(trainerId, clientId, TrainerClientLinkStatus.ENDED);
-
-        if (!hasRelationship) {
-            throw new AccessDeniedException("Trainer must have an active or past relationship with client");
+        requireAssessmentAccess(trainerId, clientId);
+        validateScore(reliabilityScore);
+        validateScore(communicationScore);
+        if (privateNotes != null && privateNotes.length() > 10000) {
+            throw new IllegalArgumentException("Assessment notes must not exceed 10000 characters");
         }
 
         // Find or create assessment
@@ -75,6 +60,7 @@ public class ClientAssessmentService {
      * Get assessment for a specific client (trainer-only).
      */
     public Optional<ClientAssessment> getAssessment(Long trainerId, Long clientId) {
+        requireAssessmentAccess(trainerId, clientId);
         return assessmentRepository.findByTrainerIdAndClientId(trainerId, clientId);
     }
 
@@ -82,6 +68,7 @@ public class ClientAssessmentService {
      * Get all assessments by a trainer.
      */
     public List<ClientAssessment> getAllAssessmentsByTrainer(Long trainerId) {
+        requireVerifiedTrainer(trainerId);
         return assessmentRepository.findByTrainerIdOrderByUpdatedAtDesc(trainerId);
     }
 
@@ -90,9 +77,38 @@ public class ClientAssessmentService {
      */
     @Transactional
     public void deleteAssessment(Long trainerId, Long clientId) {
+        requireAssessmentAccess(trainerId, clientId);
         ClientAssessment assessment = assessmentRepository.findByTrainerIdAndClientId(trainerId, clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Assessment not found"));
 
         assessmentRepository.delete(assessment);
+    }
+
+    private void requireVerifiedTrainer(Long trainerId) {
+        User trainer = userRepository.findById(trainerId)
+                .orElseThrow(() -> new AccessDeniedException("Trainer access required"));
+        if (trainer.getRole() != Role.TRAINER || !trainer.isTrainerVerified() || !trainer.isEnabled()) {
+            throw new AccessDeniedException("Verified trainer access required");
+        }
+    }
+
+    private void requireAssessmentAccess(Long trainerId, Long clientId) {
+        requireVerifiedTrainer(trainerId);
+        boolean coached = linkRepository.findByClientIdOrderByUpdatedAtDesc(clientId).stream()
+                .anyMatch(link -> trainerId.equals(link.getTrainerUserId()) &&
+                        (link.getStatus() == TrainerClientLinkStatus.ACTIVE ||
+                         (link.getActivatedAt() != null &&
+                          (link.getStatus() == TrainerClientLinkStatus.PAUSED || link.getStatus() == TrainerClientLinkStatus.ENDED))));
+        // Withdrawn or rejected requests are ENDED too, but never became coaching relationships.
+        if (!coached) throw new AccessDeniedException("A current or previous coaching relationship is required");
+        User client = userRepository.findById(clientId)
+                .orElseThrow(() -> new AccessDeniedException("Client access denied"));
+        if (client.getRole() != Role.CLIENT) throw new AccessDeniedException("Client access denied");
+    }
+
+    private void validateScore(Integer score) {
+        if (score != null && (score < 1 || score > 5)) {
+            throw new IllegalArgumentException("Assessment scores must be between 1 and 5");
+        }
     }
 }

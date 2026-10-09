@@ -17,5 +17,15 @@ public interface GymMemberSubscriptionRepository extends JpaRepository<GymMember
     
     long countByProductIdAndStatus(Long productId, SubscriptionStatus status);
     
+    long countByGymIdAndStatus(Long gymId, SubscriptionStatus status);
+
+    interface ProductSubscriberCount {
+        Long getProductId();
+        long getSubscribers();
+    }
+
+    @org.springframework.data.jpa.repository.Query("select s.productId as productId, count(s) as subscribers from GymMemberSubscription s where s.gymId = :gymId and s.status = :status and s.productId in :productIds group by s.productId")
+    List<ProductSubscriberCount> countForProducts(@org.springframework.data.repository.query.Param("gymId") Long gymId, @org.springframework.data.repository.query.Param("status") SubscriptionStatus status, @org.springframework.data.repository.query.Param("productIds") List<Long> productIds);
+
     List<GymMemberSubscription> findByGymIdAndStatus(Long gymId, SubscriptionStatus status);
 }

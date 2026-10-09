@@ -29,6 +29,7 @@ data class HomeSummary(
     val todayCompleted: Int,
     val actions: List<String>,
     val notifications: List<MobileNotification>,
+    val relationshipCount: Int? = null,
 )
 
 data class DayItem(
@@ -49,7 +50,7 @@ data class TrainingLog(
     val id: String,
     val date: String,
     val comments: String,
-    val durationMinutes: Int,
+    val durationMinutes: Int?,
 )
 
 data class MobileNotification(
@@ -69,4 +70,10 @@ data class RoleItem(
     val title: String,
     val subtitle: String,
     val status: String,
+)
+
+data class MobileClientDetail(
+    val name: String,
+    val email: String,
+    val logs: List<TrainingLog>,
 )

@@ -1,13 +1,27 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.00233}, null, ~{::content}, null)}">
+          th:replace="~{base :: layout(#{ui.plan.library}, null, ~{::content}, null)}">
 
-    <div th:fragment="content" class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
+    <div th:fragment="content" class="client-workspace-v2 assigned-plan-v2 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <nav class="client-workspace-nav" th:attr="aria-label=#{ui.00233}"><a th:href="@{/client/assigned-plan}" aria-current="page" th:text="#{ui.plan.library}">Coach programme library</a><a th:href="@{/client/plan}" th:text="#{ui.plan.feedback}">Workout feedback</a><a th:href="@{/calendar}" th:text="#{ui.01297}">Calendar</a><a th:href="@{/client/trainers}" th:text="#{ui.00245}">My Trainer</a></nav>
+        <div class="detail-card rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
             <div>
-                <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00233}">Assigned Plan</h1>
+                <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.plan.library}">Coach programme library</h1>
                 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00234}">Workouts and programmes shared by your active trainer.</p>
             </div>
+            <p class="plan-notice" th:text="#{ui.plan.referenceHint}">These are shared coaching prescriptions. Follow your planned calendar session to record sets and progress.</p>
 
+            <section th:unless="${#lists.isEmpty(assignedExercises)}" class="assigned-exercises-section" aria-labelledby="assigned-exercises-title">
+                <h2 id="assigned-exercises-title" class="detail-section-title" th:text="#{ui.02329}">Exercises</h2>
+                <div class="library-exercise-grid">
+                    <article th:each="assigned : ${assignedExercises}" class="detail-card">
+                        <h3 class="detail-card-title" dir="auto" th:text="${assigned.exercise.name}"></h3>
+                        <p class="plan-coaching-note" th:if="${!#strings.isEmpty(assigned.exercise.description)}" dir="auto" th:text="${assigned.exercise.description}"></p>
+                        <dl class="portfolio-metadata"><div><dt th:text="#{ui.02684}"></dt><dd dir="auto" th:text="${assigned.exercise.primaryMuscles}"></dd></div><div><dt th:text="#{ui.02065}"></dt><dd dir="auto" th:text="${assigned.exercise.equipment}"></dd></div><div><dt th:text="#{ui.02685}"></dt><dd th:switch="${#strings.toUpperCase(assigned.exercise.difficulty)}"><span th:case="'BEGINNER'" th:text="#{ui.02668}"></span><span th:case="'INTERMEDIATE'" th:text="#{ui.02669}"></span><span th:case="'ADVANCED'" th:text="#{ui.02670}"></span><span th:case="'*'" dir="auto" th:text="${assigned.exercise.difficulty}"></span></dd></div></dl>
+                        <a th:if="${!#strings.isEmpty(assigned.videoUrl)}" th:href="${assigned.videoUrl}" class="detail-btn-secondary" target="_blank" rel="noopener noreferrer" th:text="#{ui.02699}"></a>
+                        <h4 th:unless="${#lists.isEmpty(assigned.notes)}" th:text="#{ui.00239}"></h4><ul class="assigned-exercise-notes"><li th:each="note : ${assigned.notes}" dir="auto" th:text="${note.noteText}"></li></ul>
+                    </article>
+                </div>
+            </section>
             <div class="mt-8">
                 <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00235}">Workouts</h2>
 
@@ -15,8 +29,8 @@
 
                 <div th:if="${!#lists.isEmpty(assignedWorkouts)}" class="mt-3 space-y-4">
                     <div th:each="aw : ${assignedWorkouts}" class="rounded-xl border border-white/10 bg-white/5 p-5">
-                        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${aw.workout.title}">Workout title</div>
-                        <div class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="${aw.workout.summary}">Summary</div>
+                        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" dir="auto" th:text="${aw.workout.title}">Workout title</div>
+                        <div class="mt-1 text-sm text-slate-600 dark:text-slate-300 plan-coaching-note" dir="auto" th:text="${aw.workout.summary}">Summary</div>
 
                         <div class="mt-4">
                             <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00237}">Items</div>
@@ -24,9 +38,10 @@
                             <div th:if="${!#lists.isEmpty(aw.items)}" class="mt-2 space-y-2">
                                 <div th:each="it : ${aw.items}" class="rounded-xl border border-white/10 bg-white/5 p-3">
                                     <div class="text-sm font-semibold text-slate-900 dark:text-slate-100"
-                                         th:text="${aw.exercisesById[it.exerciseId] != null ? aw.exercisesById[it.exerciseId].name : ('Exercise #' + it.exerciseId)}">Exercise</div>
+                                         dir="auto" th:text="${aw.exercisesById[it.exerciseId] != null ? aw.exercisesById[it.exerciseId].name : #messages.msg('ui.01682')}">Exercise</div>
                                     <div class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                                         th:text="${it.sets + ' sets × ' + it.reps + ' reps' + (it.rpe != null ? (', RPE ' + it.rpe) : '') + ', rest ' + it.restSeconds + 's'}">Details</div>
+                                         th:text="#{ui.plan.setsReps(${it.sets},${it.reps})}">Details</div>
+                                    <p class="plan-exercise-prescription"><span th:if="${it.rpe != null}" th:text="#{ui.library.rpeValue(${it.rpe})}"></span><span th:text="#{ui.plan.rest(${it.restSeconds})}"></span></p>
                                 </div>
                             </div>
                         </div>
@@ -35,7 +50,7 @@
                             <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00239}">Coaching notes</div>
                             <div th:if="${#lists.isEmpty(aw.notes)}" class="mt-2 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00240}">No notes.</div>
                             <ul th:if="${!#lists.isEmpty(aw.notes)}" class="mt-2 space-y-2">
-                                <li th:each="n : ${aw.notes}" class="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-900 dark:text-slate-100" th:text="${n.noteText}">Note</li>
+                                <li th:each="n : ${aw.notes}" class="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-900 dark:text-slate-100 plan-coaching-note" dir="auto" th:text="${n.noteText}">Note</li>
                             </ul>
                         </div>
                     </div>
@@ -49,17 +64,17 @@
 
                 <div th:if="${!#lists.isEmpty(assignedProgrammes)}" class="mt-3 space-y-4">
                     <div th:each="ap : ${assignedProgrammes}" class="rounded-xl border border-white/10 bg-white/5 p-5">
-                        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${ap.programme.title}">Programme title</div>
-                        <div class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="${ap.programme.weeks != null ? (ap.programme.weeks + ' weeks') : ''}">Weeks</div>
+                        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" dir="auto" th:text="${ap.programme.title}">Programme title</div>
+                        <div class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="${ap.programme.weeks != null} ? #{ui.plan.weeks(${ap.programme.weeks})} : #{ui.library.programmeDurationOpen}">Weeks</div>
 
                         <div class="mt-4">
                             <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00243}">Days</div>
                             <div th:if="${#lists.isEmpty(ap.days)}" class="mt-2 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00244}">No days.</div>
                             <div th:if="${!#lists.isEmpty(ap.days)}" class="mt-2 space-y-2">
                                 <div th:each="d : ${ap.days}" class="rounded-xl border border-white/10 bg-white/5 p-3">
-                                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${d.dayOfWeek}">Day</div>
+                                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" dir="auto" th:text="${d.dayOfWeek}">Day</div>
                                     <div class="mt-1 text-sm text-slate-600 dark:text-slate-300"
-                                         th:text="${ap.workoutsById[d.workoutId] != null ? ap.workoutsById[d.workoutId].title : ('Workout #' + d.workoutId)}">Workout</div>
+                                         dir="auto" th:text="${ap.workoutsById[d.workoutId] != null ? ap.workoutsById[d.workoutId].title : #messages.msg('ui.02748')}">Workout</div>
                                 </div>
                             </div>
                         </div>
@@ -68,7 +83,7 @@
                             <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00239}">Coaching notes</div>
                             <div th:if="${#lists.isEmpty(ap.notes)}" class="mt-2 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00240}">No notes.</div>
                             <ul th:if="${!#lists.isEmpty(ap.notes)}" class="mt-2 space-y-2">
-                                <li th:each="n : ${ap.notes}" class="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-900 dark:text-slate-100" th:text="${n.noteText}">Note</li>
+                                <li th:each="n : ${ap.notes}" class="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-900 dark:text-slate-100 plan-coaching-note" dir="auto" th:text="${n.noteText}">Note</li>
                             </ul>
                         </div>
                     </div>

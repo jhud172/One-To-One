@@ -25,7 +25,7 @@
                           ringTheme=${navSettings != null and navSettings.profileRingStyle != null ? #strings.toLowerCase(navSettings.profileRingStyle) : 'neon_dual'},
                           cardBackTheme=${navSettings != null and navSettings.profileCardBackStyle != null ? #strings.toLowerCase(navSettings.profileCardBackStyle) : 'glass'}"
                  th:attr="data-profile-name-color=${navSettings != null ? navSettings.profileTextColor : null},
-                          data-profile-copy-color=${navSettings != null ? navSettings.profileBioTextColor : null}"
+                          data-profile-copy-color=${navSettings != null ? navSettings.profileBioTextColor : null},aria-label=#{ui.03017}"
                  aria-label="User profile card">
             <div class="floating-profile-card__shell"
                  th:classappend="${' profile-card-back-theme--' + cardBackTheme}">

@@ -1,110 +1,18 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02848}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="styles"></div>
-
-    <div th:fragment="content">
-        <main class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8" role="main" aria-label="Workout Templates" th:attr="aria-label=#{ui.02848}">
-
-            <div class="mb-6 flex items-center justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100" th:text="#{ui.02848}">Workout Templates</h1>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400" th:text="#{ui.02849}">Manage your custom workout session layouts</p>
-                </div>
-                <a href="/workout-templates/builder"
-                   class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    <th:block th:text="#{ui.02850}">New Template</th:block>
-                </a>
-            </div>
-
-            <!-- My Templates -->
-            <section class="mb-8">
-                <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02851}">My Templates</h2>
-                <div th:if="${#lists.isEmpty(userTemplates)}"
-                     class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-900">
-                    <p class="text-sm text-slate-500 dark:text-slate-400"><th:block th:text="#{ui.02852}">No custom templates yet.</th:block> <a href="/workout-templates/builder" class="font-semibold text-emerald-600 hover:underline" th:text="#{ui.02853}">Create your first template</a></p>
-                </div>
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div th:each="tpl : ${userTemplates}"
-                         class="group relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="min-w-0 flex-1">
-                                <h3 class="truncate text-base font-semibold text-slate-900 dark:text-slate-100" th:text="${tpl.name}">Template Name</h3>
-                                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400"
-                                   th:text="${tpl.layoutType != null ? tpl.layoutType.name() : 'FLOW'}">FLOW</p>
-                            </div>
-                            <span th:if="${preferredTemplate != null && tpl.id == preferredTemplate.id}"
-                                  class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                                <th:block th:text="#{ui.02854}">Preferred</th:block>
-                            </span>
-                        </div>
-                        <div class="mt-4 flex items-center gap-2">
-                            <a th:href="@{'/workout-templates/builder/' + ${tpl.id}}"
-                               class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900" th:text="#{ui.00138}">
-                                Edit
-                            </a>
-                            <button type="button"
-                                    th:attr="data-template-id=${tpl.id}"
-                                    class="set-preferred-btn flex-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-center text-xs font-semibold text-emerald-800 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300"
-                                    th:disabled="${preferredTemplate != null && tpl.id == preferredTemplate.id}" th:text="#{ui.02855}">
-                                Set as Preferred
-                            </button>
-                            <form th:action="@{'/workout-templates/' + ${tpl.id} + '/delete'}" method="post"
-                                  data-confirm="Delete this template?">
-                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                <button type="submit"
-                                        class="rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300" th:text="#{ui.00139}">
-                                    Delete
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Global Templates -->
-            <section th:if="${!#lists.isEmpty(globalTemplates)}">
-                <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02856}">Built-in Templates</h2>
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div th:each="tpl : ${globalTemplates}"
-                         class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="min-w-0 flex-1">
-                                <h3 class="truncate text-base font-semibold text-slate-900 dark:text-slate-100" th:text="${tpl.name}">Template Name</h3>
-                                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400"
-                                   th:text="${tpl.layoutType != null ? tpl.layoutType.name() : 'FLOW'}">FLOW</p>
-                            </div>
-                            <span th:if="${preferredTemplate != null && tpl.id == preferredTemplate.id}"
-                                  class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                                <th:block th:text="#{ui.02854}">Preferred</th:block>
-                            </span>
-                        </div>
-                        <div class="mt-4">
-                            <button type="button"
-                                    th:attr="data-template-id=${tpl.id}"
-                                    class="set-preferred-btn w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-300"
-                                    th:disabled="${preferredTemplate != null && tpl.id == preferredTemplate.id}" th:text="#{ui.02855}">
-                                Set as Preferred
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <div th:fragment="pageScripts">
-        <input type="hidden" th:if="${_csrf != null}" id="csrf-token" th:value="${_csrf.token}" th:attr="data-csrf-header=${'X-CSRF-TOKEN'}"/>
-        <script th:src="@{/js/workouts/workout-templates-index-page.js}"></script>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02848}, null, ~{::content}, null)}">
+<div th:fragment="content" class="display-studio">
+    <header class="display-studio__header"><div><p class="display-studio__eyebrow" th:text="#{ui.02832}">Layout</p><h1 th:text="#{ui.02848}">Workout templates</h1><p th:text="#{ui.display.context}">Choose the appearance of your workout player. These layouts do not change your training plan.</p></div><a class="training-launch__action training-launch__action--primary" href="/workout-templates/builder" th:text="#{ui.02850}">New template</a></header>
+    <p th:if="${displayFeedback != null}" class="display-studio__notice" role="status" th:text="${#messages.msg(displayFeedback)}"></p>
+    <p th:if="${displayError != null}" class="display-studio__notice display-studio__notice--error" role="alert" th:text="${#messages.msg(displayError)}"></p>
+    <section aria-labelledby="own-layouts"><h2 id="own-layouts" th:text="#{ui.02851}">My templates</h2><p class="display-studio__empty" th:if="${#lists.isEmpty(userTemplates)}"><span th:text="#{ui.02852}">No custom templates yet.</span> <a href="/workout-templates/builder" th:text="#{ui.02853}">Create your first template</a></p><div class="display-studio__cards"><th:block th:each="tpl : ${userTemplates}"><article th:replace="~{trainer-views/workout-templates/index :: card(${tpl}, true)}"></article></th:block></div></section>
+    <section aria-labelledby="built-in-layouts" th:if="${!#lists.isEmpty(globalTemplates)}"><h2 id="built-in-layouts" th:text="#{ui.02856}">Built-in templates</h2><div class="display-studio__cards"><th:block th:each="tpl : ${globalTemplates}"><article th:replace="~{trainer-views/workout-templates/index :: card(${tpl}, false)}"></article></th:block></div></section>
 </div>
-
+<article th:fragment="card(tpl, own)" class="display-studio__card" th:attr="data-template-id=${tpl.id}">
+    <div class="display-studio__card-heading"><h3><bdi th:text="${tpl.name}">Layout</bdi></h3><span class="display-studio__preferred" th:if="${preferredTemplate != null and tpl.id == preferredTemplate.id}" th:text="#{ui.02854}">Preferred</span></div>
+    <th:block th:replace="~{fragments/workout-display-preview :: preview(${templatePreviews.get(tpl.id)})}"></th:block>
+    <div class="display-studio__actions"><a class="training-launch__action" th:if="${own}" th:href="@{/workout-templates/builder/{id}(id=${tpl.id})}" th:attr="aria-label=#{ui.training.actionFor(#{ui.00138},${tpl.name})}" th:text="#{ui.00138}">Edit</a>
+        <a class="training-launch__action" th:href="@{/workout-templates/builder(copy=${tpl.id})}" th:attr="aria-label=#{ui.training.actionFor(#{ui.display.copy},${tpl.name})}" th:text="#{ui.display.copy}">Create a copy</a>
+        <form method="post" th:action="@{/workout-templates/{id}/prefer(id=${tpl.id})}"><button class="training-launch__action training-launch__action--primary" type="submit" th:disabled="${preferredTemplate != null and tpl.id == preferredTemplate.id}" th:attr="aria-label=#{ui.training.actionFor(#{ui.02855},${tpl.name})}" th:text="#{ui.02855}">Set as preferred</button></form>
+        <form th:if="${own}" method="post" th:action="@{/workout-templates/{id}/delete(id=${tpl.id})}" th:attr="data-confirm=#{ui.02120}"><button class="training-launch__action" type="submit" th:attr="aria-label=#{ui.training.actionFor(#{ui.00139},${tpl.name})}" th:text="#{ui.00139}">Delete</button></form>
+    </div>
+</article>
 </th:block>

@@ -17,6 +17,7 @@ import java.util.List;
 public class HealthRecordForm {
     private Long id;
     private User user;
+    @NotNull
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime baselineDate;
 
@@ -60,6 +61,9 @@ public class HealthRecordForm {
     private Double waistHeightRatio;
 
     @NotBlank(message = "{validation.healthRecord.activityLevel}")
+    @Size(max = 255)
+    @Pattern(regexp = "Sedentary|Lightly Active|Moderately Active|Very Active", message = "{validation.healthRecord.activityLevel}")
     private String activityLevel;
+    @Size(max = 50)
     private List<Long> physicalConditions = new ArrayList<>();
 }

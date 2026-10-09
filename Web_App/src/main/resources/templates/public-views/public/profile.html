@@ -38,7 +38,9 @@
                            class="guest-action guest-action--secondary" th:text="#{ui.01569}">
                             View Reviews
                         </a>
-                        <a th:href="@{/signup}"
+                        <a th:if="${canReview == true}" th:href="@{/trainers/{id}/review(id=${trainer.id})}" class="guest-action guest-action--primary" th:text="#{ui.02225}">Leave a review</a>
+                        <a th:if="${signedInClient == true and canReview != true}" th:href="@{/trainers/{id}/profile(id=${trainer.id})}" class="guest-action guest-action--primary" th:text="#{ui.00567}">View profile</a>
+                        <a th:if="${signedInClient != true}" th:href="@{/signup}"
                            class="guest-action guest-action--primary" th:text="#{ui.01570}">
                             Start Training
                         </a>
@@ -105,7 +107,7 @@
         <section id="reviews" class="guest-profile__reviews" aria-labelledby="trainer-reviews-heading">
             <div class="guest-profile__rating-summary guest-panel" data-guest-reveal>
                 <h2 id="trainer-reviews-heading" th:text="#{ui.01571}">Rating Summary</h2>
-                <div th:if="${reviewCount > 0}" class="guest-profile__rating-value">
+                <div th:if="${reviewCount > 0}" class="guest-profile__rating-value" dir="ltr">
                     <div>
                         <span class="sr-only" th:text="#{ui.00558}">Rating</span>
                         <span th:text="${#numbers.formatDecimal(averageRating, 1, 1)}">4.5</span>
@@ -165,15 +167,15 @@
                                    th:text="${#temporals.format(review.createdAt, 'd MMM yyyy')}">15 Jan 2026</p>
 
                                 <div th:if="${review.tags != null && !review.tags.isEmpty()}" class="mt-2 flex flex-wrap gap-2">
-                                    <th:block th:each="tag : ${review.tags.split(',')}">
+                                    <th:block th:each="tag : ${review.displayTags}">
                                         <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
-                                              th:text="${tag.trim()}">Professional</span>
+                                              dir="auto" th:text="${tag.labelKey != null ? #messages.msg(tag.labelKey) : tag.value}">Professional</span>
                                     </th:block>
                                 </div>
 
                                 <p th:if="${review.comment != null && !review.comment.isEmpty()}"
                                    class="mt-3 text-sm text-slate-700 dark:text-slate-300"
-                                   th:text="${review.comment}">Great trainer!</p>
+                                   dir="auto" th:text="${review.comment}">Great trainer!</p>
                             </div>
                         </div>
                     </article>

@@ -1,0 +1,486 @@
+[
+  {
+    "path": "/pricing",
+    "name": "04-pricing",
+    "url": "http://localhost:8081/pricing",
+    "metrics": {
+      "brokenImages": [
+        null
+      ],
+      "headings": [
+        "Browse One To One",
+        "More insight. The same focused training journey.",
+        "Monthly flexibility or yearly value.",
+        "Three upgrades, one clear purpose.",
+        "Check the details or ask us first."
+      ],
+      "height": 720,
+      "overflow": false,
+      "unnamedButtons": 0,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/faq",
+    "name": "05-faq",
+    "url": "http://localhost:8081/faq",
+    "metrics": {
+      "brokenImages": [
+        null
+      ],
+      "headings": [
+        "Browse One To One",
+        "Questions, answered clearly.",
+        "Search common questions",
+        "Send the support team the details."
+      ],
+      "height": 720,
+      "overflow": false,
+      "unnamedButtons": 0,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/explore",
+    "name": "06-explore",
+    "url": "http://localhost:8081/explore",
+    "metrics": {
+      "brokenImages": [
+        null
+      ],
+      "headings": [
+        "Browse One To One",
+        "Verified trainer directory",
+        "Filters",
+        "2\n                            Verified trainers"
+      ],
+      "height": 720,
+      "overflow": false,
+      "unnamedButtons": 0,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/signup",
+    "name": "07-signup-choice",
+    "url": "http://localhost:8081/signup",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Choose your account type",
+        "Client",
+        "Trainer",
+        "Gym"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/signup/client",
+    "name": "08-signup-client",
+    "url": "http://localhost:8081/signup/client",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Create your client account",
+        "How should we identify you?",
+        "Secure your account"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/signup/trainer",
+    "name": "09-signup-trainer",
+    "url": "http://localhost:8081/signup/trainer",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Create your trainer account",
+        "Create your secure trainer login",
+        "Introduce your coaching practice",
+        "Connect your professional presence"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/signup/gym",
+    "name": "10-signup-gym",
+    "url": "http://localhost:8081/signup/gym",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Apply for your gym account",
+        "Tell us about your gym",
+        "Confirm where you operate",
+        "Protect the gym administrator account"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/signup",
+    "name": "07-signup-choice",
+    "url": "http://localhost:8081/signup",
+    "metrics": {
+      "brokenImages": [],
+      "headings": [
+        "Browse One To One",
+        "Choose your account type",
+        "Client",
+        "Trainer",
+        "Gym"
+      ],
+      "height": 720,
+      "overflow": false,
+      "unnamedButtons": 0,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/forgot-password",
+    "name": "11-forgot-password",
+    "url": "http://localhost:8081/forgot-password",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Reset your password"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/policies/terms",
+    "name": "12-terms",
+    "url": "http://localhost:8081/policies/terms",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Terms of Service",
+        "Awaiting review"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/support",
+    "name": "13-support",
+    "url": "http://localhost:8081/support",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Contact support",
+        "What can we help with?",
+        "Before you send"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/login",
+    "name": "14-login",
+    "url": "http://localhost:8081/login",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Welcome back"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/dashboard",
+    "name": "15-client-dashboard",
+    "url": "http://localhost:8081/dashboard",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Discover What Supports Your Goals",
+        "Your Coaching Relationship",
+        "Keep Long-Term Progress Visible",
+        "Support Without Leaving the Dashboard",
+        "Client dashboard",
+        "Your Week With Jordan Trainer",
+        "What should I do next?",
+        "Track Body",
+        "Track Schedule"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/calendar?view=month",
+    "name": "16-calendar-month",
+    "url": "http://localhost:8081/calendar?view=month",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Calendar month view",
+        "Deploy schedules",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/calendar?view=week",
+    "name": "17-calendar-week",
+    "url": "http://localhost:8081/calendar?view=week",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Calendar week view",
+        "Deploy schedules",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/profile",
+    "name": "18-client-profile",
+    "url": "http://localhost:8081/profile",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Avery",
+        "Profile Details",
+        "Health Conditions\n                            \n                                \n                                    \n                                \n                                Health conditions shape recovery, exercise intensity, and movement safety. We use them to tailor workouts and recommendations.",
+        "Options",
+        "Settings",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/goals",
+    "name": "19-goals",
+    "url": "http://localhost:8081/goals",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "My goals",
+        "Milestones to obtain",
+        "Week goals, month goals, and targets",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/workout-management",
+    "name": "20-workout-management",
+    "url": "http://localhost:8081/workout-management",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "One place for scheduled workouts, logs, and history",
+        "Workouts ready to launch now",
+        "Scheduled workouts over the next 3 weeks",
+        "Recently completed workout sessions",
+        "Personal log entries you can edit",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/inbox",
+    "name": "21-inbox",
+    "url": "http://localhost:8081/inbox",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Coaching inbox",
+        "Notifications",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/calendar/day/2026-10-01",
+    "name": "22-calendar-day",
+    "url": "http://localhost:8081/calendar/day/2026-10-01",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Thursday\n                         - 1st October 2026",
+        "Timed Focus",
+        "Daily Focus",
+        "Your Timeline for Today",
+        "Your Tasks for Today",
+        "Client premium training block",
+        "Your Workouts for Today",
+        "Day overview",
+        "Your Day Health"
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/dashboard",
+    "name": "26-client-dashboard-mobile",
+    "url": "http://localhost:8081/dashboard",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Discover What Supports Your Goals",
+        "Your Coaching Relationship",
+        "Keep Long-Term Progress Visible",
+        "Support Without Leaving the Dashboard",
+        "Client dashboard",
+        "Your Week With Jordan Trainer",
+        "What should I do next?"
+      ],
+      "height": 844,
+      "overflow": false,
+      "width": 390
+    }
+  },
+  {
+    "path": "/calendar?view=week",
+    "name": "27-calendar-week-mobile",
+    "url": "http://localhost:8081/calendar?view=week",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Calendar week view",
+        "Deploy schedules",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 844,
+      "overflow": false,
+      "width": 390
+    }
+  },
+  {
+    "path": "/client/trainers",
+    "name": "24-client-trainers",
+    "url": "http://localhost:8081/client/trainers",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "My Trainer",
+        "Find Trainer",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/chat",
+    "name": "25-charlie",
+    "url": "http://localhost:8081/chat",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Charlie — Pro Command Centre",
+        "Daily limit reached",
+        "Choose your shortcuts",
+        ""
+      ],
+      "height": 720,
+      "overflow": false,
+      "width": 1280
+    }
+  },
+  {
+    "path": "/",
+    "name": "28-home-mobile",
+    "url": "http://localhost:8081/",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Development mode is active",
+        "Find the right coach. Keep showing up.",
+        "A world built around you.",
+        "A reason to return every time you train.",
+        "Trust you can check.Progress you can keep.",
+        "Built around your goals,and the people behind them.",
+        "Start with one session. Stay for progress you can see."
+      ],
+      "height": 844,
+      "overflow": false,
+      "width": 390
+    }
+  },
+  {
+    "path": "/login",
+    "name": "29-login-mobile",
+    "url": "http://localhost:8081/login",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Welcome back"
+      ],
+      "height": 844,
+      "overflow": false,
+      "width": 390
+    }
+  },
+  {
+    "path": "/",
+    "name": "30-home-tablet",
+    "url": "http://localhost:8081/",
+    "metrics": {
+      "headings": [
+        "Browse One To One",
+        "Development mode is active",
+        "Find the right coach. Keep showing up.",
+        "A world built around you.",
+        "A reason to return every time you train.",
+        "Trust you can check.Progress you can keep.",
+        "Built around your goals,and the people behind them.",
+        "Start with one session. Stay for progress you can see."
+      ],
+      "height": 1024,
+      "overflow": false,
+      "width": 768
+    }
+  }
+]

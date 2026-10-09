@@ -69,7 +69,7 @@ public class OpenAiGateway implements AiGateway {
     @Override
     public ChatResponse chat(List<AiMessage> messages) {
         if (!isAvailable()) {
-            return new ChatResponse(DEFAULT_UNAVAILABLE_MESSAGE);
+            return new ChatResponse(DEFAULT_UNAVAILABLE_MESSAGE, false);
         }
 
         OkHttpClient requestClient = client.newBuilder()
@@ -88,7 +88,7 @@ public class OpenAiGateway implements AiGateway {
             try (Response response = requestClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     log.warn("OpenAI chat request failed with status {}", response.code());
-                    return new ChatResponse(DEFAULT_UNAVAILABLE_MESSAGE);
+                    return new ChatResponse(DEFAULT_UNAVAILABLE_MESSAGE, false);
                 }
 
                 String json = response.body() != null ? response.body().string() : "{}";
@@ -96,7 +96,7 @@ public class OpenAiGateway implements AiGateway {
             }
         } catch (IOException e) {
             log.warn("OpenAI chat request failed", e);
-            return new ChatResponse(DEFAULT_UNAVAILABLE_MESSAGE);
+            return new ChatResponse(DEFAULT_UNAVAILABLE_MESSAGE, false);
         }
     }
 
@@ -130,6 +130,7 @@ public class OpenAiGateway implements AiGateway {
         JsonNode root = mapper.readTree(json);
         JsonNode content = root.path("choices").path(0).path("message").path("content");
         String text = content.asText("");
-        return text.isBlank() ? DEFAULT_UNAVAILABLE_MESSAGE : text.trim();
+        if (text.isBlank()) throw new IOException("AI response contained no reply");
+        return text.trim();
     }
 }

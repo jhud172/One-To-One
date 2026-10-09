@@ -1,0 +1,84 @@
+.gym-operations-v2 { color: var(--v2-ink); }
+.gym-operations-v2 > div { background: var(--v2-surface); border: 1px solid var(--v2-border); border-radius: var(--v2-radius-panel); box-shadow: var(--v2-shadow-panel); }
+.gym-operations-v2 :is(h1, h2, h3, h4, label, .font-semibold) { color: var(--v2-ink); }
+.gym-operations-v2 :is(p, dt, time, th) { color: var(--v2-muted); }
+.gym-operations-v2 :is(input:not([type=hidden]):not([type=checkbox]), textarea, select) { min-width: 0; min-height: 44px; color: var(--v2-ink); background: var(--v2-surface); border-color: var(--v2-control-border); border-radius: var(--v2-radius-control); }
+.gym-operations-v2 :is(button, a) { min-height: 44px; }
+.gym-operations-v2 :is(a, button, input, textarea, select):focus-visible { outline: 2px solid var(--v2-focus); outline-offset: 3px; }
+.gym-operations-v2 :is(.bg-white\/5, .bg-slate-50, .bg-blue-50, .bg-gradient-to-br) { background: var(--v2-raised); border-color: var(--v2-border); }
+.gym-operations-v2 table { width: 100%; }
+.gym-operations-v2 table :is(th, td) { padding: 1rem; text-align: start; }
+.gym-operations-v2 tr { border-color: var(--v2-border); }
+.gym-operations-v2 td:last-child { min-width: 22rem; }
+.gym-operations-v2 .gym-feedback { padding: 1rem; border: 1px solid var(--v2-danger); border-radius: var(--v2-radius-control); color: var(--v2-danger); }
+.gym-price-preview { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.5rem 1rem; padding: 1rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-control); background: var(--v2-accent-soft); }
+.gym-price-preview[hidden] { display: none; }
+.gym-consent { display: flex; align-items: start; gap: 0.75rem; }
+.gym-consent input { margin-block-start: 0.4rem; accent-color: var(--v2-accent); }
+@media (max-width: 640px) { .gym-operations-v2 .flex.justify-between, .gym-operations-v2 .flex.justify-end { flex-wrap: wrap; } .gym-operations-v2 .p-6 { padding: 1.25rem; } .gym-operations-v2 .grid-cols-2 { grid-template-columns: minmax(0, 1fr); } }
+
+.gym-notes-editor { min-width: 18rem; }
+.gym-notes-editor summary { cursor: pointer; color: var(--v2-accent); min-height: 44px; padding-block: 0.6rem; }
+.gym-notes-editor form { display: grid; gap: 0.75rem; margin-block: 0.5rem; }
+.gym-notes-editor textarea { width: 100%; }
+.gym-review-notes { white-space: normal; overflow-wrap: anywhere; }
+
+.gym-roster-header { display: flex; justify-content: space-between; align-items: start; gap: 1.5rem; margin-block-end: 1.5rem; }
+.gym-roster-header h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 750; letter-spacing: -.035em; }
+.gym-roster-header p { max-width: 44rem; margin-block: .6rem 0; }
+.gym-roster-header nav { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; }
+.gym-roster-header nav a { display: inline-flex; align-items: center; color: var(--v2-accent); text-decoration: underline; }
+.gym-roster-panel { margin-block: 1.25rem; padding: 1.5rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-panel); background: var(--v2-surface); }
+.gym-roster-panel h2 { margin: 0 0 1rem; font-size: 1.25rem; font-weight: 700; }
+.gym-roster-filters { display: grid; grid-template-columns: minmax(14rem, 1.5fr) minmax(12rem, 1fr) auto auto auto; align-items: end; gap: .8rem; }
+.gym-roster-filters label:not(.gym-roster-check) { display: block; margin-block-end: .4rem; }
+.gym-roster-filters :is(input[type=search], select) { width: 100%; padding: .75rem; border: 1px solid var(--v2-control-border); }
+.gym-roster-check { display: flex; align-items: center; gap: .6rem; min-height: 48px; cursor: pointer; }
+.gym-roster-check input { width: 1.25rem; height: 1.25rem; accent-color: var(--v2-accent); }
+.gym-roster-v2 .btn { padding: .65rem 1rem; min-height: 48px; }
+.gym-roster-feedback { padding: 1rem; border-radius: var(--v2-radius-control); background: var(--v2-accent-soft); overflow-wrap: anywhere; }
+.gym-roster-empty { padding-block: 1.5rem; }
+.gym-roster-empty h3 { font-size: 1.15rem; font-weight: 700; }
+.gym-roster-list { display: grid; gap: 1rem; }
+.gym-roster-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 1fr); gap: 1rem 2rem; padding: 1.25rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-panel); background: var(--v2-raised); overflow-wrap: anywhere; }
+.gym-roster-card h3 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+.gym-roster-card header p { margin-block: .35rem; }
+.gym-roster-status { display: grid; gap: .75rem; margin: 0; }
+.gym-roster-status dt { font-size: .8rem; }
+.gym-roster-status dd { margin: .25rem 0 0; font-weight: 650; }
+.gym-roster-review { grid-column: 1 / -1; border-block-start: 1px solid var(--v2-border); padding-block-start: .75rem; }
+.gym-roster-review summary, .gym-create-account > summary { min-height: 44px; cursor: pointer; padding-block: .7rem; color: var(--v2-accent); font-weight: 650; }
+.gym-roster-review .gym-review-notes { white-space: pre-wrap; }
+.gym-roster-v2 .gym-notes-editor { min-width: 0; }
+.gym-roster-v2 .gym-notes-editor form { margin-inline: 0; }
+.gym-roster-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-block-start: 1.5rem; }
+.gym-roster-pagination p { margin-inline-end: auto; }
+.gym-create-account > form { margin-block-start: 1rem; }
+@media (max-width: 1100px) { .gym-roster-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .gym-roster-check { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .gym-roster-header { flex-direction: column; gap: .75rem; } .gym-roster-panel { padding: 1rem; } .gym-roster-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .gym-roster-filters > div { grid-column: 1 / -1; } .gym-roster-card { grid-template-columns: minmax(0, 1fr); padding: 1rem; } }
+
+.gym-products-v2 .btn { padding: .65rem 1rem; min-height: 48px; text-decoration: none; }
+.gym-products-v2 .btn--primary { background: var(--v2-accent); color: var(--v2-on-accent); border-color: var(--v2-accent); }
+.gym-products-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-block: 1.5rem; }
+.gym-products-metrics > div { padding: 1rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-panel); background: var(--v2-raised); }
+.gym-products-metrics dd { margin: .5rem 0 0; color: var(--v2-ink); font-size: 1.8rem; font-weight: 700; }
+.gym-products-filters { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(10rem, 1fr) auto auto; gap: .8rem; align-items: end; margin-block: 1rem; }
+.gym-products-filters label { display: block; margin-block-end: .4rem; }
+.gym-products-filters :is(input[type=search], select) { width: 100%; padding: .75rem; border: 1px solid var(--v2-control-border); }
+.gym-product-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.gym-product-card { padding: 1.25rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-panel); background: var(--v2-raised); min-width: 0; overflow-wrap: anywhere; }
+.gym-product-card > header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
+.gym-product-card h2 { margin: 0; }
+.gym-product-state { flex: 0 0 auto; padding: .35rem .6rem; border: 1px solid var(--v2-border); border-radius: var(--v2-radius-control); color: var(--v2-ink); font-size: .8rem; }
+.gym-product-description { white-space: pre-wrap; margin-block: 1rem; }
+.gym-product-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin-block: 1.25rem; }
+.gym-product-facts dt { font-size: .8rem; }
+.gym-product-facts dd { margin: .35rem 0 0; color: var(--v2-ink); font-weight: 650; }
+.gym-product-facts small { font-size: .7rem; color: var(--v2-muted); }
+.gym-product-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.gym-product-actions form { display: contents; }
+.gym-product-deactivation { margin-block-start: 1rem; border-block-start: 1px solid var(--v2-border); }
+.gym-product-deactivation summary { min-height: 44px; padding-block: .7rem; color: var(--v2-accent); font-weight: 650; cursor: pointer; }
+.gym-product-deactivation p { margin-block: .5rem 1rem; }
+@media (max-width: 900px) { .gym-products-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gym-product-list { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .gym-products-metrics { grid-template-columns: minmax(0, 1fr); } .gym-products-filters > div { grid-column: 1 / -1; } .gym-product-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

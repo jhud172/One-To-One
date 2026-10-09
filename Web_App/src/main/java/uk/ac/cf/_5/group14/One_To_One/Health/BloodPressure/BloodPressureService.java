@@ -15,12 +15,22 @@ public class BloodPressureService {
 
     private final BloodPressureReadingRepository repo;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private uk.ac.cf._5.group14.One_To_One.Users.UserRepository users;
+
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     public BloodPressureService(BloodPressureReadingRepository repo) {
         this.repo = repo;
     }
 
     @Transactional
     public BloodPressureReading save(BloodPressureReading reading) {
+        if (reading.getUser() == null || reading.getUser().getId() == null) throw new SecurityException("Reading owner required");
+        validateReading(reading);
+        lockOwner(reading.getUser());
+        reading.setId(null);
         if (reading.getReadingTime() == null && reading.getId() == null) {
             Optional<BloodPressureReading> existing = repo.findByUserAndReadingDateAndReadingTimeIsNull(
                     reading.getUser(), reading.getReadingDate());
@@ -34,10 +44,28 @@ public class BloodPressureService {
 
     @Transactional
     public BloodPressureReading update(Long id, BloodPressureReading updated, User currentUser) {
+        return updateReading(id, updated, currentUser, null, false);
+    }
+
+    @Transactional
+    public BloodPressureReading update(Long id, BloodPressureReading updated, User currentUser, String revision) {
+        return updateReading(id, updated, currentUser, revision, true);
+    }
+
+    private BloodPressureReading updateReading(Long id, BloodPressureReading updated, User currentUser, String revision, boolean checkRevision) {
+        lockOwner(currentUser);
         BloodPressureReading existing = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Reading not found"));
         if (!existing.getUser().getId().equals(currentUser.getId())) {
             throw new SecurityException("Access denied");
+        }
+        refreshReading(existing);
+        if (checkRevision && !revision(existing).equals(revision)) throw new StaleBloodPressureReadingException();
+        validateReading(updated);
+        if (updated.getReadingTime() == null) {
+            repo.findByUserAndReadingDateAndReadingTimeIsNull(currentUser, updated.getReadingDate())
+                    .filter(reading -> !reading.getId().equals(id))
+                    .ifPresent(reading -> { throw new IllegalStateException("Daily reading already exists"); });
         }
         existing.setReadingDate(updated.getReadingDate());
         existing.setReadingTime(updated.getReadingTime());
@@ -52,12 +80,57 @@ public class BloodPressureService {
 
     @Transactional
     public void delete(Long id, User currentUser) {
+        deleteReading(id, currentUser, null, false);
+    }
+
+    @Transactional
+    public void delete(Long id, User currentUser, String revision) {
+        deleteReading(id, currentUser, revision, true);
+    }
+
+    private void deleteReading(Long id, User currentUser, String revision, boolean checkRevision) {
+        lockOwner(currentUser);
         BloodPressureReading reading = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Reading not found"));
         if (!reading.getUser().getId().equals(currentUser.getId())) {
             throw new SecurityException("Access denied");
         }
+        refreshReading(reading);
+        if (checkRevision && !revision(reading).equals(revision)) throw new StaleBloodPressureReadingException();
         repo.delete(reading);
+    }
+
+    private void lockOwner(User user) {
+        if (user == null || user.getId() == null) throw new SecurityException("Reading owner required");
+        // Serialise untimed-reading checks, including API writes, on the existing owner row.
+        if (users != null) users.findByIdForUpdate(user.getId()).orElseThrow(() -> new SecurityException("Reading owner unavailable"));
+    }
+
+    private void refreshReading(BloodPressureReading reading) {
+        if (entityManager == null) return;
+        try { entityManager.refresh(reading, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE); }
+        catch (jakarta.persistence.EntityNotFoundException removed) { throw new IllegalArgumentException("Reading no longer exists", removed); }
+    }
+
+    public String revision(BloodPressureReading reading) {
+        try {
+            var bytes = new java.io.ByteArrayOutputStream();
+            try (var data = new java.io.DataOutputStream(bytes)) {
+                for (Object value : new Object[]{reading.getId(), reading.getReadingDate(), reading.getReadingTime(),
+                        reading.getSystolic(), reading.getDiastolic(), reading.getPulse(), reading.getArm(), reading.getPosition(), reading.getNotes()}) {
+                    var text = value == null ? new byte[0] : value.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    data.writeBoolean(value != null); data.writeInt(text.length); data.write(text);
+                }
+            }
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes.toByteArray()));
+        } catch (java.io.IOException | java.security.NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
+    }
+
+    public org.springframework.data.domain.Page<BloodPressureReading> history(User user, int page) {
+        if (user == null || user.getId() == null) throw new SecurityException("Reading owner required");
+        var result = repo.findHistory(user, org.springframework.data.domain.PageRequest.of(Math.max(0, Math.min(page, 9999)), 6));
+        if (result.getTotalElements() == 0) return org.springframework.data.domain.Page.empty(org.springframework.data.domain.PageRequest.of(0,6));
+        return result.getNumber() >= result.getTotalPages() ? repo.findHistory(user, org.springframework.data.domain.PageRequest.of(result.getTotalPages()-1,6)) : result;
     }
 
     public List<BloodPressureReading> getRecent(User user) {
@@ -65,7 +138,15 @@ public class BloodPressureService {
     }
 
     public List<BloodPressureReading> getRange(User user, LocalDate from, LocalDate to) {
+        if (from == null || to == null || from.isAfter(to)) throw new IllegalArgumentException("Invalid reading date range");
         return repo.findForRange(user, from, to);
+    }
+
+    private void validateReading(BloodPressureReading reading) {
+        if (reading.getReadingDate() == null || reading.getSystolic() == null || reading.getDiastolic() == null
+                || reading.getSystolic() < 60 || reading.getSystolic() > 250 || reading.getDiastolic() < 40 || reading.getDiastolic() > 150
+                || (reading.getPulse() != null && (reading.getPulse() < 30 || reading.getPulse() > 220))
+                || (reading.getNotes() != null && reading.getNotes().length() > 500)) throw new IllegalArgumentException("Invalid reading values");
     }
 
     public Optional<BloodPressureReading> findById(Long id) {

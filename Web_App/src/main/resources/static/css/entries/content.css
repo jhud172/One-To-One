@@ -6,5 +6,7 @@
 @import "../components/misc/vault.css";
 @import "../components/merch/store-page.css";
 @import "../components/chat/chat-page.css";
+@import "../components/chat/coach-workspace-v2.css";
+@import "../components/chat/inbox-v2.css";
 
 @tailwind components;

@@ -7,8 +7,8 @@ plugins {
 }
 
 group = 'uk.ac.cf.2025.group14'
-version = '0.0.1-SNAPSHOT'
-description = 'Group project for the One_To_One coaching platform.'
+version = '2.0.0-SNAPSHOT'
+description = 'One To One coaching platform — Version 2.0 preview.'
 
 java {
 	toolchain {
@@ -69,6 +69,10 @@ dependencies {
 	runtimeOnly 'com.h2database:h2'
 }
 
+tasks.named('bootJar') {
+	archiveFileName = 'one-to-one.jar'
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 	maxHeapSize = '1g'
@@ -85,7 +89,42 @@ compileTestJava {
 	options.compilerArgs << '-parameters'
 }
 
+tasks.named('processResources') {
+	// The watched marker belongs to its own classpath directory, outside copied resources.
+	exclude '.reloadtrigger'
+}
+
+def localPreviewControlDirectory = layout.buildDirectory.dir('local-preview-control')
+tasks.register('prepareLocalPreviewMarker') {
+	group = 'application'
+	description = 'Create the local preview reload marker without changing an existing marker.'
+	inputs.file('src/main/resources/.reloadtrigger')
+	outputs.file(localPreviewControlDirectory.map { it.file('.reloadtrigger') })
+	doLast {
+		def trigger = localPreviewControlDirectory.get().file('.reloadtrigger').asFile
+		if (!trigger.isFile()) {
+			trigger.parentFile.mkdirs()
+			trigger.bytes = file('src/main/resources/.reloadtrigger').bytes
+		}
+	}
+}
+
+tasks.register('reloadLocalPreview') {
+	group = 'application'
+	description = 'Compile classes/resources, then trigger one safe local DevTools reload.'
+	dependsOn tasks.named('classes'), tasks.named('prepareLocalPreviewMarker')
+	doLast {
+		def trigger = localPreviewControlDirectory.get().file('.reloadtrigger').asFile
+		if (!trigger.isFile() || !trigger.setLastModified(System.currentTimeMillis())) {
+			throw new GradleException('Local reload marker could not be touched after compilation.')
+		}
+		logger.lifecycle('Local preview reload requested after complete classes/resources output.')
+	}
+}
+
 tasks.named('bootRun') {
+	dependsOn tasks.named('prepareLocalPreviewMarker')
+	classpath += files(localPreviewControlDirectory)
 	doFirst {
 		def systemProfile = System.getProperty('spring.profiles.active')
 		def environmentProfile = System.getenv('SPRING_PROFILES_ACTIVE')

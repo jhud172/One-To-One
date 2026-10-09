@@ -1,16 +1,16 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(#{ui.01437}, null, ~{::content}, ~{::pageScripts})}">
 
-    <div th:fragment="content" class="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+    <div th:fragment="content" class="merch-workspace-v2 merch-checkout-v2 mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
 
         <div class="mb-6 flex items-center gap-3">
-            <a th:href="@{/merch}" class="text-neon-cyan text-sm hover:underline" th:text="#{ui.02019}">&larr; Back to Shop</a>
+            <a th:href="${shopReturnUrl ?: '/merch'}" class="text-neon-cyan text-sm hover:underline" th:text="#{ui.02019}">&larr; Back to Shop</a>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[1.45fr,0.95fr]">
             <section class="card-neon card--cyan p-6">
                 <h1 class="text-2xl font-bold gradient-text"
-                    th:text="${paymentSimulationMode} ? 'Demo checkout' : 'Secure checkout'">Checkout</h1>
+                    th:text="${paymentSimulationMode} ? #{ui.merch.demoCheckout} : #{ui.merch.secureCheckout}">Checkout</h1>
                 <p class="mt-2 text-sm text-slate-400"
                    th:if="${!paymentSimulationMode}">
                     <th:block th:text="#{ui.02020}">We use</th:block>
@@ -23,13 +23,13 @@
                 </p>
 
                 <div th:if="${checkoutError}"
-                     class="mt-5 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300"
+                     role="alert" class="mt-5 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300"
                      th:text="${checkoutError}">Checkout error</div>
 
-                <div th:if="${paymentSimulationMode}"
-                     class="mt-5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
-                    <th:block th:text="#{ui.01404}">Demo mode is active because the Stripe secret key is set to</th:block> <code>false</code><th:block th:text="#{ui.02023}">. You can still test the full flow, save a demo card, and place a simulated order.</th:block>
-                </div>
+                <p th:if="${checkoutUncertain == true}" class="merch-feedback" role="status" th:text="#{ui.merch.uncertainCheckout}"></p>
+                <p th:if="${checkoutPriceChanged == true}" class="merch-feedback" role="alert" th:text="#{ui.merch.priceChanged}"></p>
+                <p th:if="${checkoutCardExpired == true}" class="merch-feedback" role="alert" th:text="#{ui.merch.cardExpired}"></p>
+                <p th:if="${checkoutQuoteInvalid == true}" class="merch-feedback" role="alert" th:text="#{ui.merch.quoteInvalid}"></p>
 
                 <div th:if="${!paymentSimulationMode and !paymentProviderConfigured}"
                      class="mt-5 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100" th:text="#{ui.02024}">
@@ -37,20 +37,22 @@
                 </div>
 
                 <div class="mt-6 rounded-2xl border border-slate-700/50 bg-slate-900/40 p-4">
-                    <div class="flex gap-4">
+                    <div class="flex gap-4 merch-checkout-product" data-merch-media="true">
                         <img th:if="${product.imageUrl != null}"
                              th:src="${product.imageUrl}"
                              th:alt="${product.name}"
                              class="h-24 w-24 rounded-xl object-cover" />
+                        <div th:attr="hidden=${product.imageUrl != null},aria-label=#{ui.merch.imageUnavailable}" role="img" class="merch-product-fallback img-placeholder">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z M4 16l5-5 4 4 3-3 4 4"/></svg>
+                        </div>
                         <div class="min-w-0">
-                            <h2 class="text-lg font-semibold text-white" th:text="${product.name}">Product</h2>
+                            <h2 class="text-lg font-semibold text-white" dir="auto" th:text="${product.name}">Product</h2>
                             <p th:if="${product.description != null}"
-                               class="mt-2 text-sm text-slate-400"
+                               class="mt-2 text-sm text-slate-400" dir="auto"
                                th:text="${product.description}">Description</p>
-                            <p class="mt-3 text-lg font-bold text-neon-cyan"
+                            <p class="mt-3 text-lg font-bold text-neon-cyan" dir="ltr"
                                th:text="'£' + ${#numbers.formatDecimal(product.price, 1, 2)}">£0.00</p>
-                            <p class="mt-1 text-xs text-slate-500"
-                               th:text="${product.stockQuantity} + ' in stock'">0 in stock</p>
+                            <p class="mt-1 text-xs text-slate-500"><span th:text="${checkoutRetry == true} ? #{ui.merch.reservedQuantity} : #{ui.00133}"></span><span aria-hidden="true">: </span><span dir="ltr" th:text="${product.stockQuantity}"></span></p>
                         </div>
                     </div>
                 </div>
@@ -58,16 +60,24 @@
                 <form th:action="@{/merch/{id}/buy(id=${product.id})}"
                       method="post"
                       class="mt-6 space-y-5"
+                      id="merch-checkout-form"
+                      th:attrappend="data-unit-minor=${product.price.movePointRight(2).longValueExact()}"
                       th:attr="data-simulated-payment-form=${paymentSimulationMode}">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
+                    <input type="hidden" name="checkoutKey" th:value="${checkoutKey}" />
+                    <input type="hidden" name="returnTo" th:value="${shopReturnUrl}" />
+                    <input type="hidden" name="expectedUnitMinor" th:value="${product.price.movePointRight(2).longValueExact()}" />
+
                     <div>
-                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.02025}">Quantity</label>
-                        <input type="number"
+                        <label for="merch-quantity" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.02025}">Quantity</label>
+                        <input id="merch-quantity" type="number"
                                name="quantity"
                                min="1"
                                th:max="${product.stockQuantity}"
-                               value="1"
+                               th:value="${checkoutQuantity ?: 1}"
+                               th:readonly="${checkoutRetry == true}"
+                               required
                                class="input-field w-28" />
                     </div>
 
@@ -83,14 +93,13 @@
                                 <input type="radio"
                                        name="selectedCardId"
                                        th:value="${card.id}"
-                                       th:checked="${stat.index == 0}"
+                                       th:checked="${checkoutDraft == true ? checkoutSelectedCardId == card.id : stat.index == 0}"
                                        class="mt-1 h-4 w-4" />
                                 <span class="flex-1 text-sm text-slate-300">
                                     <span class="block font-semibold text-white"
-                                          th:text="${card.brand + ' ending ' + card.lastFour}">Visa ending 4242</span>
+                                          th:text="#{ui.merch.cardEnding(${card.brand},${card.lastFour})}" dir="auto">Visa ending 4242</span>
                                     <span class="block text-xs text-slate-400"
-                                          th:text="${card.cardHolderName + ' · expires ' + card.expiryMonth + '/' + card.expiryYear + (card.default ? ' · default' : '')}">
-                                        Name · expires 01/2030
+                                          ><span dir="auto" th:text="${card.cardHolderName}"></span><span aria-hidden="true"> · </span><span th:text="#{ui.01415}"></span><span dir="ltr" th:text="${card.expiryMonth + '/' + card.expiryYear}"></span><span th:if="${card.default}" th:text="#{ui.00833}"></span>
                                     </span>
                                 </span>
                             </label>
@@ -100,7 +109,8 @@
                                        name="selectedCardId"
                                        value=""
                                        class="mt-1 h-4 w-4"
-                                       data-select-new-card="true" />
+                                       data-select-new-card="true"
+                                       th:checked="${checkoutDraft == true and checkoutSelectedCardId == null}" />
                                 <span class="flex-1 text-sm text-slate-300">
                                     <span class="block font-semibold text-white" th:text="#{ui.01409}">Use a different demo card</span>
                                     <span class="block text-xs text-slate-400" th:text="#{ui.02028}">Enter a one-off card below or save it to your profile.</span>
@@ -114,15 +124,16 @@
                         </div>
 
                         <div class="space-y-4"
-                             data-new-card-section="true"
-                             th:classappend="${savedCards != null and !#lists.isEmpty(savedCards)} ? ' hidden' : ''">
+                             data-new-card-section="true">
                             <input type="hidden" name="newProviderToken" value="" data-provider-token="true" />
                             <input type="hidden" name="newLastFour" value="" data-last-four="true" />
 
                             <div>
-                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01412}">Cardholder Name</label>
-                                <input type="text"
+                                <label for="merch-newCardHolderName" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01412}">Cardholder Name</label>
+                                <input id="merch-newCardHolderName" type="text"
                                        name="newCardHolderName"
+                                       dir="auto"
+                                       th:value="${checkoutHolder}"
                                        maxlength="200"
                                        class="input-field w-full"
                                        data-new-card-input="true"
@@ -131,8 +142,9 @@
 
                             <div class="grid gap-4 md:grid-cols-2">
                                 <div>
-                                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01413}">Card Number</label>
-                                    <input type="text"
+                                    <label for="merch-card-number" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01413}">Card Number</label>
+                                    <input id="merch-card-number" type="text"
+                                           dir="ltr"
                                            maxlength="23"
                                            class="input-field w-full"
                                            data-card-number-display="true"
@@ -141,9 +153,11 @@
                                            inputmode="numeric" />
                                 </div>
                                 <div>
-                                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01414}">Brand</label>
-                                    <input type="text"
+                                    <label for="merch-newBrand" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01414}">Brand</label>
+                                    <input id="merch-newBrand" type="text"
                                            name="newBrand"
+                                           dir="auto"
+                                       th:value="${checkoutBrand}"
                                            maxlength="50"
                                            class="input-field w-full"
                                            data-new-card-input="true"
@@ -153,9 +167,10 @@
 
                             <div class="grid gap-4 md:grid-cols-2">
                                 <div>
-                                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01415}">Expiry Month</label>
-                                    <input type="number"
+                                    <label for="merch-newExpiryMonth" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01415}">Expiry Month</label>
+                                    <input id="merch-newExpiryMonth" type="number"
                                            name="newExpiryMonth"
+                                       th:value="${checkoutMonth}"
                                            min="1"
                                            max="12"
                                            class="input-field w-full"
@@ -163,9 +178,10 @@
                                            placeholder="12" />
                                 </div>
                                 <div>
-                                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01416}">Expiry Year</label>
-                                    <input type="number"
+                                    <label for="merch-newExpiryYear" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400" th:text="#{ui.01416}">Expiry Year</label>
+                                    <input id="merch-newExpiryYear" type="number"
                                            name="newExpiryYear"
+                                       th:value="${checkoutYear}"
                                            min="2024"
                                            max="2100"
                                            class="input-field w-full"
@@ -175,7 +191,7 @@
                             </div>
 
                             <label class="flex items-start gap-3 rounded-xl border border-slate-700/50 bg-slate-950/30 p-3 text-sm text-slate-300">
-                                <input type="checkbox" name="saveCard" value="true" class="mt-1 h-4 w-4 rounded" />
+                                <input type="checkbox" name="saveCard" value="true" th:checked="${checkoutSaveCard == true}" class="mt-1 h-4 w-4 rounded" />
                                 <span th:text="#{ui.02029}">Save this demo card to my profile so it appears next time.</span>
                             </label>
                         </div>
@@ -199,10 +215,11 @@
                         <button type="submit"
                                 class="btn btn--primary"
                                 th:disabled="${!paymentProviderConfigured}"
-                                th:text="${paymentSimulationMode} ? 'Complete demo purchase' : 'Continue to secure checkout'">
+                                th:attr="data-provider-disabled=${!paymentProviderConfigured}"
+                                th:text="${checkoutPriceChanged == true} ? #{ui.merch.confirmUpdatedPrice} : (${paymentSimulationMode} ? #{ui.merch.completeDemo} : #{ui.merch.continueSecure})">
                             Continue
                         </button>
-                        <a th:href="@{/merch}" class="btn btn--secondary" th:text="#{ui.00125}">Cancel</a>
+                        <a th:href="${shopReturnUrl ?: '/merch'}" class="btn btn--secondary" th:text="#{ui.00125}">Cancel</a>
                     </div>
                 </form>
             </section>
@@ -212,13 +229,15 @@
                 <div class="mt-4 space-y-3 text-sm text-slate-300">
                     <div class="flex items-center justify-between">
                         <span th:text="#{ui.02037}">Item</span>
-                        <span class="font-semibold text-white" th:text="${product.name}">Product</span>
+                        <span class="font-semibold text-white" dir="auto" th:text="${product.name}">Product</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span th:text="#{ui.00132}">Price</span>
                         <span class="font-semibold text-white"
+                              dir="ltr"
                               th:text="'£' + ${#numbers.formatDecimal(product.price, 1, 2)}">£0.00</span>
                     </div>
+                    <div class="merch-total" id="merch-total-panel" th:attr="hidden=${checkoutInitialTotal == null}"><span th:text="#{ui.02216}"></span><output id="merch-order-total" dir="ltr" for="merch-quantity" aria-live="polite" th:text="${checkoutInitialTotal == null ? '—' : '£' + #numbers.formatDecimal(checkoutInitialTotal, 1, 2)}"></output></div>
                     <div class="rounded-xl border border-slate-700/50 bg-slate-900/30 p-3 text-xs text-slate-400"
                          th:if="${!paymentSimulationMode}">
                         <th:block th:text="#{ui.02038}">Orders stay in</th:block> <span class="font-semibold text-white" th:text="#{ui.02039}">pending payment</span> <th:block th:text="#{ui.02040}">until the provider confirms the charge.</th:block>
@@ -233,7 +252,9 @@
     </div>
 
     <th:block th:fragment="pageScripts">
-        <script th:src="@{/js/payments/simulated-payment-form.js(v='20260328a')}" defer></script>
+        <script th:src="@{/js/merch/merch-shop-page.js(v=${uiCssVersion})}" defer></script>
+        <script th:src="@{/js/payments/simulated-payment-form.js(v=${uiCssVersion})}" defer></script>
+        <script th:src="@{/js/merch/merch-checkout-page.js(v=${uiCssVersion})}" defer></script>
     </th:block>
 
 </th:block>

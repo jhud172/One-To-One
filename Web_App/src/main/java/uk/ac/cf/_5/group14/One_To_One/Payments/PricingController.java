@@ -52,7 +52,7 @@ public class PricingController {
                 new CheckoutPlanInfo(PlatformPlan.MONTHLY, "Monthly", "£12 / month", "Most flexible",
                         List.of("Premium dashboards", "Weekly insights", "Priority support")),
                 new CheckoutPlanInfo(PlatformPlan.YEARLY, "Yearly", "£108 / year", "Recommended",
-                        List.of("2 months free", "Premium dashboards", "Weekly insights", "Priority support"))
+                        List.of("Save £36 a year", "Premium dashboards", "Weekly insights", "Priority support"))
         ));
         model.addAttribute("paymentProviderConfigured", paymentProviderService.isConfigured());
         model.addAttribute("paymentSimulationMode", paymentProviderService.isSimulationMode());
@@ -68,6 +68,10 @@ public class PricingController {
 
     @GetMapping("/pricing/checkout")
     public String checkoutPage(@RequestParam("plan") PlatformPlan plan, Model model, RedirectAttributes redirectAttributes) {
+        if (plan != PlatformPlan.MONTHLY && plan != PlatformPlan.YEARLY) {
+            redirectAttributes.addFlashAttribute("pricingError", "Choose a monthly or yearly plan.");
+            return "redirect:/pricing";
+        }
         User user = authHelper.getAuthenticatedUser();
         if (user == null) {
             return "redirect:/login?next=/pricing/checkout?plan=" + plan.name();
@@ -86,7 +90,7 @@ public class PricingController {
 
         CheckoutPlanInfo planInfo = plan == PlatformPlan.YEARLY
                 ? new CheckoutPlanInfo(PlatformPlan.YEARLY, "Yearly", "£108 / year", "Recommended",
-                List.of("2 months free", "Premium dashboards", "Weekly insights", "Priority support"))
+                List.of("Save £36 a year", "Premium dashboards", "Weekly insights", "Priority support"))
                 : new CheckoutPlanInfo(PlatformPlan.MONTHLY, "Monthly", "£12 / month", "Most flexible",
                 List.of("Premium dashboards", "Weekly insights", "Priority support"));
 
@@ -110,6 +114,10 @@ public class PricingController {
                                 @RequestParam(value = "newExpiryYear", required = false) Short newExpiryYear,
                                 @RequestParam(value = "saveCard", defaultValue = "false") boolean saveCard,
                                 RedirectAttributes redirectAttributes) {
+        if (plan != PlatformPlan.MONTHLY && plan != PlatformPlan.YEARLY) {
+            redirectAttributes.addFlashAttribute("pricingError", "Choose a monthly or yearly plan.");
+            return "redirect:/pricing";
+        }
         User user = authHelper.getAuthenticatedUser();
         if (user == null) {
             return "redirect:/login?next=/pricing/checkout?plan=" + plan.name();
@@ -168,9 +176,19 @@ public class PricingController {
             return "redirect:/login";
         }
 
-        PaymentSubscriptionVerification verification = paymentProviderService.verifyCheckoutSession(sessionId);
+        PaymentSubscriptionVerification verification;
+        try {
+            verification = paymentProviderService.verifyCheckoutSession(sessionId);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("pricingError", "Subscription checkout could not be verified. Please try again.");
+            return "redirect:/pricing";
+        }
         if (!verification.active()) {
             redirectAttributes.addFlashAttribute("pricingError", verification.message());
+            return "redirect:/pricing";
+        }
+        if (!verification.belongsTo(user.getId(), plan)) {
+            redirectAttributes.addFlashAttribute("pricingError", "This checkout does not match your account and selected plan.");
             return "redirect:/pricing";
         }
 

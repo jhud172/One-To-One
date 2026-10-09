@@ -66,6 +66,33 @@ class PlatformSubscriptionServiceTest {
     }
 
     @Test
+    void duplicateCheckoutCannotReverseScheduledCancellation() {
+        PlatformSubscription subscription = new PlatformSubscription();
+        subscription.setUserId(7L);
+        subscription.setPlan(PlatformPlan.MONTHLY);
+        subscription.setProviderSubId("sub_existing");
+        subscription.setCancelAtPeriodEnd(true);
+        subscription.setStatus(PlatformSubscriptionStatus.EXPIRES);
+        when(repository.findByUserId(7L)).thenReturn(Optional.of(subscription));
+
+        assertThat(service.activateSubscription(7L, PlatformPlan.MONTHLY, "cus_1", "sub_existing", Instant.now()))
+                .isSameAs(subscription);
+        assertThat(subscription.isCancelAtPeriodEnd()).isTrue();
+        assertThat(subscription.getStatus()).isEqualTo(PlatformSubscriptionStatus.EXPIRES);
+        org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void recurringCheckoutCannotDowngradeLifetimeAccess() {
+        PlatformSubscription subscription = new PlatformSubscription();
+        subscription.setPlan(PlatformPlan.INFINITE);
+        when(repository.findByUserId(7L)).thenReturn(Optional.of(subscription));
+        assertThat(service.activateSubscription(7L, PlatformPlan.MONTHLY, "cus_1", "sub_new", Instant.now())).isSameAs(subscription);
+        assertThat(subscription.getPlan()).isEqualTo(PlatformPlan.INFINITE);
+        org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
     void successfulRetryKeepsScheduledCancellation() {
         PlatformSubscription subscription = new PlatformSubscription();
         subscription.setProviderSubId("sub_1");

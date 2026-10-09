@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const overlay = document.getElementById('opening-overlay');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const supportsFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const usesCoarsePointer = window.matchMedia('(hover: none), (pointer: coarse)').matches;
@@ -209,37 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.setTimeout(() => devModeNotification.show(), 120);
     };
 
-    const finishOverlay = () => {
-        if (!overlay || overlay.classList.contains('finished')) {
-            return;
-        }
-
-        overlay.classList.add('finished');
-
-        window.setTimeout(() => {
-            if (overlay.parentNode) {
-                overlay.parentNode.removeChild(overlay);
-            }
-            showDevModeNotification();
-        }, 800);
-    };
-
-    // INTRO SEQUENCE
-    if (overlay) {
-        if (prefersReducedMotion || usesCoarsePointer) {
-            overlay.remove();
-            showDevModeNotification();
-        } else {
-            window.setTimeout(finishOverlay, 1400);
-            overlay.addEventListener('animationend', (event) => {
-                if (event.animationName === 'overlayDismiss') {
-                    finishOverlay();
-                }
-            });
-        }
-    } else {
-        showDevModeNotification();
-    }
+    // Page actions are available immediately; sculpture motion starts on activation.
+    showDevModeNotification();
 
     const createTabController = ({ tabSelector, panelSelector, keyName, activateOnHover = false }) => {
         const tabs = Array.from(document.querySelectorAll(tabSelector));
@@ -852,165 +822,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     createHomeChapterNavigation();
 
-    const brandObject = document.querySelector('[data-brand-object]');
-    const prepareBrandSculpture = () => {
-        if (!brandObject || prefersReducedMotion) return;
-
-        const sliceTemplate = brandObject.querySelector('[data-brand-slice-template]');
-        const volumes = Array.from(brandObject.querySelectorAll('[data-brand-volume]'));
-        if (!sliceTemplate || !volumes.length) return;
-
-        volumes.forEach((volume) => {
-            const frontFace = volume.querySelector('.brand-sculpture__front');
-            const sliceCount = Math.max(1, Number.parseInt(volume.dataset.brandSlices || '1', 10));
-            const volumeDepth = Math.max(1, Number.parseFloat(volume.dataset.brandDepth || '1'));
-            const fragment = document.createDocumentFragment();
-
-            for (let index = sliceCount - 1; index >= 0; index -= 1) {
-                const slice = sliceTemplate.content.firstElementChild?.cloneNode(true);
-                if (!slice) continue;
-
-                const progress = sliceCount === 1 ? 1 : index / (sliceCount - 1);
-                const edgeLight = 0.18 + ((1 - progress) * 0.2);
-                slice.style.setProperty('--slice-layer', String(sliceCount - index));
-                slice.style.setProperty('--slice-x', `${(progress * 7.5).toFixed(2)}px`);
-                slice.style.setProperty('--slice-y', `${(progress * 10.5).toFixed(2)}px`);
-                slice.style.setProperty('--slice-z', `${(-progress * volumeDepth).toFixed(2)}px`);
-                slice.style.setProperty('--slice-brightness', edgeLight.toFixed(3));
-                slice.style.setProperty('--slice-opacity', `${(0.76 + ((1 - progress) * 0.22)).toFixed(3)}`);
-                fragment.appendChild(slice);
-            }
-
-            volume.insertBefore(fragment, frontFace);
-        });
-
-        brandObject.classList.add('is-volume-ready');
-    };
-
-    prepareBrandSculpture();
-
-    if (brandObject && !prefersReducedMotion) {
-        const visual = brandObject.closest('[data-home-depth]');
-        const interactionSurface = visual?.matches('[data-brand-interaction]') ? visual : brandObject;
-        const currentPose = { x: 0, y: 0 };
-        const targetPose = { x: 0, y: 0 };
-        const desiredPose = { x: 0, y: 0 };
-        let interactionBounds = null;
-        let brandIsEngaged = false;
-        let poseFrame = 0;
-        let previousFrameTime = performance.now();
-
-        const renderBrandPose = (x, y) => {
-            brandObject.style.setProperty('--brand-rotate-x', `${(-5 - (y * 22)).toFixed(2)}deg`);
-            brandObject.style.setProperty('--brand-rotate-y', `${(-8 + (x * 42)).toFixed(2)}deg`);
-            brandObject.style.setProperty('--brand-shift-x', `${(x * 14).toFixed(1)}px`);
-            brandObject.style.setProperty('--brand-shift-y', `${(y * 10).toFixed(1)}px`);
-            brandObject.style.setProperty('--brand-mark-shift-x', `${(-x * 7).toFixed(1)}px`);
-            brandObject.style.setProperty('--brand-mark-shift-y', `${(-y * 4).toFixed(1)}px`);
-            brandObject.style.setProperty('--brand-word-shift-x', `${(x * 5).toFixed(1)}px`);
-            brandObject.style.setProperty('--brand-word-shift-y', `${(y * 3).toFixed(1)}px`);
-            brandObject.style.setProperty('--brand-shine-x', `${50 + (x * 39)}%`);
-            brandObject.style.setProperty('--brand-shine-y', `${46 + (y * 36)}%`);
-            brandObject.style.setProperty('--brand-light-tilt', `${(-12 + (x * 26)).toFixed(1)}deg`);
-            visual?.style.setProperty('--field-shift-x', `${(x * 28).toFixed(1)}px`);
-            visual?.style.setProperty('--field-shift-y', `${(y * 18).toFixed(1)}px`);
-            visual?.style.setProperty('--field-counter-shift-x', `${(-x * 10).toFixed(1)}px`);
-            visual?.style.setProperty('--field-counter-shift-y', `${(-y * 7).toFixed(1)}px`);
-            visual?.style.setProperty('--field-dot-shift-x', `${(x * 6.5).toFixed(1)}px`);
-            visual?.style.setProperty('--field-dot-shift-y', `${(y * 4.5).toFixed(1)}px`);
-            visual?.style.setProperty('--field-rotate-z', `${(-4 + (x * 7)).toFixed(2)}deg`);
-            visual?.style.setProperty('--field-light-x', `${50 + (x * 31)}%`);
-            visual?.style.setProperty('--field-light-y', `${44 + (y * 27)}%`);
-            visual?.style.setProperty('--signal-shift-x', `${(-x * 24).toFixed(1)}px`);
-            visual?.style.setProperty('--signal-shift-y', `${(-y * 16).toFixed(1)}px`);
-        };
-
-        const animateBrandPose = (time) => {
-            const elapsed = Math.min(Math.max((time - previousFrameTime) / 1000, 0), 0.05);
-            const targetResponsiveness = brandIsEngaged ? 7 : 5.5;
-            const poseResponsiveness = brandIsEngaged ? 4.4 : 5.2;
-            const targetSmoothing = 1 - Math.exp(-targetResponsiveness * elapsed);
-            const poseSmoothing = 1 - Math.exp(-poseResponsiveness * elapsed);
-            previousFrameTime = time;
-            targetPose.x += (desiredPose.x - targetPose.x) * targetSmoothing;
-            targetPose.y += (desiredPose.y - targetPose.y) * targetSmoothing;
-            currentPose.x += (targetPose.x - currentPose.x) * poseSmoothing;
-            currentPose.y += (targetPose.y - currentPose.y) * poseSmoothing;
-
-            const distance = Math.abs(desiredPose.x - targetPose.x)
-                + Math.abs(desiredPose.y - targetPose.y)
-                + Math.abs(targetPose.x - currentPose.x)
-                + Math.abs(targetPose.y - currentPose.y);
-            if (distance < 0.001) {
-                Object.assign(targetPose, desiredPose);
-                Object.assign(currentPose, desiredPose);
-                renderBrandPose(currentPose.x, currentPose.y);
-                poseFrame = 0;
-                return;
-            }
-
-            renderBrandPose(currentPose.x, currentPose.y);
-            poseFrame = window.requestAnimationFrame(animateBrandPose);
-        };
-
-        const moveBrandTo = (x, y) => {
-            desiredPose.x = Math.max(-1, Math.min(1, x));
-            desiredPose.y = Math.max(-1, Math.min(1, y));
-            if (poseFrame) {
-                return;
-            }
-            previousFrameTime = performance.now();
-            poseFrame = window.requestAnimationFrame(animateBrandPose);
-        };
-
-        const resetBrandPose = () => {
-            interactionBounds = null;
-            brandIsEngaged = false;
-            visual?.classList.remove('is-brand-engaged');
-            moveBrandTo(0, 0);
-        };
-
-        const syncBrandTargetToPointer = (event) => {
-            const bounds = interactionBounds;
-            if (!bounds?.width || !bounds?.height) {
-                return;
-            }
-
-            moveBrandTo(
-                ((((event.clientX - bounds.left) / bounds.width) - 0.5) * 2),
-                ((((event.clientY - bounds.top) / bounds.height) - 0.5) * 2)
-            );
-        };
-
-        if (supportsFinePointer) {
-            interactionSurface.addEventListener('pointerenter', (event) => {
-                interactionBounds = interactionSurface.getBoundingClientRect();
-                brandIsEngaged = true;
-                visual?.classList.add('is-brand-engaged');
-                syncBrandTargetToPointer(event);
-            });
-            interactionSurface.addEventListener('pointermove', syncBrandTargetToPointer);
-            interactionSurface.addEventListener('pointerleave', resetBrandPose);
-            interactionSurface.addEventListener('pointercancel', resetBrandPose);
-            window.addEventListener('scroll', resetBrandPose, { passive: true });
-            window.addEventListener('resize', resetBrandPose, { passive: true });
-        }
-        brandObject.addEventListener('blur', resetBrandPose);
-        brandObject.addEventListener('keydown', (event) => {
-            const poses = {
-                ArrowLeft: [-0.82, 0],
-                ArrowRight: [0.82, 0],
-                ArrowUp: [0, -0.72],
-                ArrowDown: [0, 0.72]
-            };
-            if (!poses[event.key]) return;
-            event.preventDefault();
-            brandIsEngaged = true;
-            visual?.classList.add('is-brand-engaged');
-            moveBrandTo(...poses[event.key]);
-        });
-    }
-
     const createStandardExperience = (controller) => {
         const tabs = Array.from(controller.querySelectorAll('[data-standard-tab]'));
         const panels = Array.from(controller.querySelectorAll('[data-standard-panel]'));
@@ -1080,26 +891,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     document.querySelectorAll('[data-standard-controller]').forEach(createStandardExperience);
-
-    const depthStage = document.querySelector('[data-home-depth]');
-    if (depthStage && supportsFinePointerMotion) {
-        let depthUpdateQueued = false;
-        const updateDepth = () => {
-            depthUpdateQueued = false;
-            const bounds = depthStage.getBoundingClientRect();
-            const viewportMiddle = window.innerHeight / 2;
-            const offset = Math.max(-1, Math.min(1, (bounds.top + bounds.height / 2 - viewportMiddle) / window.innerHeight));
-            depthStage.style.setProperty('--depth-y', `${(offset * -12).toFixed(1)}px`);
-        };
-        const queueDepthUpdate = () => {
-            if (depthUpdateQueued) return;
-            depthUpdateQueued = true;
-            window.requestAnimationFrame(updateDepth);
-        };
-        queueDepthUpdate();
-        window.addEventListener('scroll', queueDepthUpdate, { passive: true });
-        window.addEventListener('resize', queueDepthUpdate, { passive: true });
-    }
 
     // SCROLL REVEAL
     const observer = new IntersectionObserver((entries) => {

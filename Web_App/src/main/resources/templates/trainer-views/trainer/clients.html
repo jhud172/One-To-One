@@ -2,15 +2,34 @@
           xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
           th:replace="~{base :: layout(#{ui.02653}, null, ~{::content}, ~{::pageScripts})}">
 
-    <div th:fragment="content" class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div th:if="${error} == 'trainer-unverified'" class="mb-4 rounded-2xl border border-amber-200/30 bg-amber-500/10 p-4 text-sm text-amber-200" th:text="#{ui.02646}">
-            Your trainer account needs verification before you can manage clients.
+    <div th:fragment="content" class="trainer-clients-v2 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <h1 class="trainer-clients-title" th:text="#{ui.02653}">Trainer Clients</h1>
+        <nav class="trainer-clients-navigation" th:attr="aria-label=#{ui.02653}"><a th:href="@{/trainer/assessments}" th:text="#{ui.assessment.history}">Private assessment history</a></nav>
+        <p th:if="${relationshipAccepted == true}" class="trainer-clients-feedback" role="status" th:text="#{v2.clients.accepted}"></p>
+        <p th:if="${relationshipDeclined == true}" class="trainer-clients-feedback" role="status" th:text="#{v2.clients.declined}"></p>
+        <p th:if="${relationshipPaused == true}" class="trainer-clients-feedback" role="status" th:text="#{v2.clients.paused}"></p>
+        <p th:if="${relationshipEnded == true}" class="trainer-clients-feedback" role="status" th:text="#{v2.clients.ended}"></p>
+        <p th:if="${relationshipResumed == true}" class="trainer-clients-feedback" role="status" th:text="#{v2.clients.resumed}">Coaching relationship resumed.</p>
+        <p th:if="${error == 'client-active'}" class="trainer-clients-feedback trainer-clients-feedback--error" role="alert" th:text="#{v2.clients.conflict}">This client already has an active trainer. Their coaching relationship must be resolved before you can resume.</p>
+        <p th:if="${error == 'invalid'}" class="trainer-clients-feedback trainer-clients-feedback--error" role="alert" th:text="#{v2.clients.error}">This action is unavailable. Refresh the client list and try again.</p>
+        <div th:if="${trainerReady != true or error == 'trainer-unverified'}" class="trainer-clients-feedback">
+            <p th:text="#{ui.02646}">Your trainer account needs verification before you can manage clients.</p>
+            <a class="detail-btn-secondary" th:href="@{/trainer/verification}" th:text="#{ui.proReview.title}">Professional verification</a>
         </div>
+        <details class="client-relationship-help">
+            <summary th:text="#{v2.clients.helpTitle}">How relationship actions work</summary>
+            <dl>
+                <div><dt th:text="#{ui.02644}">Accept</dt><dd th:text="#{v2.clients.acceptHelp}"></dd></div>
+                <div><dt th:text="#{ui.02645}">Decline</dt><dd th:text="#{v2.clients.declineHelp}"></dd></div>
+                <div><dt th:text="#{ui.02652}">Pause</dt><dd th:text="#{v2.clients.pauseHelp}"></dd></div>
+                <div><dt th:text="#{ui.00253}">End</dt><dd th:text="#{v2.clients.endHelp}"></dd></div>
+            </dl>
+        </details>
         <div class="grid gap-4 lg:grid-cols-2">
-            <section class="rounded-2xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
+            <section id="clientRequests" class="rounded-2xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02639}">Client Requests</h1>
+                        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02639}">Client Requests</h2>
                         <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02647}">Review and accept new trainer requests.</p>
                     </div>
                 </div>
@@ -21,27 +40,30 @@
                 </div>
 
                 <div th:if="${!#lists.isEmpty(requests)}" class="mt-6 divide-y divide-white/10">
-                    <div th:each="req : ${requests}" class="py-4 flex items-center justify-between gap-4">
-                        <div class="min-w-0">
+                    <div th:each="req : ${requests}" th:with="clientName=${clientsById[req.clientUserId] != null ? clientsById[req.clientUserId].fullName : #messages.msg('v2.clients.clientLabel', req.clientUserId)}" class="client-row py-4 flex items-center justify-between gap-4">
+                        <div class="client-row__identity min-w-0">
                             <div class="flex items-center gap-2">
                                 <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
-                                      th:text="${clientsById[req.clientUserId] != null ? clientsById[req.clientUserId].fullName : ('Client #' + req.clientUserId)}">Client</span>
+                                      th:text="${clientName}">Client</span>
                                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ring-white/10 bg-slate-400/10 text-slate-300" th:text="#{ui.02648}">REQUESTED</span>
                             </div>
                             <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                                 <span th:if="${clientsById[req.clientUserId] != null}" th:text="${'@' + clientsById[req.clientUserId].username + ' · ' + clientsById[req.clientUserId].email}"></span>
-                                <span th:if="${clientsById[req.clientUserId] == null}" th:text="${'Client ID ' + req.clientUserId}"></span>
-                                <span class="text-slate-500 dark:text-slate-400" th:text="${req.requestedAt != null ? ' · Requested ' + #temporals.format(req.requestedAt, 'dd MMM yyyy HH:mm') : ''}"></span>
+                                <span th:if="${clientsById[req.clientUserId] == null}" th:text="#{v2.clients.clientLabel(${req.clientUserId})}"></span>
+                                <span th:if="${req.requestedAt != null}" class="client-row__requested" th:text="#{v2.clients.requestedAt(${#temporals.format(req.requestedAt, 'd MMM yyyy HH:mm')})}"></span>
                             </p>
                         </div>
 
-                        <div class="flex items-center gap-2 shrink-0">
-                            <form th:action="@{/trainer/clients/{id}/accept(id=${req.clientUserId})}" method="post">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <div class="client-row__actions flex items-center gap-2">
+                            <form th:action="@{/trainer/clients/{id}/accept(id=${req.clientUserId})}" method="post" th:attr="data-confirm=#{v2.clients.actionName(#{ui.02644},${clientName})} + '. ' + #{v2.clients.acceptHelp}">
                                 <button type="submit"
+                                        th:disabled="${trainerReady != true}" th:attr="aria-label=#{v2.clients.actionName(#{ui.02644},${clientName})}"
                                         class="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white" th:text="#{ui.02644}">
                                     Accept
                                 </button>
+                            </form>
+                            <form th:action="@{/trainer/clients/{id}/decline(id=${req.clientUserId})}" method="post" th:attr="data-confirm=#{v2.clients.actionName(#{ui.02645},${clientName})} + '. ' + #{v2.clients.declineHelp}">
+                                <button type="submit" th:disabled="${trainerReady != true}" th:attr="aria-label=#{v2.clients.actionName(#{ui.02645},${clientName})}" th:text="#{ui.02645}">Decline</button>
                             </form>
                         </div>
                     </div>
@@ -56,10 +78,13 @@
                     </div>
                 </div>
 
-                <div class="mt-4">
-                    <input id="clientSearch" type="text" placeholder="Search active clients"
-                           class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"  th:placeholder="#{ui.02651}"/>
+                <div class="client-search mt-4" th:if="${!#lists.isEmpty(currentLinks)}">
+                    <label class="sr-only" for="clientSearch" th:text="#{v2.clients.search}">Search clients</label>
+                    <input id="clientSearch" type="text" placeholder="Search clients"
+                           class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"  th:placeholder="#{v2.clients.search}"/>
+                    <button id="clientSearchClear" type="button" hidden th:text="#{ui.00555}">Clear</button>
                 </div>
+                <p id="clientSearchEmpty" class="client-search-empty" role="status" hidden th:text="#{ui.01563}">No results found. Try another keyword.</p>
 
                 <div th:if="${#lists.isEmpty(currentLinks)}" class="mt-6 border border-dashed border-white/15 rounded-2xl p-8 text-center">
                     <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02600}">No active clients</h2>
@@ -67,48 +92,50 @@
                 </div>
 
                 <div th:if="${!#lists.isEmpty(currentLinks)}" class="mt-6 divide-y divide-white/10" id="currentClientsList">
-                    <div th:each="link : ${currentLinks}" th:with="linkStatus=${link.status != null ? link.status.toString() : ''}" class="py-4 flex items-center justify-between gap-4" data-client-row>
-                        <div class="min-w-0">
+                    <div th:each="link : ${currentLinks}" th:with="linkStatus=${link.status != null ? link.status.toString() : ''}, clientName=${clientsById[link.clientUserId] != null ? clientsById[link.clientUserId].fullName : #messages.msg('v2.clients.clientLabel', link.clientUserId)}" class="client-row py-4 flex items-center justify-between gap-4" data-client-row>
+                        <div class="client-row__identity min-w-0">
                             <div class="flex items-center gap-2">
                                 <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
-                                      th:text="${clientsById[link.clientUserId] != null ? clientsById[link.clientUserId].fullName : ('Client #' + link.clientUserId)}">Client</span>
+                                      th:text="${clientName}">Client</span>
                                   <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ring-white/10"
                                       th:classappend="${linkStatus == 'ACTIVE'} ? ' bg-emerald-400/10 text-emerald-300' : (linkStatus == 'PAUSED' ? ' bg-amber-400/10 text-amber-300' : (linkStatus == 'ENDED' ? ' bg-rose-400/10 text-rose-300' : ' bg-slate-400/10 text-slate-300'))"
-                                      th:text="${linkStatus}">STATUS</span>
+                                      th:text="${linkStatus == 'ACTIVE' ? #messages.msg('v2.clients.statusActive') : #messages.msg('v2.clients.statusPaused')}">STATUS</span>
                             </div>
                             <p class="mt-1 text-sm text-slate-600 dark:text-slate-300"
                                th:text="${clientsById[link.clientUserId] != null ? '@' + clientsById[link.clientUserId].username : ''}"></p>
                         </div>
 
-                        <div class="flex items-center gap-2 shrink-0">
-                            <a th:if="${linkStatus == 'ACTIVE'}" th:href="@{/trainer/clients/{id}/assessment(id=${link.clientUserId})}"
+                        <div class="client-row__actions flex items-center gap-2">
+                            <a th:if="${linkStatus == 'ACTIVE' and trainerReady == true}" th:href="@{/trainer/clients/{id}/assessment(id=${link.clientUserId})}" th:attr="aria-label=#{v2.clients.actionName(#{ui.02603},${clientName})}"
                                class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40" th:text="#{ui.02603}">
                                 Assess
                             </a>
-                            <a th:if="${linkStatus == 'ACTIVE'}" th:href="@{/trainer/clients/{id}(id=${link.clientUserId})}"
+                            <a th:if="${linkStatus == 'ACTIVE' and trainerReady == true}" th:href="@{/trainer/clients/{id}(id=${link.clientUserId})}" th:attr="aria-label=#{v2.clients.actionName(#{ui.01433},${clientName})}"
                                class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40" th:text="#{ui.01433}">
                                 Plan
                             </a>
-                            <form th:if="${linkStatus == 'ACTIVE'}"
+                            <form th:if="${linkStatus == 'ACTIVE' and trainerReady == true}"
                                   th:action="@{/inbox/start/{id}(id=${link.clientUserId})}"
                                   method="post">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                 <button type="submit"
+                                        th:attr="aria-label=#{v2.clients.actionName(#{ui.00028},${clientName})}"
                                         class="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white" th:text="#{ui.00028}">
                                     Message
                                 </button>
                             </form>
-                            <form th:action="@{/trainer/clients/{id}/pause(id=${link.clientUserId})}" method="post">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <form th:if="${linkStatus == 'ACTIVE'}" th:action="@{/trainer/clients/{id}/pause(id=${link.clientUserId})}" method="post" th:attr="data-confirm=#{v2.clients.actionName(#{ui.02652},${clientName})} + '. ' + #{v2.clients.pauseHelp}">
                                 <button type="submit"
-                                        th:disabled="${linkStatus != 'ACTIVE'}"
+                                        th:disabled="${trainerReady != true}" th:attr="aria-label=#{v2.clients.actionName(#{ui.02652},${clientName})}"
                                         class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:opacity-50 disabled:cursor-not-allowed" th:text="#{ui.02652}">
                                     Pause
                                 </button>
                             </form>
-                            <form th:action="@{/trainer/clients/{id}/end(id=${link.clientUserId})}" method="post">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <form th:if="${linkStatus == 'PAUSED'}" th:action="@{/trainer/clients/{id}/resume(id=${link.clientUserId})}" method="post">
+                                <button type="submit" th:disabled="${trainerReady != true}" th:attr="aria-label=#{v2.clients.actionName(#{v2.clients.resume},${clientName})}" th:text="#{v2.clients.resume}">Resume</button>
+                            </form>
+                            <form class="client-row__end" th:action="@{/trainer/clients/{id}/end(id=${link.clientUserId})}" method="post" th:attr="data-confirm=#{v2.clients.actionName(#{ui.00253},${clientName})} + '. ' + #{v2.clients.endHelp}">
                                 <button type="submit"
+                                        th:disabled="${trainerReady != true}" th:attr="aria-label=#{v2.clients.actionName(#{ui.00253},${clientName})}"
                                         class="inline-flex min-h-11 items-center justify-center rounded-xl border border-rose-200/40 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-600 dark:text-rose-200 hover:bg-rose-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40" th:text="#{ui.00253}">
                                     End
                                 </button>
@@ -121,7 +148,7 @@
     </div>
 
     <th:block th:fragment="pageScripts">
-        <script th:src="@{/js/trainer/trainer-clients-page.js}"></script>
+        <script th:src="@{/js/trainer/trainer-clients-page.js(v=${uiCssVersion})}" defer></script>
     </th:block>
 
 </th:block>

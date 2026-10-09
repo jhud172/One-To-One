@@ -1,47 +1,26 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(${pageTitle} ?: #{ui.02783}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        <div th:if="${error} == 'trainer-unverified'" class="mb-4 rounded-2xl border border-amber-200/30 bg-amber-500/10 p-4 text-sm text-amber-200" th:text="#{ui.02758}">
-            Your trainer account needs verification before you can manage templates.
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" th:text="#{ui.02752}">Trainer toolkit</p>
-                <h1 class="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02778}">Schedule templates</h1>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02779}">Build reusable weekly blueprints for clients.</p>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02778}, null, ~{::content}, null)}">
+    <div th:fragment="content" class="client-workspace-v2 library-exercise-v2 schedule-library-v2 library-catalogue-v2">
+        <header class="detail-header">
+            <div class="detail-header-content"><div><h1 class="detail-title" th:text="#{ui.02778}"></h1><p class="detail-subtitle" th:text="#{ui.schedule.catalogueHint}"></p></div><div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/trainer/library}" th:text="#{ui.02654}"></a><a th:if="${error != 'trainer-unverified'}" class="detail-btn-primary" th:href="@{/trainer/templates/create(q=${query},page=${libraryPage})}" th:text="#{ui.02780}"></a></div></div>
+            <th:block th:unless="${error == 'trainer-unverified'}">
+                <form method="get" th:action="@{/trainer/templates}" class="connection-search"><label for="templateSearch" th:text="#{ui.schedule.searchTemplates}"></label><div><input id="templateSearch" type="search" name="q" maxlength="120" dir="auto" th:value="${query}"><button class="detail-btn-primary" type="submit" th:text="#{ui.00260}"></button><a th:if="${!#strings.isEmpty(query)}" class="detail-btn-secondary" th:href="@{/trainer/templates}" th:text="#{ui.00555}"></a></div></form>
+                <p><span th:text="#{ui.00826}"></span>: <strong th:text="${templateCount}"></strong> · <span th:text="#{ui.library.resultsRange(${templatePage.totalElements == 0 ? 0 : libraryPage * templatePage.size + 1},${libraryPage * templatePage.size + #lists.size(templates)},${templatePage.totalElements})}"></span></p>
+            </th:block>
+        </header>
+        <section th:if="${error == 'trainer-unverified'}" class="detail-section"><p class="profile-editor-errors" role="status" th:text="#{ui.02758}"></p><a class="detail-btn-secondary" th:href="@{/trainer/verification}" th:text="#{ui.proReview.title}"></a><a class="detail-btn-secondary" th:href="@{/profile}" th:text="#{ui.00419}"></a></section>
+        <th:block th:unless="${error == 'trainer-unverified'}">
+            <section th:if="${#lists.isEmpty(templates)}" class="detail-section library-exercise-empty"><h2 class="detail-section-title" th:text="${templateCount == 0} ? #{ui.02781} : #{ui.01563}"></h2><p th:if="${templateCount == 0}" th:text="#{ui.schedule.firstTemplateHint}"></p><a th:if="${templateCount == 0}" class="detail-btn-primary" th:href="@{/trainer/templates/create(q=${query},page=${libraryPage})}" th:text="#{ui.02780}"></a></section>
+            <div th:unless="${#lists.isEmpty(templates)}" class="library-exercise-grid">
+                <article th:each="template : ${templates}" class="detail-section library-catalogue-card" th:id="${'schedule-template-' + template.id}">
+                    <div class="library-catalogue-card-heading"><p class="detail-label" th:text="#{ui.schedule.templateResource}"></p><p class="connection-status" th:text="${template.archived} ? #{ui.00592} : #{ui.00134}"></p></div>
+                    <h2 class="detail-section-title" dir="auto" th:id="${'template-title-' + template.id}"><a th:href="@{/trainer/templates/{id}/edit(id=${template.id},q=${query},page=${libraryPage})}" th:text="${template.name}"></a></h2>
+                    <p th:if="${!#strings.isEmpty(template.description)}" class="library-exercise-description" dir="auto" th:text="${template.description}"></p><p th:if="${!#strings.isEmpty(template.tags)}" class="detail-subtitle" dir="auto" th:text="${template.tags}"></p>
+                    <dl class="library-exercise-facts"><div><dt th:text="#{ui.02763}"></dt><dd th:text="${entryCounts[template.id] ?: 0}"></dd></div><div><dt th:text="#{ui.02772}"></dt><dd th:text="${questionCounts[template.id] ?: 0}"></dd></div></dl><p th:if="${entryCounts[template.id] == null}" class="detail-subtitle" th:text="#{ui.02764}"></p>
+                    <ul th:if="${weekdayCounts[template.id] != null}" class="schedule-catalogue-rhythm" th:attr="aria-label=#{ui.02763}"><li th:each="day : ${weekdayCounts[template.id]}"><span th:text="${weekdays[day.key]}"></span>: <strong th:text="${day.value}"></strong></li></ul>
+                    <div class="library-catalogue-card-footer"><a class="detail-btn-secondary" th:href="@{/trainer/templates/{id}/edit(id=${template.id},q=${query},page=${libraryPage})}" th:text="#{ui.00138}"></a><a th:unless="${template.archived}" class="detail-btn-secondary" th:href="@{/trainer/templates/{id}/apply(id=${template.id},q=${query},page=${libraryPage})}" th:text="#{ui.00925}"></a><form method="post" th:action="@{/trainer/templates/{id}/clone(id=${template.id},q=${query},page=${libraryPage})}"><button type="submit" class="detail-btn-secondary" th:id="${'clone-template-' + template.id}" th:attr="aria-labelledby=${'clone-template-' + template.id + ' template-title-' + template.id}" th:text="#{ui.02782}"></button></form></div>
+                </article>
             </div>
-            <a th:href="@{/trainer/templates/create}"
-               class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" th:text="#{ui.02780}">New template</a>
-        </div>
-
-        <div class="mt-6 grid gap-4 md:grid-cols-2">
-            <div th:if="${#lists.isEmpty(templates)}" class="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02781}">
-                No templates yet. Create one to start.
-            </div>
-            <div th:each="template : ${templates}" class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="${template.name}">Template</h2>
-                        <p class="mt-1 text-xs text-slate-500" th:text="${template.tags}"></p>
-                        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300" th:text="${template.description}"></p>
-                    </div>
-                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] ring-1 ring-white/10"
-                          th:classappend="${template.archived} ? ' bg-slate-500/10 text-slate-400' : ' bg-emerald-400/10 text-emerald-300'"
-                          th:text="${template.archived} ? 'ARCHIVED' : 'ACTIVE'"></span>
-                </div>
-                <div class="mt-4 flex flex-wrap gap-2">
-                    <a th:href="@{/trainer/templates/{id}/edit(id=${template.id})}"
-                       class="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.00138}">Edit</a>
-                    <a th:href="@{/trainer/templates/{id}/apply(id=${template.id})}"
-                       class="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.00925}">Apply</a>
-                    <form th:action="@{/trainer/templates/{id}/clone(id=${template.id})}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                        <button type="submit" class="inline-flex items-center rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white hover:bg-slate-800/70" th:text="#{ui.02782}">Clone</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+            <nav th:if="${templatePage.totalPages > 1}" class="library-catalogue-pagination" th:attr="aria-label=#{ui.02778}"><a th:if="${templatePage.hasPrevious()}" class="detail-btn-secondary" th:href="@{/trainer/templates(q=${query},page=${libraryPage - 1})}" th:text="#{ui.library.previousPage}"></a><p th:text="#{ui.library.pageNumber(${libraryPage + 1},${templatePage.totalPages})}"></p><a th:if="${templatePage.hasNext()}" class="detail-btn-secondary" th:href="@{/trainer/templates(q=${query},page=${libraryPage + 1})}" th:text="#{ui.library.nextPage}"></a></nav>
+        </th:block>
     </div>
-
 </th:block>

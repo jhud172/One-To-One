@@ -63,7 +63,7 @@ public class InboxServiceImpl implements InboxService {
             User otherUser = userRepository.findById(otherUserId).orElse(null);
             String title = otherUser != null ? otherUser.getFullName() : "Conversation";
 
-            Optional<Message> lastMessage = messageRepository.findTop1ByThread_IdOrderByCreatedAtDesc(thread.getId());
+            Optional<Message> lastMessage = messageRepository.findTop1ByThread_IdOrderByCreatedAtDescIdDesc(thread.getId());
             String snippet = lastMessage.map(m -> m.getBodyText() == null ? "" : m.getBodyText())
                     .map(s -> s.length() > 180 ? s.substring(0, 180) : s)
                     .orElse("");
@@ -80,7 +80,8 @@ public class InboxServiceImpl implements InboxService {
             items.add(dto);
         }
 
-        items.sort(Comparator.comparing(ConversationListItemDto::getLastMessageAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+        items.sort(Comparator.comparing(ConversationListItemDto::getLastMessageAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(ConversationListItemDto::getConversationId, Comparator.reverseOrder()));
         return items;
     }
 
@@ -97,18 +98,33 @@ public class InboxServiceImpl implements InboxService {
     @Transactional(readOnly = true)
     public List<Message> getMessages(User user, Long threadId) {
         getConversationOrThrow(user, threadId);
-        return messageRepository.findByThread_IdOrderByCreatedAtAsc(threadId);
+        return messageRepository.findByThread_IdOrderByCreatedAtAscIdAsc(threadId);
     }
 
     @Override
     @Transactional
     public void markRead(User user, Long threadId) {
+        readThrough(user, threadId, null);
+    }
+
+    @Override
+    @Transactional
+    public void markRead(User user, Long threadId, Long upToId) {
+        if (upToId == null || upToId < 1) return;
+        readThrough(user, threadId, upToId);
+    }
+
+    private void readThrough(User user, Long threadId, Long upToId) {
         if (user == null || user.getId() == null) {
             return;
         }
         getConversationOrThrow(user, threadId);
 
-        List<Long> unreadMessageIds = messageRepository.findUnreadMessageIds(threadId, user.getId());
+        // Concurrent native/poll read requests for this recipient must not insert duplicate receipts.
+        userRepository.findByIdForUpdate(user.getId()).orElseThrow(() -> new SecurityException("Recipient unavailable"));
+
+        List<Long> unreadMessageIds = upToId == null ? messageRepository.findUnreadMessageIds(threadId, user.getId())
+                : messageRepository.findUnreadMessageIdsThrough(threadId, user.getId(), upToId);
         if (unreadMessageIds.isEmpty()) {
             return;
         }
@@ -119,14 +135,14 @@ public class InboxServiceImpl implements InboxService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = uk.ac.cf._5.group14.One_To_One.Messaging.MessagingException.class)
     public Message sendMessage(User user, Long threadId, String body, String attachmentName, String attachmentUrl, String attachmentType) {
-        if (body == null || body.isBlank()) {
-            return null;
+        boolean hasBody = body != null && !body.isBlank();
+        if (!hasBody && (attachmentUrl == null || attachmentUrl.isBlank())) {
+            throw new IllegalArgumentException("A message or attachment link is required");
         }
         MessageThread thread = getConversationOrThrow(user, threadId);
-        messagingService.sendMessage(thread.getId(), user.getId(), MessageType.TEXT, body.trim(), attachmentName, attachmentUrl, attachmentType);
-        return messageRepository.findTop1ByThread_IdOrderByCreatedAtDesc(thread.getId()).orElse(null);
+        return messagingService.sendMessage(thread.getId(), user.getId(), MessageType.TEXT, hasBody ? body.trim() : "(attachment)", attachmentName, attachmentUrl, attachmentType);
     }
 
     @Override

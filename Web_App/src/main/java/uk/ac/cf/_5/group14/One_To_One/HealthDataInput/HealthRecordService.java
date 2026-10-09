@@ -9,7 +9,10 @@ public interface HealthRecordService {
 
     List<HealthRecord> getAllHealthRecords(User user);
 
-    HealthRecord getHealthRecordById(Long id);
+    org.springframework.data.domain.Page<HealthRecord> searchHistory(User user, String query,
+            java.time.LocalDate from, java.time.LocalDate until, String activity, boolean oldest, int page);
+
+    HealthRecord getHealthRecordByIdForUser(Long id, User user);
 
     void addHealthRecord(HealthRecordForm healthRecordForm, User user);
 

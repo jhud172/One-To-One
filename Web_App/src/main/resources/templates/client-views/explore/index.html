@@ -221,7 +221,7 @@
                         </div>
 
                         <div class="guest-trainer-card__actions">
-                            <a th:href="@{'/u/' + ${card.trainer.username}}"
+                            <a th:href="@{/trainers/{id}/profile(id=${card.trainer.id})}"
                                class="guest-action guest-action--secondary" th:text="#{ui.00567}">
                                 View profile
                             </a>

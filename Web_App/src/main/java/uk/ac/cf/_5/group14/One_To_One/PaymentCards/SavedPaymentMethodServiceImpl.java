@@ -18,12 +18,14 @@ public class SavedPaymentMethodServiceImpl implements SavedPaymentMethodService 
 
     private final SavedPaymentMethodRepository repo;
     private final CardEncryptionService cardEncryptionService;
+    private final PaymentCardExpiryValidator expiry;
 
     public SavedPaymentMethodServiceImpl(
             SavedPaymentMethodRepository repo,
-            CardEncryptionService cardEncryptionService) {
+            CardEncryptionService cardEncryptionService, PaymentCardExpiryValidator expiry) {
         this.repo = repo;
         this.cardEncryptionService = cardEncryptionService;
+        this.expiry = expiry;
     }
 
     @Override
@@ -64,6 +66,7 @@ public class SavedPaymentMethodServiceImpl implements SavedPaymentMethodService 
         if (lastFour == null || !lastFour.matches("\\d{4}")) {
             throw new IllegalArgumentException("Last four digits are required.");
         }
+        expiry.validate(expiryMonth, expiryYear);
 
         boolean isFirstCard = repo.countByUserId(user.getId()) == 0;
         boolean shouldBeDefault = makeDefault || isFirstCard;
@@ -97,6 +100,7 @@ public class SavedPaymentMethodServiceImpl implements SavedPaymentMethodService 
         SavedPaymentMethod card = repo.findByIdAndUserId(cardId, user.getId())
                 .orElseThrow(() -> new AccessDeniedException("Card not found"));
 
+        expiry.validate(expiryMonth, expiryYear);
         card.setCardHolderName(cardHolderName.trim());
         card.setBrand(brand.trim());
         card.setExpiryMonth(expiryMonth);

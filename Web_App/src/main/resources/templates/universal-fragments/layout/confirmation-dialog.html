@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<dialog th:fragment="confirmationDialog" id="confirmationDialog" class="confirmation-dialog"
+        aria-labelledby="confirmationTitle" aria-describedby="confirmationMessage">
+    <div class="confirmation-dialog__content">
+        <span class="confirmation-dialog__mark" aria-hidden="true">?</span>
+        <h2 id="confirmationTitle" th:text="#{ui.01783}">Confirm</h2>
+        <p id="confirmationMessage"></p>
+        <div class="confirmation-dialog__actions">
+            <button type="button" data-confirm-cancel autofocus th:text="#{ui.00125}">Cancel</button>
+            <button type="button" class="confirmation-dialog__approve" data-confirm-approve
+                    th:text="#{ui.01783}">Confirm</button>
+        </div>
+    </div>
+</dialog>
+</body>
+</html>

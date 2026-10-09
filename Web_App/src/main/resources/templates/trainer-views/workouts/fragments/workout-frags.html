@@ -1,158 +1,30 @@
-<!-- Edit workout fragment -->
-<div xmlns:th="http://www.thymeleaf.org"
-     th:fragment="editWorkout(workout)"
-    class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-
-    <input type="hidden" id="workout-id" th:value="${workout.id}"/>
-
-    <div class="grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-slate-900" th:text="#{ui.02867}">Workout list</h3>
-                <span class="text-xs uppercase tracking-wide text-slate-500" th:text="#{ui.02868}">Drag to reorder</span>
-            </div>
-
-            <ul id="workout-list"
-                class="min-h-[240px] max-h-[520px] space-y-2 overflow-auto rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4">
-
-                <li th:each="exercise : ${workout.exercises}"
-                    th:data-id="${exercise.id}"
-                    th:attr="data-name=${exercise.name},data-description=${exercise.description},data-type='exercise'"
-                    class="workout-item group cursor-pointer rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-slate-800 group-hover:text-slate-900" th:text="${exercise.name}">Exercise Name</span>
-                        <span class="text-xs font-semibold uppercase text-slate-400" th:text="#{ui.01682}">Exercise</span>
-                    </div>
-                    <p class="line-clamp-2 text-sm text-slate-600" th:text="${exercise.description}">Description goes here...</p>
-                </li>
-
-                <li th:each="exercise : ${workout.customExercises}"
-                    th:data-id="${exercise.id}"
-                    th:attr="data-name=${exercise.name},data-description=${exercise.description},data-howto=${exercise.howTo},data-video=${exercise.videoUrl},data-embed=${customExerciseEmbeds[exercise.id]},data-color=${exercise.colorTag},data-type='custom'"
-                    class="workout-item group cursor-pointer rounded-xl border border-indigo-200 bg-indigo-50/70 p-3 shadow-sm transition hover:border-indigo-300 hover:shadow-md">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-slate-800 group-hover:text-slate-900" th:text="${exercise.name}">Custom</span>
-                        <span class="text-xs font-semibold uppercase text-indigo-500" th:text="#{ui.01730}">Custom</span>
-                    </div>
-                    <p class="line-clamp-2 text-sm text-slate-600" th:text="${exercise.description}">Description goes here...</p>
-                </li>
-            </ul>
-        </div>
-
-        <div class="space-y-5">
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.02869}">Workout details</h3>
-
-                <div class="mt-3 space-y-3">
-                    <div>
-                        <label for="workout-name" class="mb-1 block text-sm font-semibold text-slate-700" th:text="#{ui.02870}">Workout Name</label>
-                        <input type="text" id="workout-name"
-                               class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                               th:value="${workout.name}">
-                    </div>
-
-                    <div>
-                        <label for="workout-notes" class="mb-1 block text-sm font-semibold text-slate-700" th:text="#{ui.00175}">Notes</label>
-                        <textarea id="workout-notes" name="notes" rows="3"
-                                  class="w-full resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                                  th:text="${workout.notes}"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.02871}">Selected exercise</h3>
-
-                <div id="selected-exercise-empty" class="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500" th:text="#{ui.02872}">
-                    Select an exercise from the list to edit details.
-                </div>
-
-                <div id="selected-exercise-panel" class="mt-3 hidden space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p id="selected-exercise-name" class="text-base font-semibold text-slate-900" th:text="#{ui.01682}">Exercise</p>
-                            <p id="selected-exercise-type" class="text-xs uppercase tracking-wide text-slate-500" th:text="#{ui.00623}">Type</p>
-                        </div>
-                        <button id="selected-exercise-remove" class="text-xs font-semibold text-rose-600" th:text="#{ui.00801}">Remove</button>
-                    </div>
-                    <p id="selected-exercise-description" class="text-sm text-slate-600"></p>
-                    <p id="selected-exercise-howto" class="text-sm text-slate-600"></p>
-                    <div id="selected-exercise-video" class="hidden overflow-hidden rounded-xl border border-slate-200"></div>
-                </div>
-            </div>
-
-            <button id="save-workout-btn"
-                    class="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10">
-                <span th:text="#{ui.02873}">Save Workout</span>
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Create workout fragment -->
-<div xmlns:th="http://www.thymeleaf.org"
-     th:fragment="createWorkout"
-    class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-
-    <input type="hidden" id="workout-id" value="" />
-
-    <div class="grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-slate-900" th:text="#{ui.02867}">Workout list</h3>
-                <span class="text-xs uppercase tracking-wide text-slate-500" th:text="#{ui.02868}">Drag to reorder</span>
-            </div>
-
-            <ul id="workout-list"
-                class="min-h-[240px] max-h-[520px] space-y-2 overflow-auto rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4"></ul>
-        </div>
-
-        <div class="space-y-5">
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.02869}">Workout details</h3>
-
-                <div class="mt-3 space-y-3">
-                    <div>
-                        <label for="workout-name" class="mb-1 block text-sm font-semibold text-slate-700" th:text="#{ui.02870}">Workout Name</label>
-                        <input type="text" id="workout-name"
-                               class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                               placeholder="e.g., Leg Day 1..." th:placeholder="#{ui.02874}">
-                    </div>
-
-                    <div>
-                        <label for="workout-notes" class="mb-1 block text-sm font-semibold text-slate-700" th:text="#{ui.00175}">Notes</label>
-                        <textarea id="workout-notes" name="notes" rows="3"
-                                  class="w-full resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                                  placeholder="Add notes..." th:placeholder="#{ui.02875}"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500" th:text="#{ui.02871}">Selected exercise</h3>
-
-                <div id="selected-exercise-empty" class="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500" th:text="#{ui.02872}">
-                    Select an exercise from the list to edit details.
-                </div>
-
-                <div id="selected-exercise-panel" class="mt-3 hidden space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p id="selected-exercise-name" class="text-base font-semibold text-slate-900" th:text="#{ui.01682}">Exercise</p>
-                            <p id="selected-exercise-type" class="text-xs uppercase tracking-wide text-slate-500" th:text="#{ui.00623}">Type</p>
-                        </div>
-                        <button id="selected-exercise-remove" class="text-xs font-semibold text-rose-600" th:text="#{ui.00801}">Remove</button>
-                    </div>
-                    <p id="selected-exercise-description" class="text-sm text-slate-600"></p>
-                    <p id="selected-exercise-howto" class="text-sm text-slate-600"></p>
-                    <div id="selected-exercise-video" class="hidden overflow-hidden rounded-xl border border-slate-200"></div>
-                </div>
-            </div>
-
-            <button id="save-workout-btn"
-                    class="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10">
-                <span th:text="#{ui.02873}">Save Workout</span>
-            </button>
-        </div>
-    </div>
-</div>
+<th:block xmlns:th="http://www.thymeleaf.org">
+    <div th:fragment="createWorkout" th:replace="~{trainer-views/workouts/fragments/workout-frags :: editor(${workoutDraft})}"></div>
+    <div th:fragment="editWorkout(workout)" th:replace="~{trainer-views/workouts/fragments/workout-frags :: editor(${workoutDraft})}"></div>
+    <form th:fragment="editor(draft)" id="workout-draft-form" method="post" th:action="@{/save-workout}" data-schedule-draft>
+        <button type="submit" name="editAction" value="save" class="sr-only" tabindex="-1" aria-hidden="true" th:text="#{ui.02873}">Save workout</button>
+        <input type="hidden" id="workout-id" name="id" th:value="${draft.id}">
+        <input th:each="id : ${draft.exerciseIds}" type="hidden" name="exerciseIds" th:value="${id}" data-selected-type="e">
+        <input th:each="id : ${draft.customExerciseIds}" type="hidden" name="customExerciseIds" th:value="${id}" data-selected-type="c">
+        <label for="workout-name" th:text="#{ui.02870}">Workout name</label>
+        <input type="text" id="workout-name" name="name" required maxlength="200" th:value="${draft.name}" autocomplete="off">
+        <label for="workout-notes" th:text="#{ui.00175}">Notes</label>
+        <textarea id="workout-notes" name="workoutNotes" rows="3" maxlength="5000" th:text="${draft.workoutNotes}"></textarea>
+        <div class="schedule-workshop__section-heading"><h2 th:text="#{ui.02867}">Workout list</h2><span data-selected-count th:text="#{ui.studio.count(${#lists.size(draft.exerciseIds) + #lists.size(draft.customExerciseIds)})}">Exercises</span></div>
+        <p class="schedule-workshop__hint" th:text="#{ui.scheduleWorkout.grouping}">Catalogue and custom exercises are saved in separate groups.</p>
+        <p id="no-exercises-msg" class="schedule-workshop__empty" th:attr="hidden=${!#lists.isEmpty(draft.exerciseIds) or !#lists.isEmpty(draft.customExerciseIds)} ? 'hidden' : null" th:text="#{ui.scheduleWorkout.empty}">Add an exercise from the library.</p>
+        <ul id="workout-list" class="schedule-workshop__selected">
+            <th:block th:each="exercise : ${selectedExercises}"><li th:replace="~{trainer-views/workouts/fragments/workout-frags :: movement(${exercise}, 'e')}"></li></th:block>
+            <th:block th:each="exercise : ${selectedCustomExercises}"><li th:replace="~{trainer-views/workouts/fragments/workout-frags :: movement(${exercise}, 'c')}"></li></th:block>
+        </ul>
+        <div class="schedule-workshop__save"><button id="save-workout-btn" type="submit" name="editAction" value="save" class="training-launch__action training-launch__action--primary" th:text="#{ui.02873}">Save workout</button><a href="/schedules/builder" class="training-launch__action" id="schedule-button" th:text="#{ui.02572}">Continue to schedule</a></div>
+    </form>
+    <li th:fragment="movement(exercise, type)" class="schedule-movement" th:attr="data-id=${exercise.id},data-type=${type},data-name=${exercise.name},data-color=${type == 'c' ? exercise.colorTag : ''}">
+        <div class="schedule-movement__heading"><h3 th:text="${exercise.name}">Exercise</h3><button type="submit" form="workout-draft-form" name="editAction" th:value="${'remove:' + type + ':' + exercise.id}" formnovalidate class="training-launch__action" th:attr="aria-label=#{ui.studio.removeFor(${exercise.name})}" th:text="#{ui.00801}">Remove</button></div>
+        <p class="schedule-movement__type" th:text="${type == 'c' ? #messages.msg('ui.01730') : #messages.msg('ui.01682')}">Exercise</p>
+        <details><summary th:text="#{ui.02871}">Selected exercise</summary><p th:text="${exercise.description}">Description</p>
+            <p th:if="${type == 'c'}" th:text="${exercise.howTo}"></p>
+            <a th:if="${type == 'c' and exercise.embedUrl != null and !#strings.isEmpty(exercise.embedUrl)}" th:href="${exercise.embedUrl}" target="_blank" rel="noopener noreferrer" th:text="#{ui.02582}">Video URL (YouTube/Vimeo)</a>
+        </details>
+    </li>
+</th:block>

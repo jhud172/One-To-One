@@ -50,6 +50,17 @@ public class VaultNote {
     @Column(name = "ai_summary", columnDefinition = "TEXT")
     private String aiSummary;
 
+    @Column(name = "ai_generated_at")
+    private Instant aiGeneratedAt;
+
+    @Column(name = "ai_source_revision", length = 64)
+    private String aiSourceRevision;
+
+    public Instant getAiGeneratedAt() { return aiGeneratedAt; }
+    public void setAiGeneratedAt(Instant value) { aiGeneratedAt = value; }
+    public String getAiSourceRevision() { return aiSourceRevision; }
+    public void setAiSourceRevision(String value) { aiSourceRevision = value; }
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -90,6 +101,11 @@ public class VaultNote {
 
     public Long getId() {
         return id;
+    }
+
+    @Transient
+    public String getRevision() {
+        return VaultRevision.of(this);
     }
 
     public Long getUserId() {

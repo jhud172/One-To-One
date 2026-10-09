@@ -1,143 +1,34 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.01945}, null, ~{::content}, ~{::scripts})}">
-    <div th:fragment="content">
-        <div class="relative overflow-hidden" id="chatV2Root" th:attr="data-thread-id=${thread.id}">
-            <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-500/10 via-sky-400/10 to-indigo-500/10"></div>
-            <div class="relative mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-                <div class="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)_260px]">
-                    <th:block th:replace="~{shared-views/chat/fragments/sidebar :: chatSidebar(${folders}, ${threads}, ${icons}, ${activeFolderId}, ${activeThreadId})}"></th:block>
-
-                    <section class="rounded-2xl border border-slate-200/70 bg-white/90 shadow-lg backdrop-blur dark:border-slate-800/60 dark:bg-slate-950/80">
-                        <header class="flex items-start justify-between border-b border-slate-200/70 px-6 py-4 dark:border-slate-800/60">
-                            <div>
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl text-lg"
-                                         data-chat-accent-badge
-                                         th:attr="data-chat-color=${thread.colorHex}"
-                                         th:text="${icons[thread.iconKey]}">💬</div>
-                                    <div>
-                                        <h1 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="${thread.title}">Chat</h1>
-                                        <span id="chatInstructionsBadge" th:classappend="${!hasCustomInstructions} ? ' hidden' : ''" class="mt-1 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-700" th:text="#{ui.01946}">Active instructions</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button id="chatInstructionsToggle" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50" th:text="#{ui.01947}">Instructions</button>
-                                <button id="chatSettingsToggle" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50" th:text="#{ui.01948}">⚙ Settings</button>
-                            </div>
-                        </header>
-
-                        <div class="flex min-h-[60vh] flex-col">
-                            <div id="chatMessages" class="flex-1 space-y-4 overflow-auto px-6 py-6 text-sm">
-                                <div th:if="${#lists.isEmpty(messages)}" class="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 text-slate-700 shadow-sm" th:text="#{ui.01949}">Start your first message…</div>
-                                <div th:each="msg : ${messages}" th:class="${msg.role.name() == 'USER'} ? 'flex justify-end' : 'flex justify-start'">
-                                    <div class="max-w-[80%] whitespace-pre-wrap rounded-2xl border px-3 py-2 shadow-sm"
-                                         th:classappend="${msg.role.name() == 'USER'} ? ' border-slate-900 bg-slate-900 text-white' : ' border-slate-200 bg-slate-50 text-slate-900'"
-                                         th:text="${msg.content}">Message</div>
-                                </div>
-                            </div>
-
-                            <div class="border-t border-slate-200/70 px-6 py-4">
-                                <div class="relative">
-                                    <textarea id="chatComposer" rows="3" placeholder="Type / for commands" class="w-full resize-none rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10" th:placeholder="#{ui.01950}"></textarea>
-                                    <div id="chatCommandMenu" class="absolute bottom-full left-0 mb-2 hidden w-full rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"></div>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between gap-2">
-                                    <div class="flex items-center gap-2 text-xs text-slate-400">
-                                        <span class="rounded-full bg-slate-100 px-2 py-1" th:text="#{ui.01951}">/task add</span>
-                                        <span class="rounded-full bg-slate-100 px-2 py-1" th:text="#{ui.01952}">/note add</span>
-                                    </div>
-                                    <button id="chatSendBtn" class="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-2 text-sm font-semibold text-white shadow-lg hover:bg-slate-800" th:text="#{ui.01897}">Send ✨</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="chatSettingsDrawer" class="hidden border-t border-slate-200/70 bg-slate-50 px-6 py-4">
-                            <div class="text-sm font-semibold text-slate-900" th:text="#{ui.01953}">Chat settings</div>
-                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                                <input id="chatTitleInput" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" th:value="${thread.title}" />
-                                <input id="chatColorInput" class="rounded-xl border border-slate-200 px-3 py-2 text-sm" th:value="${thread.colorHex}" />
-                                <select id="chatIconInput" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                    <option th:each="entry : ${icons}" th:value="${entry.key}" th:text="${entry.value}" th:selected="${entry.key == thread.iconKey}"></option>
-                                </select>
-                                <select id="chatFolderMove" class="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                    <option value="" th:selected="${thread.folder == null}" th:text="#{ui.01954}">No folder</option>
-                                    <option th:each="folder : ${folders}" th:value="${folder.id}" th:text="${folder.name}" th:selected="${thread.folder != null and folder.id == thread.folder.id}"></option>
-                                </select>
-                                <div class="flex items-center gap-2 text-xs">
-                                    <label class="flex items-center gap-2"><input id="chatPinnedInput" type="checkbox" th:checked="${thread.pinned}" /><th:block th:text="#{ui.01747}">Pinned</th:block></label>
-                                    <label class="flex items-center gap-2"><input id="chatArchivedInput" type="checkbox" th:checked="${thread.archived}" /><th:block th:text="#{ui.00592}">Archived</th:block></label>
-                                </div>
-                            </div>
-                            <div class="mt-3 flex items-center gap-2">
-                                <button id="chatInstructionsReset" class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold" th:text="#{ui.01955}">Reset to default</button>
-                                <button id="chatSettingsSave" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white" th:text="#{ui.01956}">Save settings</button>
-                            </div>
-                        </div>
-
-                        <div id="chatInstructionsDrawer" class="hidden border-t border-slate-200/70 bg-white px-6 py-4">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <div class="text-sm font-semibold text-slate-900" th:text="#{ui.01957}">Coach modes</div>
-                                    <p class="mt-1 text-xs text-slate-500" th:text="#{ui.01958}">Add guidance that shapes how Coach Bot responds in this thread.</p>
-                                </div>
-                            </div>
-
-                            <div class="mt-3 flex flex-wrap gap-2">
-                                <button type="button" class="chat-preset rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700" data-preset="fatloss" th:text="#{ui.01360}">Fat loss</button>
-                                <button type="button" class="chat-preset rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700" data-preset="strength" th:text="#{ui.01359}">Strength</button>
-                                <button type="button" class="chat-preset rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700" data-preset="rehab" th:text="#{ui.01959}">Rehab</button>
-                                <button type="button" class="chat-preset rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700" data-preset="motivation" th:text="#{ui.01803}">Motivation</button>
-                            </div>
-
-                            <textarea id="chatInstructionsInput" rows="5" class="mt-3 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm" th:text="${thread.customInstructions}" placeholder="Example: Keep responses short. Focus on recovery, pain-free movement, and safe progressions." th:placeholder="#{ui.01960}"></textarea>
-
-                            <div class="mt-3 flex flex-wrap items-center gap-2">
-                                <button id="chatInstructionsResetBtn" class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold" th:text="#{ui.00555}">Clear</button>
-                                <button id="chatInstructionsSave" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white" th:text="#{ui.01961}">Save instructions</button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <aside class="rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-800/60 dark:bg-slate-950/70">
-                        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.01940}">Context + Actions</div>
-                        <div class="mt-4 space-y-3 text-xs">
-                            <div class="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 shadow-sm">
-                                <div class="text-[11px] uppercase tracking-widest text-slate-400" th:text="#{ui.01962}">Next task</div>
-                                <div class="mt-1 text-sm text-slate-700" th:text="${nextTask != null ? nextTask.title : 'No upcoming tasks'}">No upcoming tasks</div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-center shadow-sm">
-                                    <div class="text-[11px] uppercase text-slate-400" th:text="#{ui.01963}">Overdue</div>
-                                    <div class="text-base font-semibold" th:text="${overdueCount}">0</div>
-                                </div>
-                                <div class="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-center shadow-sm">
-                                    <div class="text-[11px] uppercase text-slate-400" th:text="#{ui.01613}">Done</div>
-                                    <div class="text-base font-semibold" th:text="${completedToday}">0</div>
-                                </div>
-                            </div>
-                            <div th:if="${levelProgress != null}" class="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 shadow-sm">
-                                <div class="text-[11px] uppercase text-slate-400" th:text="#{ui.00476}">Level</div>
-                                <div class="text-sm font-semibold" th:text="${levelProgress.level}">1</div>
-                                <div class="text-xs text-slate-500" th:text="${levelProgress.points} + ' pts'">0 pts</div>
-                            </div>
-                            <div class="space-y-2">
-                                <button id="quickAddTask" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50" th:text="#{ui.01673}">Add task</button>
-                                <a href="/calendar" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50" th:text="#{ui.01932}">View calendar</a>
-                                <a href="/notes" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50" th:text="#{ui.01933}">Open notes</a>
-                                <a href="/schedule" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50" th:text="#{ui.01964}">View schedules</a>
-                            </div>
-                        </div>
-                    </aside>
-                </div>
-            </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.charlie.history}, null, ~{::content}, ~{::scripts})}">
+<div th:fragment="content" class="coach-workspace-v2 assistant-history-v2">
+<header class="assistant-history-header">
+    <div><p class="assistant-history-eyebrow" th:text="#{ui.charlie.history}"></p>
+        <h1 dir="auto" th:text="${thread.title}"></h1><p th:text="#{ui.charlie.historyHint}"></p></div>
+    <a class="assistant-history-action" th:href="@{/chat}" th:text="#{ui.charlie.archive.openCurrent}"></a>
+</header>
+<div class="assistant-history-layout">
+    <th:block th:replace="~{shared-views/chat/fragments/sidebar :: chatSidebar(${folders}, null, null, ${thread.folder != null ? thread.folder.id : null}, ${thread.id})}"></th:block>
+    <section class="assistant-history-panel" th:attr="aria-label=#{ui.02083}">
+        <a class="assistant-history-action" th:href="@{${historyListPath}(q=${searchQuery},page=${historyReturnPage})}" th:text="#{ui.charlie.archive.return}"></a>
+        <div class="assistant-history-tags">
+            <a th:if="${thread.folder != null}" class="assistant-history-action" th:href="@{/chatv2/history/folder/{id}(id=${thread.folder.id})}" dir="auto" th:text="${thread.folder.name}"></a>
+            <span th:if="${thread.pinned}" class="assistant-history-meta" th:text="#{ui.charlie.archive.pinned}"></span>
+            <span th:if="${thread.archived}" class="assistant-history-meta" th:text="#{ui.00592}"></span>
+            <span th:if="${thread.type.name() == 'TRAINER_CLIENT'}" class="assistant-history-meta" th:text="#{ui.charlie.archive.coaching}"></span>
         </div>
-
-        <input type="hidden" id="chat_csrf" th:value="${_csrf != null ? _csrf.token : ''}" />
-        <input type="hidden" id="chat_csrf_header" th:value="${_csrf != null ? _csrf.headerName : ''}" />
-    </div>
-
-    <th:block th:fragment="scripts">
-        <script src="/js/chat/chat-v2.js" defer></script>
-    </th:block>
+        <details th:if="${!#strings.isEmpty(thread.customInstructions)}" class="assistant-history-instructions">
+            <summary th:text="#{ui.01947}"></summary><p dir="auto" th:text="${thread.customInstructions}"></p>
+        </details>
+        <p th:if="${#lists.isEmpty(messages)}" class="assistant-history-empty" th:text="#{ui.02005}"></p>
+        <ol class="assistant-history-messages">
+            <li th:each="message : ${messages}" th:attr="data-history-message=${message.id}" th:classappend="${message.role.name() == 'USER'} ? 'assistant-history-own' : ''">
+                <p class="assistant-history-meta"><span th:text="${message.role.name() == 'USER'} ? #{ui.charlie.you} : (${message.role.name() == 'SYSTEM'} ? #{ui.charlie.archive.system} : (${thread.type.name() == 'TRAINER_CLIENT'} ? #{ui.charlie.archive.savedReply} : 'Charlie'))"></span>
+                    <time dir="ltr" th:text="${historyMessageDates[message.id]}" th:datetime="${message.createdAt}"></time></p>
+                <p class="assistant-history-body" dir="auto" th:text="${message.content}"></p>
+            </li>
+        </ol>
+        <th:block th:replace="~{shared-views/chat/fragments/history-pagination :: historyPagination}"></th:block>
+    </section>
+</div>
+</div>
+<th:block th:fragment="scripts"><script th:src="@{/js/messaging/archive-history.js(v=${uiCssVersion})}" defer></script></th:block>
 </th:block>

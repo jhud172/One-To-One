@@ -5,13 +5,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const notificationList = document.getElementById("notificationInboxList");
     const notificationEmpty = document.getElementById("notificationInboxEmpty");
     const notificationReadAll = document.getElementById("notificationInboxReadAll");
+    const page = threadRoot || document.getElementById("inboxPage");
+    if (!page || page.dataset.inboxInitialized === "true") return;
+    page.dataset.inboxInitialized = "true";
+    const copy = key => page?.dataset[key] || key;
+    const statusElement = document.getElementById("inboxStatus");
+    const announce = text => { if (statusElement) statusElement.textContent = text; };
+    let threadRequestPending = false;
+    let sending = false;
+    let messagesSignature = null;
+    let threadListVersion = 0;
+    let notificationVersion = 0;
+
+    function safeLink(value, internalOnly = false) {
+        try {
+            const url = new URL(value, location.origin);
+            if (!["http:", "https:"].includes(url.protocol) || url.username || url.password
+                    || (internalOnly && url.origin !== location.origin)) return null;
+            return url.href;
+        } catch { return null; }
+    }
 
     const csrfToken = document.getElementById("inbox_csrf")?.value || null;
     const csrfHeader = document.getElementById("inbox_csrf_header")?.value || "X-CSRF-TOKEN";
 
     const headers = { "Content-Type": "application/json" };
     if (csrfToken) headers[csrfHeader] = csrfToken;
-    const notificationSyncChannel = "BroadcastChannel" in window ? new BroadcastChannel("one-to-one-notifications") : null;
+    let notificationSyncChannel = null;
+    try {
+        if ("BroadcastChannel" in window) notificationSyncChannel = new BroadcastChannel("one-to-one-notifications");
+    } catch { /* Cross-tab updates are optional. */ }
 
     function broadcastNotificationSync(detail) {
         const payload = detail || {};
@@ -27,32 +50,30 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!value) return "";
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return "";
-        return date.toLocaleString();
+        return date.toLocaleString(document.documentElement.lang || undefined);
     }
 
     async function fetchThreads() {
+        const version = ++threadListVersion;
         try {
             const res = await fetch("/api/inbox/threads", { method: "GET" });
-            if (!res.ok) return;
+            if (!res.ok) throw new Error("threads-load");
             const data = await res.json();
-            if (!Array.isArray(data)) return;
-            renderThreads(data);
-        } catch {
-            // ignore
-        }
+            if (!Array.isArray(data)) throw new Error("threads-payload");
+            if (version === threadListVersion) renderThreads(data);
+        } catch { if (version === threadListVersion) announce(copy("loadError")); }
     }
 
     async function fetchNotifications() {
         if (!notificationList || !notificationEmpty) return;
+        const version = ++notificationVersion;
         try {
             const res = await fetch("/api/notifications?limit=50", { method: "GET" });
-            if (!res.ok) return;
+            if (!res.ok) throw new Error("notifications-load");
             const data = await res.json();
-            if (!Array.isArray(data)) return;
-            renderNotifications(data);
-        } catch {
-            // ignore
-        }
+            if (!Array.isArray(data)) throw new Error("notifications-payload");
+            if (version === notificationVersion) renderNotifications(data);
+        } catch { if (version === notificationVersion) announce(copy("loadError")); }
     }
 
     function renderThreads(threads) {
@@ -73,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const item = document.createElement("li");
             const link = document.createElement("a");
             link.href = `/inbox/${thread.threadId}`;
-            link.className = "group flex items-start justify-between gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/30";
+            link.className = "inbox-thread-link";
 
             const left = document.createElement("div");
             left.className = "flex min-w-0 items-start gap-3";
@@ -90,14 +111,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const title = document.createElement("p");
             title.className = "truncate text-sm font-semibold text-slate-900 dark:text-slate-100";
-            title.textContent = thread.title || "Conversation";
+            title.textContent = thread.title || copy("conversation");
 
             titleRow.appendChild(title);
 
             if (thread.unreadCount && thread.unreadCount > 0) {
                 const badge = document.createElement("span");
-                badge.className = "inline-flex items-center rounded-full bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-900";
+                badge.className = "inbox-unread-badge inline-flex items-center";
                 badge.textContent = thread.unreadCount;
+                badge.setAttribute("aria-label", `${thread.unreadCount} ${copy("unreadLabel")}`);
                 titleRow.appendChild(badge);
             }
 
@@ -117,10 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const date = document.createElement("span");
             date.className = "text-xs text-slate-500";
             date.textContent = formatDate(thread.lastMessageAt);
+            date.dir = "ltr";
 
             const open = document.createElement("span");
             open.className = "text-xs font-semibold text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300";
-            open.textContent = "Open";
+            open.textContent = copy("open");
 
             right.appendChild(date);
             right.appendChild(open);
@@ -131,13 +154,17 @@ document.addEventListener("DOMContentLoaded", () => {
             list.appendChild(item);
         });
 
-        listRoot.innerHTML = "";
+        listRoot.replaceChildren();
         listRoot.appendChild(list);
     }
 
     function renderNotifications(notifications) {
         if (!notificationList || !notificationEmpty) return;
-        notificationList.innerHTML = "";
+        notificationList.replaceChildren();
+        const unread = notifications.filter(item => !item.readAt && !item.dismissedAt).length;
+        const badge = document.getElementById("notificationInboxUnread");
+        if (badge) { badge.hidden = unread === 0; badge.textContent = `${unread} ${copy("unreadLabel")}`; }
+        if (notificationReadAll) notificationReadAll.disabled = unread === 0;
 
         if (!notifications.length) {
             notificationEmpty.classList.remove("hidden");
@@ -172,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const title = document.createElement("span");
-        title.textContent = notification.title || "Notification";
+        title.textContent = notification.title || copy("notification");
         titleWrap.appendChild(title);
 
         const actions = document.createElement("div");
@@ -182,11 +209,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const markRead = document.createElement("button");
             markRead.type = "button";
             markRead.className = "inline-flex min-h-11 items-center rounded-lg px-2 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200";
-            markRead.textContent = "Mark read";
+            markRead.textContent = copy("markRead");
             markRead.addEventListener("click", async (e) => {
                 e.stopPropagation();
-                await markNotificationRead(notification.id);
-                await fetchNotifications();
+                markRead.disabled = true;
+                try { await markNotificationRead(notification.id); await fetchNotifications(); }
+                finally { markRead.disabled = false; }
             });
             actions.appendChild(markRead);
         }
@@ -199,17 +227,18 @@ document.addEventListener("DOMContentLoaded", () => {
         message.textContent = notification.message || "";
 
         const meta = document.createElement("div");
-        meta.className = "text-xs text-slate-400";
+        meta.className = "inbox-notification-meta";
         meta.textContent = formatDate(notification.createdAt);
 
         row.appendChild(header);
         row.appendChild(message);
 
-        if (notification.ctaUrl) {
+        const safeCtaUrl = notification.ctaUrl ? safeLink(notification.ctaUrl, true) : null;
+        if (safeCtaUrl) {
             const cta = document.createElement("a");
-            cta.href = notification.ctaUrl;
+            cta.href = safeCtaUrl;
             cta.className = "inline-flex min-h-11 w-fit items-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200";
-            cta.textContent = "Open";
+            cta.textContent = copy("open");
             cta.addEventListener("click", async (e) => {
                 e.stopPropagation();
                 if (isUnread) {
@@ -226,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 await markNotificationRead(notification.id);
                 await fetchNotifications();
             });
-            row.style.cursor = "pointer";
+            row.classList.add("inbox-notification-unread");
         }
 
         return row;
@@ -236,7 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const res = await fetch(`/api/inbox/threads/${threadId}`, { method: "GET" });
             if (!res.ok) return null;
-            return res.json();
+            return await res.json();
         } catch {
             return null;
         }
@@ -248,6 +277,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!messagesEl || !emptyEl || !payload) return;
 
         const messages = payload.messages || [];
+        if (!Array.isArray(messages)) { announce(copy("loadError")); return; }
+        const followLatest = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 80;
+        const signature = JSON.stringify(messages);
+        if (signature === messagesSignature) return followLatest;
+        messagesSignature = signature;
+        const previousTop = messagesEl.scrollTop;
         if (!messages.length) {
             messagesEl.classList.add("hidden");
             emptyEl.classList.remove("hidden");
@@ -256,84 +291,103 @@ document.addEventListener("DOMContentLoaded", () => {
 
         messagesEl.classList.remove("hidden");
         emptyEl.classList.add("hidden");
-        messagesEl.innerHTML = "";
+        messagesEl.replaceChildren();
 
         messages.forEach(msg => {
             const row = document.createElement("div");
             row.className = "flex";
+            row.classList.add(payload.currentUserId === msg.senderUserId ? "inbox-message-own" : "inbox-message-other");
 
             const card = document.createElement("div");
             card.className = "max-w-2xl rounded-2xl border border-slate-200/70 bg-white px-4 py-3 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950/40";
 
-            const meta = document.createElement("p");
+            const meta = document.createElement("time");
             meta.className = "text-xs text-slate-500";
             meta.textContent = formatDate(msg.createdAt);
+            meta.dateTime = msg.createdAt || "";
+            meta.dir = "ltr";
 
             const body = document.createElement("p");
             body.className = "mt-1 whitespace-pre-wrap text-slate-800 dark:text-slate-200";
             body.textContent = msg.bodyText || "";
+            body.dir = "auto";
 
+            if (msg.type === "CHECKIN") {
+                const label = document.createElement("p");
+                label.className = "inbox-checkin-label";
+                label.textContent = copy("checkin");
+                card.appendChild(label);
+            }
             card.appendChild(meta);
             card.appendChild(body);
 
-            if (msg.attachmentUrl) {
+            const safeAttachment = msg.attachmentUrl ? safeLink(msg.attachmentUrl) : null;
+            if (safeAttachment) {
                 const attachment = document.createElement("a");
-                attachment.href = msg.attachmentUrl;
+                attachment.href = safeAttachment;
                 attachment.target = "_blank";
                 attachment.rel = "noopener noreferrer";
-                attachment.className = "mt-2 inline-flex items-center text-xs font-semibold text-slate-600 hover:underline dark:text-slate-300";
-                attachment.textContent = msg.attachmentName || "View attachment";
+                attachment.className = "inbox-attachment";
+                attachment.textContent = msg.attachmentName || copy("viewAttachment");
                 card.appendChild(attachment);
             }
 
             if (payload.currentUserId === msg.senderUserId) {
-                const receipt = document.createElement("div");
-                receipt.className = "mt-2 text-[11px] text-slate-400";
-                receipt.textContent = msg.readByOther ? "Read" : "Sent";
+                const receipt = document.createElement("p");
+                receipt.className = "inbox-receipt";
+                receipt.textContent = msg.readByOther ? copy("read") : copy("sent");
                 card.appendChild(receipt);
             }
 
             row.appendChild(card);
             messagesEl.appendChild(row);
         });
+        messagesEl.scrollTop = followLatest ? messagesEl.scrollHeight : previousTop;
+        return followLatest;
     }
 
-    async function markThreadRead(threadId) {
+    async function markThreadRead(threadId, upToId) {
         try {
-            await fetch(`/api/inbox/threads/${threadId}/read`, { method: "POST", headers });
-        } catch {
-            // ignore
-        }
+            const response = await fetch(`/api/inbox/threads/${threadId}/read?upToId=${upToId}`, { method: "POST", headers });
+            if (!response.ok) throw new Error("read-failed");
+            return true;
+        } catch { announce(copy("readFailed")); return false; }
     }
 
     async function markNotificationRead(id) {
         if (!id) return;
         try {
-            await fetch(`/api/notifications/${id}/read`, { method: "POST", headers });
+            // A notification link may navigate immediately; retain its small read request across that navigation.
+            const response = await fetch(`/api/notifications/${id}/read`, { method: "POST", headers, keepalive: true });
+            if (!response.ok) throw new Error("notification-read");
             broadcastNotificationSync({ source: "inbox", notificationId: id, action: "read" });
-        } catch {
-            // ignore
-        }
+        } catch { announce(copy("loadError")); }
     }
 
     async function sendMessage(threadId, bodyText, attachmentUrl) {
         const payload = {
             bodyText,
             attachmentUrl: attachmentUrl || null,
-            attachmentName: attachmentUrl ? "Attachment" : null,
+            attachmentName: attachmentUrl ? copy("viewAttachment") : null,
             attachmentType: attachmentUrl ? "link" : null
         };
-        const res = await fetch(`/api/inbox/threads/${threadId}/send`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload)
-        });
-        return res.ok;
+        let res;
+        try {
+            res = await fetch(`/api/inbox/threads/${threadId}/send`, { method: "POST", headers, body: JSON.stringify(payload) });
+        } catch { throw new Error("SEND_UNCONFIRMED"); }
+        if (!res.ok) {
+            let reason = "SEND_UNCONFIRMED";
+            try { reason = (await res.json()).reason || reason; } catch { /* Retain an unconfirmed draft. */ }
+            throw new Error(reason);
+        }
+        let acknowledgement;
+        try { acknowledgement = await res.json(); } catch { throw new Error("SEND_UNCONFIRMED"); }
+        if (res.redirected || !Number.isSafeInteger(acknowledgement?.id) || acknowledgement.id < 1) throw new Error("SEND_UNCONFIRMED");
     }
 
     if (listRoot) {
         fetchThreads();
-        setInterval(fetchThreads, 8000);
+        setInterval(() => { if (!document.hidden) fetchThreads(); }, 8000);
     }
 
     if (notificationList) {
@@ -342,9 +396,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (notificationReadAll) {
         notificationReadAll.addEventListener("click", async () => {
-            await fetch("/api/notifications/read-all", { method: "POST", headers });
-            await fetchNotifications();
-            broadcastNotificationSync({ source: "inbox", action: "read-all" });
+            notificationReadAll.disabled = true;
+            try {
+                const response = await fetch("/api/notifications/read-all", { method: "POST", headers });
+                if (!response.ok) throw new Error("notification-read-all");
+                await fetchNotifications();
+                broadcastNotificationSync({ source: "inbox", action: "read-all" });
+            } catch { announce(copy("loadError")); }
+            finally { notificationReadAll.disabled = !notificationList?.querySelector('.inbox-notification-unread'); }
         });
     }
 
@@ -360,27 +419,107 @@ document.addEventListener("DOMContentLoaded", () => {
         const sendForm = document.getElementById("inboxSendForm");
         const bodyInput = document.getElementById("inboxBody");
         const attachmentInput = document.getElementById("inboxAttachmentUrl");
+        const sendButton = sendForm?.querySelector("button[type=submit]");
+        let locked = threadRoot.dataset.threadStatus !== "OPEN";
+        let unconfirmed = false;
+        let lastReceivedId = 0, lastReadId = 0, readPending = false;
+        const messagesEl = document.getElementById("inboxMessages");
+        const checkinForm = document.querySelector('[data-inbox-checkin-form]');
+        const checkinFields = [...document.querySelectorAll('[data-inbox-checkin-form] input:not([type=hidden]), [data-inbox-checkin-form] textarea')];
+        const fields = [bodyInput, attachmentInput, ...checkinFields].filter(Boolean);
+        const initial = fields.map(field => field.value);
+        let textRejected = threadRoot.dataset.rejected === "true" && threadRoot.dataset.checkinRejected !== "true";
+        const checkinRejected = threadRoot.dataset.checkinRejected === "true";
+        const dirty = () => textRejected || checkinRejected || fields.some((field,index) => field.value !== initial[index]);
+        const textDirty = () => textRejected || fields.slice(0,2).some((field,index) => field.value !== initial[index]);
+        const destinations = [...document.querySelectorAll('a[href^="/inbox"], a[href="/dashboard"]')];
+        let leaving = false;
+        const updateDraftGuard = () => {
+            destinations.forEach(link => dirty() ? link.setAttribute("data-confirm", copy("unsaved")) : link.removeAttribute("data-confirm"));
+            if (checkinForm) textDirty() ? checkinForm.setAttribute("data-confirm", copy("unsaved")) : checkinForm.removeAttribute("data-confirm");
+        };
+        fields.forEach(field => field.addEventListener("input", updateDraftGuard));
+        destinations.forEach(link => link.addEventListener("click", event => { if (!event.defaultPrevented) leaving = true; }));
+        checkinForm?.addEventListener("submit", event => { if (!event.defaultPrevented) leaving = true; });
+        window.addEventListener("beforeunload", event => { if (!leaving && dirty()) { event.preventDefault(); event.returnValue = ""; } });
+        updateDraftGuard();
+        const markDisplayedRead = async () => {
+            if (document.hidden || readPending || lastReceivedId <= lastReadId || !messagesEl
+                    || messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight >= 80) return;
+            readPending = true;
+            const position = lastReceivedId;
+            try { if (await markThreadRead(threadId, position)) lastReadId = position; }
+            finally { readPending = false; }
+        };
+        messagesEl?.addEventListener("scroll", markDisplayedRead);
+
+        function updateSendAvailability() {
+            if (sendButton) sendButton.disabled = sending || locked || unconfirmed;
+            if (bodyInput) bodyInput.readOnly = sending || locked;
+            if (attachmentInput) attachmentInput.readOnly = sending || locked;
+            const checkinFieldsGroup = checkinForm?.querySelector("fieldset");
+            if (checkinFieldsGroup) checkinFieldsGroup.disabled = sending || locked;
+            if (locked) announce(copy("locked"));
+        }
 
         const refreshThread = async () => {
-            const payload = await fetchThread(threadId);
-            if (!payload) return;
-            renderMessages(payload);
-            await markThreadRead(threadId);
+            if (threadRequestPending || sending || document.hidden) return;
+            threadRequestPending = true;
+            try {
+                const payload = await fetchThread(threadId);
+                if (!payload || !Array.isArray(payload.messages) || !["OPEN", "LOCKED"].includes(payload.status)) { announce(copy("loadError")); return false; }
+                locked = payload.status !== "OPEN";
+                updateSendAvailability();
+                renderMessages(payload);
+                const currentConversation = document.querySelector('aside a[aria-current="page"]');
+                const latestMessage = payload.messages[payload.messages.length - 1];
+                if (currentConversation && latestMessage) {
+                    const preview = currentConversation.querySelector('[data-inbox-preview]');
+                    const date = currentConversation.querySelector('[data-inbox-preview-date]');
+                    if (preview) preview.textContent = latestMessage.bodyText || "";
+                    if (date) date.textContent = formatDate(latestMessage.createdAt);
+                }
+                lastReceivedId = payload.messages.reduce((latest, message) => Number.isSafeInteger(message.id) ? Math.max(latest, message.id) : latest, lastReceivedId);
+                await markDisplayedRead();
+                return true;
+            } finally { threadRequestPending = false; }
         };
 
         refreshThread();
+        updateSendAvailability();
         setInterval(refreshThread, 5000);
 
         sendForm?.addEventListener("submit", async (event) => {
             if (!threadId || !bodyInput) return;
             event.preventDefault();
+            if (sending || locked || unconfirmed) return;
             const attachmentUrl = attachmentInput?.value?.trim() || "";
             const bodyText = bodyInput.value.trim();
-            if (!bodyText && !attachmentUrl) return;
-            bodyInput.value = "";
-            if (attachmentInput) attachmentInput.value = "";
-            await sendMessage(threadId, bodyText, attachmentUrl);
+            if (!bodyText && !attachmentUrl) { announce(copy("sendError")); bodyInput.focus(); return; }
+            sending = true;
+            updateSendAvailability();
+            try {
+                await sendMessage(threadId, bodyText, attachmentUrl);
+                bodyInput.value = "";
+                if (attachmentInput) attachmentInput.value = "";
+                textRejected = false;
+                fields.slice(0,2).forEach((field,index) => { initial[index] = field.value; });
+                updateDraftGuard();
+                announce(copy("sent"));
+            } catch (error) {
+                if (["THREAD_LOCKED", "THREAD_NOT_ACTIVE"].includes(error.message)) locked = true;
+                unconfirmed = error.message === "SEND_UNCONFIRMED";
+                announce(unconfirmed ? copy("unconfirmed") : error.message === "OFF_PLATFORM_PAYMENT" ? copy("paymentError") : (locked ? copy("locked") : copy("sendError")));
+            } finally {
+                sending = false;
+                updateSendAvailability();
+            }
             refreshThread();
         });
+        document.getElementById("inboxReload")?.addEventListener("click", async () => {
+            if (await refreshThread()) { unconfirmed = false; updateSendAvailability(); }
+        });
+    } else {
+        document.getElementById("inboxReload")?.addEventListener("click", () => { fetchThreads(); fetchNotifications(); });
     }
 });

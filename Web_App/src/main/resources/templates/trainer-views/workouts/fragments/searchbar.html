@@ -1,14 +1,11 @@
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="searchbar(searchbarId)" class="mb-4 relative">
-    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="searchbar(searchbarId)" class="schedule-search"
+     th:with="target=${searchbarId == 'exercise-search-input' ? 'suggested-list' : (searchbarId == 'custom-exercise-search' ? 'custom-exercise-list' : 'existing-workouts')}">
+    <label th:for="${searchbarId}" th:text="${searchbarId == 'exercise-search-input' ? #messages.msg('ui.02884') : (searchbarId == 'custom-exercise-search' ? #messages.msg('ui.02580') : #messages.msg('ui.studio.search'))}">Search</label>
+    <div class="schedule-search__control">
+        <input type="search" th:id="${searchbarId}" th:name="${searchbarId}" maxlength="200" autocomplete="off" form="workout-draft-form"
+               th:value="${searchValues != null ? searchValues.get(searchbarId) : ''}"
+               data-schedule-search th:attr="aria-controls=${target},aria-describedby=${searchbarId + '-status'},data-search-target=${target}">
+        <button type="button" data-search-clear hidden th:attr="aria-label=#{ui.02273}" th:text="#{ui.02273}">Clear all</button>
     </div>
-
-    <input type="text"
-           th:id="${searchbarId}"
-           th:name="${searchbarId}"
-           placeholder="Search workouts..."
-           autocomplete="off"
-            class="block w-full rounded-md border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm leading-5 text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10" th:placeholder="#{ui.02509}"/>
+    <p th:id="${searchbarId + '-status'}" class="schedule-search__status" data-search-status role="status" aria-live="polite"></p>
 </div>

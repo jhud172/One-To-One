@@ -117,6 +117,8 @@
 .home-hero__atmosphere {
     inset: 0;
     overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, #000 20% 75%, transparent), linear-gradient(to bottom, transparent, #000 18% 70%, transparent);
+    mask-composite: intersect;
 }
 
 .home-hero__atmosphere::before,
@@ -127,16 +129,15 @@
 }
 
 .home-hero__atmosphere::before {
-    top: 50%;
+    top: 25rem;
     right: -12%;
     width: min(78vw, 72rem);
     aspect-ratio: 1;
     border-radius: 50%;
     background:
-        conic-gradient(from 214deg, transparent 0 8%, rgba(56, 189, 248, 0.07) 13%, transparent 19% 37%, rgba(110, 231, 183, 0.09) 44%, transparent 51% 68%, rgba(251, 146, 60, 0.07) 75%, transparent 82%),
         repeating-radial-gradient(circle, transparent 0 11%, rgba(167, 243, 208, 0.055) 11.15% 11.35%, transparent 11.55% 18%);
     mask-image: radial-gradient(circle, transparent 0 13%, #000 27% 68%, transparent 81%);
-    opacity: 0.84;
+    opacity: 0.4;
     transform: translateY(-50%) rotate(0deg);
     animation: heroArenaTurn 34s linear infinite;
 }
@@ -155,17 +156,7 @@
 }
 
 .home-hero__grid {
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(167, 243, 208, 0.052) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(167, 243, 208, 0.052) 1px, transparent 1px);
-    background-position: center bottom;
-    background-size: 66px 66px;
-    mask-image: linear-gradient(to bottom, #000, transparent 92%);
-    opacity: 0.72;
-    transform: perspective(700px) rotateX(58deg) scale(1.45) translateY(17%);
-    transform-origin: bottom;
-    animation: heroGridDrift 13s ease-in-out infinite alternate;
+    display: none;
 }
 
 .home-hero__glow {
@@ -202,6 +193,7 @@
 }
 
 .home-hero__copy {
+    align-self: start;
     position: relative;
     z-index: 3;
     max-width: 43rem;

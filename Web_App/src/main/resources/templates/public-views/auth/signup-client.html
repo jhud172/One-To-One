@@ -24,7 +24,7 @@
 
                     <div class="auth-wizard__header">
                         <div class="auth-wizard__meta">
-                            <p class="auth-wizard__label" data-auth-progress-label data-pattern="Step {current} of {total}" th:attr="data-pattern=#{auth.wizard.progressPattern}">Step 1 of 2</p>
+                            <p class="auth-wizard__label" data-auth-progress-label data-pattern="Step {current} of {total}" th:attr="data-pattern=#{auth.wizard.progressPattern}" th:text="${#strings.replace(#strings.replace(#messages.msg('auth.wizard.progressPattern'), '{current}', '1'), '{total}', '2')}">Step 1 of 2</p>
                             <p class="auth-wizard__label" th:text="#{auth.wizard.client.time}">About 1 minute</p>
                         </div>
                         <div class="auth-wizard__progress" data-auth-progress role="progressbar" aria-label="Signup progress" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1" th:attr="aria-label=#{auth.wizard.progressLabel}"></div>

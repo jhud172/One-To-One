@@ -46,6 +46,6 @@ public class NoOpEmailService implements EmailService {
 
     @Override
     public void sendAdminMessage(String to, String subject, String body) {
-        log.warn("No email provider configured - skipping admin email to {}", to);
+        throw new IllegalStateException("No email provider is configured for outbound messages.");
     }
 }

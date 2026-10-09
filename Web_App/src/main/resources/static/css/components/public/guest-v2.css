@@ -1,0 +1,95 @@
+/* Public information uses the same readable themes as the product. */
+/* Reveal motion must never remove below-fold controls from keyboard navigation. */
+html.guest-motion-ready body.version-two .guest-experience [data-guest-reveal] {
+    visibility: visible;
+}
+body.version-two .guest-experience {
+    --guest-night: var(--v2-page);
+    --guest-night-soft: var(--v2-surface);
+    --guest-night-raised: var(--v2-raised);
+    --guest-paper: var(--v2-surface);
+    --guest-ink: var(--v2-ink);
+    --guest-copy: var(--v2-muted);
+    --guest-muted: var(--v2-muted);
+    --guest-mint: var(--v2-accent);
+    --guest-green: var(--v2-accent);
+    --guest-green-deep: var(--v2-accent);
+    --guest-blue: var(--v2-accent);
+    --guest-orange: var(--v2-connection);
+    --guest-line: var(--v2-border);
+    --guest-line-strong: var(--v2-control-border);
+    --guest-panel: var(--v2-surface);
+    --guest-panel-solid: var(--v2-surface);
+    --guest-shadow: var(--v2-shadow-panel);
+    background: var(--v2-page);
+    color: var(--v2-ink);
+    color-scheme: inherit;
+    font-family: var(--v2-font);
+}
+body.version-two .guest-experience::before { animation: none; opacity: .35; }
+body.version-two .guest-experience::after { opacity: .15; }
+body.version-two .guest-hero { min-height: 0; padding-block: clamp(2.5rem, 6vw, 5rem); }
+body.version-two .guest-title { font-size: clamp(2.5rem, 5.5vw, 5rem); line-height: 1.02; }
+body.version-two :is(.guest-title em, .guest-display-accent) { font-family: inherit; font-style: normal; font-weight: inherit; }
+body.version-two .guest-heading { font-size: clamp(1.875rem, 4vw, 3.5rem); line-height: 1.08; }
+body.version-two .guest-section { padding-block: clamp(2.5rem, 5vw, 5rem); }
+body.version-two :is(.guest-panel, .guest-plan--featured, .guest-trainer-card, .guest-trainer-card:hover) {
+    background: var(--v2-surface);
+    border-color: var(--v2-border);
+    border-radius: var(--v2-radius-panel);
+    box-shadow: var(--v2-shadow-panel);
+    backdrop-filter: none;
+    transform: none;
+}
+body.version-two .guest-panel::before { background: var(--v2-accent); box-shadow: none; }
+body.version-two .guest-plan--featured { border-top: 3px solid var(--v2-accent); }
+body.version-two .guest-plan:hover { transform: none; border-color: var(--v2-accent); }
+body.version-two .guest-experience :is(.guest-action, .public-action) { border-radius: var(--v2-radius-control); min-height: 44px; box-shadow: none; }
+body.version-two .guest-experience :is(.guest-action--primary, .public-action--primary, .public-action--inverse) {
+    background: var(--v2-accent);
+    color: var(--v2-on-accent);
+    border-color: var(--v2-accent);
+    box-shadow: none;
+}
+body.version-two .guest-experience :is(.guest-action--primary, .public-action--primary, .public-action--inverse):hover { background: var(--v2-accent-hover); color: var(--v2-on-accent); border-color: var(--v2-accent-hover); transform: none; }
+body.version-two .guest-experience :is(.guest-action--secondary, .public-action--secondary, .public-action--inverse-secondary) { color: var(--v2-ink); background: var(--v2-surface); border-color: var(--v2-control-border); }
+body.version-two .guest-experience :is(.guest-action--secondary, .public-action--secondary, .public-action--inverse-secondary):hover { background: var(--v2-accent-soft); color: var(--v2-accent); border-color: var(--v2-accent); transform: none; }
+body.version-two .guest-experience :is(input, select, textarea) { min-height: 44px; background: var(--v2-surface); color: var(--v2-ink); border-color: var(--v2-control-border); }
+body.version-two .guest-experience :is(input, select, textarea):focus { background: var(--v2-surface); border-color: var(--v2-focus); }
+body.version-two .guest-experience :is(input, textarea)::placeholder { color: var(--v2-muted); opacity: 1; }
+body.version-two .guest-notice { background: var(--v2-raised); color: var(--v2-ink); border-color: var(--v2-control-border); box-shadow: none; }
+body.version-two .guest-notice--danger { color: var(--v2-danger); border-color: var(--v2-danger); }
+body.version-two .guest-notice__signal { box-shadow: none; }
+body.version-two .guest-faq__item { background: var(--v2-surface); border-color: var(--v2-border); }
+body.version-two .guest-faq__item[open] { border-inline-start: 3px solid var(--v2-accent); background: var(--v2-accent-soft); }
+body.version-two .guest-faq__clear { color: var(--v2-accent); }
+body.version-two .guest-faq__topics { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+body.version-two .guest-faq__topics button { min-height: 44px; padding: .65rem 1rem; border: 1px solid var(--v2-control-border); border-radius: var(--v2-radius-control); background: var(--v2-surface); color: var(--v2-ink); }
+body.version-two .guest-faq__topics button[aria-pressed="true"] { background: var(--v2-accent); color: var(--v2-on-accent); border-color: var(--v2-accent); }
+body.version-two .guest-faq__item summary { padding-inline: 1rem; }
+body.version-two .guest-faq__item > p { margin-inline: 1rem; padding-bottom: 1.5rem; }
+body.version-two :is(.guest-about__system, .guest-faq__radar, .guest-pricing__meter) { box-shadow: none; }
+body.version-two :is(.guest-about__orbit, .guest-about__signal, .guest-faq__radar-sweep, .guest-pricing__meter-pulse) { animation: none; }
+body.version-two .guest-directory__trainer-grid { gap: 1rem; }
+body.version-two .guest-trainer-card:hover { border-color: var(--v2-accent); }
+body.version-two .guest-experience .role-surface__action--primary { color: var(--v2-on-accent); background: var(--v2-accent); border-color: var(--v2-accent); }
+body.version-two .guest-store .cat-pill.active { color: var(--v2-on-accent); background: var(--v2-accent); box-shadow: none; }
+body.version-two .guest-experience .error-button--primary { color: var(--v2-on-accent); background: var(--v2-accent); border-color: var(--v2-accent); }
+body.version-two .guest-marketing__final { min-height: 0; }
+body.version-two .guest-about__hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4rem); }
+body.version-two .guest-about__coaching { overflow: hidden; border-radius: var(--v2-radius-panel); border: 1px solid var(--v2-border); background: var(--v2-surface); box-shadow: var(--v2-shadow-panel); }
+body.version-two .guest-about__coaching img { width: 100%; height: 22rem; object-fit: cover; object-position: 75% center; }
+body.version-two .guest-about__coaching figcaption { padding: 1.5rem; }
+body.version-two .guest-about__coaching figcaption span { display: block; font-size: .75rem; color: var(--v2-muted); margin-bottom: .75rem; }
+body.version-two .guest-about__coaching figcaption strong { display: block; font-size: 1.25rem; color: var(--v2-ink); }
+body.version-two .guest-about__coaching figcaption p { margin-top: .5rem; line-height: 1.6; color: var(--v2-muted); }
+@media (max-width: 960px) { body.version-two .guest-about__hero-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+    body.version-two .guest-hero { padding-block: 2.5rem; }
+    body.version-two .guest-section__header { margin-bottom: 1.75rem; gap: 1rem; }
+    body.version-two .guest-actions { flex-direction: column; margin-top: 1.5rem; }
+}
+
+/* The route shell must inherit tokens even when its content is not a guest scene. */
+body.version-two.public-guest.guest-route { --guest-night: var(--v2-page); --guest-ink: var(--v2-ink); --guest-copy: var(--v2-muted); }
+html body.version-two.public-guest.guest-route #main-content { background: var(--v2-page); }

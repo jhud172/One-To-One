@@ -19,16 +19,22 @@
     "qa:login:trainer": "node tools/qa/run-site-simulation.mjs --login-only --roles trainer --fail-on major",
     "qa:login:gym": "node tools/qa/run-site-simulation.mjs --login-only --roles gym --fail-on major",
     "i18n:extract": "node tools/i18n/extract-template-messages.mjs --write",
-    "i18n:check": "node tools/i18n/extract-template-messages.mjs && node tools/i18n/check-bundle-parity.mjs"
+    "i18n:check": "node tools/i18n/extract-template-messages.mjs && node tools/i18n/check-bundle-parity.mjs",
+    "build:3d": "node tools/brand/build-web.mjs",
+    "build:frontend": "npm run build:css && npm run build:3d",
+    "test:3d": "node --test tools/brand/animation-clock.test.mjs",
+    "test:dom": "node --test tools/qa/dom-safety.test.mjs"
   },
   "devDependencies": {
     "autoprefixer": "^10.5.0",
     "cssnano": "^7.1.9",
+    "esbuild": "0.28.2",
     "parse5": "^8.0.0",
     "postcss": "^8.5.12",
     "postcss-cli": "^11.0.1",
     "postcss-import": "^16.1.0",
     "tailwind-scrollbar": "^3.1.0",
-    "tailwindcss": "^3.4.19"
+    "tailwindcss": "^3.4.19",
+    "three": "0.185.1"
   }
 }

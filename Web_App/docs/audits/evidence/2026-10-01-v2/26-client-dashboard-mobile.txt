@@ -1,0 +1,442 @@
+- banner:
+  - link "One To One Logo":
+    - /url: /
+    - img "One To One Logo"
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - button "Open profile menu":
+  - button "Open navigation":
+    - generic: Toggle navigation
+- main:
+  - navigation "Dashboard quick panels":
+    - button "Open explore platform panel":
+    - complementary:
+      - paragraph: Explore Platform
+      - paragraph: Platform shortcuts
+      - button:
+      - paragraph: Explore Platform
+      - heading [level=2]: Discover What Supports Your Goals
+      - paragraph: Jump into the most useful support spaces without losing your place in today's flow.
+      - navigation:
+        - link:
+          - /url: /explore
+          - generic: Explore trainers
+          - generic: Compare coaching styles and find the right support for your routine.
+          - generic: →
+        - link:
+          - /url: /explore
+          - generic: Explore gyms
+          - generic: Find a setup and environment that suits the week ahead.
+          - generic: →
+    - button "Open trainer overview panel":
+    - complementary:
+      - paragraph: Trainer Overview
+      - paragraph: Coaching snapshot
+      - button:
+      - paragraph: Trainer Overview
+      - heading [level=2]: Your Coaching Relationship
+      - generic: Active coach
+      - button:
+        - generic: Jordan Trainer
+        - button:
+        - status: Premium Active
+        - paragraph: "@demo_trainer"
+      - generic: Spring Strength Build
+      - generic: Connected 14 Aug 2026
+      - heading [level=3]: Your trainer link is active
+      - paragraph: Strength and conditioning coach demo account showing an active trainer workflow with premium profile styling and a live client book.
+      - paragraph: Message your trainer or open the plan when you need direction.
+      - paragraph: No trainer notifications yet
+      - paragraph: Coach updates and progress checks will appear here when they are live.
+      - link:
+        - /url: /chat
+        - text: Open coach
+      - link:
+        - /url: /inbox/1
+        - text: Message trainer
+      - link:
+        - /url: /client/trainers
+        - text: Open trainer plan
+      - link:
+        - /url: /client/trainers
+        - text: Manage
+    - button "Open goals panel":
+    - complementary:
+      - paragraph: Goals
+      - paragraph: Progress overview
+      - button:
+      - region:
+        - paragraph: Goals
+        - heading [level=2]: Keep Long-Term Progress Visible
+        - link:
+          - /url: /goals
+          - text: Open
+        - paragraph: 1 active and 0 completed.
+        - tablist:
+          - tab [selected]: Week goals
+          - tab: Month goals
+          - tab: Targets
+        - tabpanel:
+          - heading [level=3]: Week goals
+          - generic: "0"
+          - paragraph: Short weekly wins show up here once you add them on the goals page.
+        - tabpanel:
+          - heading [level=3]: Month goals
+          - generic: "0"
+          - paragraph: Monthly goals give the dashboard a clear longer rhythm without crowding today.
+        - tabpanel:
+          - heading [level=3]: Targets
+          - generic: "1"
+          - link:
+            - /url: /goals/7
+            - heading [level=4]: Hold premium consistency for 12 weeks
+            - paragraph: 4sessions/week Weekly consistency
+            - generic: Active
+            - paragraph: Due in 84 days
+    - button "Open support panel":
+    - complementary:
+      - paragraph: Help and Trust
+      - paragraph: Support shortcuts
+      - button:
+      - paragraph: Help and Trust
+      - heading [level=2]: Support Without Leaving the Dashboard
+      - paragraph: Keep essential help, privacy, and support access close to the main dashboard flow.
+      - navigation:
+        - link:
+          - /url: /faq
+          - generic: FAQ
+          - generic: Fast answers to common questions and workflows.
+          - generic: →
+        - link:
+          - /url: /policies/terms
+          - generic: Privacy and terms
+          - generic: See how your data and account rules are handled.
+          - generic: →
+    - button "Open profile panel":
+    - complementary:
+      - paragraph: Your Profile
+      - paragraph: Account snapshot
+      - button:
+      - paragraph: Your Profile
+      - generic: Avery Client
+      - button:
+      - status: Premium Active
+      - paragraph: "@demo_client"
+      - paragraph: Premium client demo account with a busy but consistent training rhythm, a live trainer link, and a fully styled profile setup.
+      - paragraph: Points and level
+      - generic: "1840"
+      - generic: points
+      - generic: "10"
+      - generic: level
+      - paragraph: Milestones
+      - generic: Verified email
+      - generic: Verified phone
+      - generic: Premium member
+      - generic: Reached Level 5
+      - paragraph: Daily focus
+      - heading [level=3]: Daily focus
+      - paragraph: Keep the next action visible and the rest of the day gets easier to follow.
+      - paragraph: Workout streak
+      - generic: "0"
+      - generic: days
+  - region "Dashboard overview":
+    - heading "Client dashboard" [level=1]
+    - region "Coaching focus":
+      - paragraph: Coaching Focus
+      - heading "Your Week With Jordan Trainer" [level=2]
+      - paragraph: Keep your active coaching relationship, latest guidance, and priority actions together.
+      - generic: Active coach
+      - generic: Premium Active
+      - img "Profile photo"
+      - generic: Jordan Trainer
+      - generic "Premium member":
+        - button "Premium membership details":
+        - status: Premium Active
+      - paragraph: "@demo_trainer"
+      - article:
+        - paragraph: Relationship
+        - heading "Connected 14 Aug 2026" [level=3]
+        - paragraph: Spring Strength Build
+      - article:
+        - paragraph: Updates waiting
+        - heading "0" [level=3]
+        - paragraph: Trainer activity and check-ins
+      - article:
+        - paragraph: Current streak
+        - heading "0 days" [level=3]
+        - paragraph: Weekly adherence signal
+      - heading "Your trainer link is active" [level=3]
+      - paragraph: Strength and conditioning coach demo account showing an active trainer workflow with premium profile styling and a live client book.
+      - paragraph: Message your trainer or open the plan when you need direction.
+      - article:
+        - paragraph: Client focus
+        - heading "Daily focus" [level=3]
+        - paragraph: Keep the next action visible and the rest of the day gets easier to follow.
+        - paragraph: Your dashboard keeps the coach relationship and your own momentum in one place.
+      - link "Message trainer":
+        - /url: /inbox/1
+      - link "Open trainer plan":
+        - /url: /client/trainers
+      - link "Manage coaching":
+        - /url: /client/trainers
+    - region "Action hub":
+      - paragraph: Action Hub
+      - heading "What should I do next?" [level=2]
+      - paragraph: Route
+      - paragraph: Clear the most time-sensitive task before the rest of the board fans out.
+      - tablist "Action hub views":
+        - tab "Recommended" [selected]
+        - tab "All"
+      - tabpanel "Recommended":
+        - link "Task Client premium training block Overdue 7:30 AM scheduled Countdown 0:00:00 Client premium training block is already past its scheduled time. Clear it first to reduce drag across the rest of the day. 1 task open Next at 7:30 AM Open Day":
+          - /url: /calendar/day/2026-10-01
+          - paragraph: Task
+          - heading "Client premium training block" [level=3]
+          - generic: Overdue
+          - text: 7:30 AM
+          - generic: scheduled
+          - generic: Countdown
+          - generic: 0:00:00
+          - paragraph: Client premium training block is already past its scheduled time. Clear it first to reduce drag across the rest of the day.
+          - generic: 1 task open
+          - generic: Next at 7:30 AM
+          - generic: Open Day
+        - paragraph: Workout queue
+        - heading "Client Premium Plan" [level=3]
+        - generic: Today
+        - paragraph: This session is already in today's plan and ready when you are.
+        - link "Open":
+          - /url: /workout-session/launch/occurrence/30
+        - paragraph: Today
+        - paragraph: 00:00:00
+        - link "Nutrition Missed Lunch Missed The lunch window has passed without a log. Add it now so the day stays accurate. 0 kcal logged Last entry Not logged yet Log Meal":
+          - /url: /nutrition
+          - paragraph: Nutrition
+          - heading "Missed Lunch" [level=3]
+          - generic: Missed
+          - paragraph: The lunch window has passed without a log. Add it now so the day stays accurate.
+          - generic: 0 kcal logged
+          - generic: Last entry Not logged yet
+          - generic: Log Meal
+        - link "Workout Client Premium Plan Today Your workout is already scheduled. Open the day, review the session, and start when ready. 1 workout queued Planner ready Start Workout":
+          - /url: /workout-session/launch/occurrence/30
+          - paragraph: Workout
+          - heading "Client Premium Plan" [level=3]
+          - generic: Today
+          - paragraph: Your workout is already scheduled. Open the day, review the session, and start when ready.
+          - generic: 1 workout queued
+          - generic: Planner ready
+          - generic: Start Workout
+      - tabpanel:
+        - link:
+          - /url: /calendar/day/2026-10-01
+          - paragraph: Task
+          - heading [level=3]: Client premium training block
+          - generic: Overdue
+          - paragraph: Client premium training block is already past its scheduled time. Clear it first to reduce drag across the rest of the day.
+          - generic: 1 task open
+          - generic: Next at 7:30 AM
+          - generic: Open Day
+        - link:
+          - /url: /nutrition
+          - paragraph: Nutrition
+          - heading [level=3]: Missed Lunch
+          - generic: Missed
+          - paragraph: The lunch window has passed without a log. Add it now so the day stays accurate.
+          - generic: 0 kcal logged
+          - generic: Last entry Not logged yet
+          - generic: Log Meal
+        - link:
+          - /url: /workout-session/launch/occurrence/30
+          - paragraph: Workout
+          - heading [level=3]: Client Premium Plan
+          - generic: Today
+          - paragraph: Your workout is already scheduled. Open the day, review the session, and start when ready.
+          - generic: 1 workout queued
+          - generic: Planner ready
+          - generic: Start Workout
+    - region "Primary dashboard actions":
+      - link "Daily tracking Track Body Ready to log Target 2450 kcal Log weight, food, or recovery data first to anchor the rest of the day. No entries today 185g protein goal":
+        - /url: /health-record/list
+        - paragraph: Daily tracking
+        - heading "Track Body" [level=2]
+        - paragraph: Ready to log
+        - paragraph: Target 2450 kcal
+        - paragraph: Log weight, food, or recovery data first to anchor the rest of the day.
+        - generic: No entries today
+        - generic: 185g protein goal
+      - link "Planner Track Schedule 2 items live today 1 tasks | 1 workouts Your day plan lives here. Open it first when you want the clearest next move. Open today and keep the flow moving Next task Client premium training block":
+        - /url: /calendar/day/2026-10-01
+        - paragraph: Planner
+        - heading "Track Schedule" [level=2]
+        - paragraph: 2 items live today
+        - paragraph: 1 tasks | 1 workouts
+        - paragraph: Your day plan lives here. Open it first when you want the clearest next move.
+        - generic: Open today and keep the flow moving
+        - generic: Next task Client premium training block
+    - region "Your next 7 days":
+      - paragraph: Planner
+      - heading "Your Next 7 Days" [level=2]
+      - paragraph: Pick a day to preview the useful detail, then jump straight into that date.
+      - link "Open Planner":
+        - /url: /calendar
+      - paragraph: Selected Day
+      - link "Open Day":
+        - /url: /calendar/day/2026-10-01
+      - heading "Thu, 1 Oct" [level=3]
+      - paragraph: 1 tasks, 1 workouts
+      - paragraph: Tasks
+      - link "Client premium training block Task":
+        - /url: /calendar/day/2026-10-01?focusTab=tasks&focusTask=34
+        - generic: Client premium training block
+        - generic: Task
+      - paragraph: Workouts
+      - link "Client Premium Plan Workout":
+        - /url: /workout-session/launch/occurrence/30
+        - generic: Client Premium Plan
+        - generic: Workout
+      - tablist "7 day selector":
+        - tab "Thu Today 1 Oct 1 tasks 1 workouts In progress" [selected]:
+          - generic: Thu
+          - generic: Today
+          - paragraph: 1 Oct
+          - generic: 1 tasks
+          - generic: 1 workouts
+          - paragraph: In progress
+        - tab "Fri Tomorrow 2 Oct 0 tasks 0 workouts Upcoming":
+          - generic: Fri
+          - generic: Tomorrow
+          - paragraph: 2 Oct
+          - generic: 0 tasks
+          - generic: 0 workouts
+          - paragraph: Upcoming
+        - tab "Sat 3 Oct 0 tasks 0 workouts Upcoming":
+          - generic: Sat
+          - paragraph: 3 Oct
+          - generic: 0 tasks
+          - generic: 0 workouts
+          - paragraph: Upcoming
+        - tab "Sun 4 Oct 0 tasks 0 workouts Upcoming":
+          - generic: Sun
+          - paragraph: 4 Oct
+          - generic: 0 tasks
+          - generic: 0 workouts
+          - paragraph: Upcoming
+        - tab "Mon 5 Oct 0 tasks 0 workouts Upcoming":
+          - generic: Mon
+          - paragraph: 5 Oct
+          - generic: 0 tasks
+          - generic: 0 workouts
+          - paragraph: Upcoming
+        - tab "Tue 6 Oct 0 tasks 0 workouts Upcoming":
+          - generic: Tue
+          - paragraph: 6 Oct
+          - generic: 0 tasks
+          - generic: 0 workouts
+          - paragraph: Upcoming
+        - tab "Wed 7 Oct 0 tasks 0 workouts Upcoming":
+          - generic: Wed
+          - paragraph: 7 Oct
+          - generic: 0 tasks
+          - generic: 0 workouts
+          - paragraph: Upcoming
+    - region "Weekly summary":
+      - paragraph: Weekly Summary
+      - heading "This Week So Far" [level=2]
+      - button "Weekly summary information":
+      - paragraph: You can change what is displayed and how it is displayed in preferences.
+      - link "Open preferences":
+        - /url: /preferences/edit#weekly-summary-metrics
+      - article:
+        - paragraph: Workouts completed
+        - paragraph: 0 / 1
+        - paragraph: Completed inside this week
+        - paragraph: Progress against your planned sessions
+      - article:
+        - paragraph: Meals logged
+        - paragraph: "0"
+        - paragraph: Nutrition logs recorded
+        - paragraph: Logging consistency over the last 7 days
+      - article:
+        - paragraph: Workout streak
+        - paragraph: 0 days
+        - paragraph: Current consecutive streak
+        - paragraph: Recent consistency streak
+    - region "Profile pulse":
+      - paragraph: Profile Pulse
+      - heading "Keep Your Own Progress Visible" [level=2]
+      - paragraph: Your focus, account status, and progress signals stay close without taking over the dashboard.
+      - link "Open preferences":
+        - /url: /preferences/edit
+      - paragraph: Avery Client
+      - paragraph: "@demo_client"
+      - generic: Premium member
+      - generic: Premium Active
+      - article:
+        - paragraph: Points
+        - heading "1840" [level=3]
+        - paragraph: Platform momentum
+      - article:
+        - paragraph: Level
+        - heading "10" [level=3]
+        - paragraph: Current account tier
+      - article:
+        - paragraph: Workout streak
+        - heading "0 days" [level=3]
+        - paragraph: Recent training consistency
+      - paragraph: Daily focus
+      - heading "Daily focus" [level=3]
+      - paragraph: Keep the next action visible and the rest of the day gets easier to follow.
+    - paragraph: Dashboard Ambience
+    - heading "Local Time And Weather Context" [level=2]
+    - paragraph: Keep ambience lightweight unless local data adds useful context for the day ahead.
+    - switch "Toggle immersive dashboard ambience" [checked]:
+      - generic: Toggle immersive dashboard ambience
+    - paragraph: Midday
+    - paragraph: 12:14:10 PM
+    - paragraph: Local weather is off
+    - paragraph: Weather outlook
+    - paragraph: Enable local weather when you want a location-aware 24 hour outlook.
+    - generic: Waiting for location
+    - paragraph: Please allow this site to access your location to use the weather feature.
+    - button "Enable local weather"
+    - region "Workout management":
+      - paragraph: Workout Hub
+      - heading "Manage Your Workout Flow" [level=2]
+      - paragraph: Open upcoming workouts, edit personal logs, and review workout history from one dedicated page.
+      - link "Open Workout Management":
+        - /url: /workout-management
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Customize platform panel":

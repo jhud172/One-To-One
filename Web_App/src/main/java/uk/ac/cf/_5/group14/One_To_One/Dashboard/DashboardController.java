@@ -61,6 +61,8 @@ import uk.ac.cf._5.group14.One_To_One.Messaging.MessagingService;
 import uk.ac.cf._5.group14.One_To_One.Messaging.ThreadMessageRepository;
 import uk.ac.cf._5.group14.One_To_One.Notifications.Notification;
 import uk.ac.cf._5.group14.One_To_One.Notifications.NotificationService;
+import uk.ac.cf._5.group14.One_To_One.Nutrition.DailyNutritionLog;
+import uk.ac.cf._5.group14.One_To_One.Nutrition.DailyNutritionLogRepository;
 import uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformPlan;
 import uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformSubscription;
 import uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformSubscriptionService;
@@ -88,6 +90,7 @@ import uk.ac.cf._5.group14.One_To_One.Users.Role;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
 import uk.ac.cf._5.group14.One_To_One.Users.UserRepository;
 import uk.ac.cf._5.group14.One_To_One.Users.UserService;
+import uk.ac.cf._5.group14.One_To_One.GymProfile.GymOperationsService;
 
 @Controller
 public class DashboardController {
@@ -105,6 +108,7 @@ public class DashboardController {
     private final UserSettingsService userSettingsService;
     private final UserSettingsRepository userSettingsRepository;
     private final HealthRecordRepository healthRecordRepository;
+    private final DailyNutritionLogRepository dailyNutritionLogRepository;
     private final GoalService goalService;
     private final TrainerAssignmentService trainerAssignmentService;
     private final TrainerLibraryService trainerLibraryService;
@@ -117,6 +121,8 @@ public class DashboardController {
     private final CalendarTaskRepository calendarTaskRepository;
     private final ScheduleOccurrenceRepository scheduleOccurrenceRepository;
     private final Clock clock;
+    private final GymOperationsService gymOperationsService;
+    private final TrainerDashboardService trainerDashboardService;
 
     public DashboardController(AuthHelper authHelper,
                                UserService userService,
@@ -126,6 +132,7 @@ public class DashboardController {
                                UserSettingsService userSettingsService,
                                UserSettingsRepository userSettingsRepository,
                                HealthRecordRepository healthRecordRepository,
+                               DailyNutritionLogRepository dailyNutritionLogRepository,
                                GoalService goalService,
                                TrainerAssignmentService trainerAssignmentService,
                                TrainerLibraryService trainerLibraryService,
@@ -137,7 +144,9 @@ public class DashboardController {
                                PlatformSubscriptionService platformSubscriptionService,
                                CalendarTaskRepository calendarTaskRepository,
                                ScheduleOccurrenceRepository scheduleOccurrenceRepository,
-                               Clock clock) {
+                               Clock clock,
+                               GymOperationsService gymOperationsService,
+                               TrainerDashboardService trainerDashboardService) {
         this.authHelper = authHelper;
         this.userService = userService;
         this.userRepository = userRepository;
@@ -146,6 +155,7 @@ public class DashboardController {
         this.userSettingsService = userSettingsService;
         this.userSettingsRepository = userSettingsRepository;
         this.healthRecordRepository = healthRecordRepository;
+        this.dailyNutritionLogRepository = dailyNutritionLogRepository;
         this.goalService = goalService;
         this.trainerAssignmentService = trainerAssignmentService;
         this.trainerLibraryService = trainerLibraryService;
@@ -158,6 +168,8 @@ public class DashboardController {
         this.calendarTaskRepository = calendarTaskRepository;
         this.scheduleOccurrenceRepository = scheduleOccurrenceRepository;
         this.clock = clock;
+        this.gymOperationsService = gymOperationsService;
+        this.trainerDashboardService = trainerDashboardService;
     }
 
     private User currentUserOrThrow(Authentication authentication) {
@@ -241,10 +253,15 @@ public class DashboardController {
         UserSettings settings = userSettingsService.getOrCreate(user);
         TimeDisplayFormatPreference timeDisplayFormat = resolveTimeDisplayFormat(settings);
         boolean isPremium = platformSubscriptionService.isPremium(user.getId(), clock);
-        int intakeCalories = summary.getLogsThisWeekCount() > 0 ? (1700 + (summary.getLogsThisWeekCount() * 40)) : 0;
-        boolean intakeLoggedToday = summary.getLogsThisWeekCount() > 0;
-        String intakeLastLogged = intakeLoggedToday ? "Today" : "Not logged yet";
-        MealWindow mealWindow = resolveMealWindow(now.toLocalTime());
+        Optional<DailyNutritionLog> todayNutrition = dailyNutritionLogRepository.findByUserAndDate(user, today);
+        int intakeCalories = todayNutrition.map(DailyNutritionLog::getCalories).orElse(0);
+        boolean intakeLoggedToday = todayNutrition.isPresent();
+        String intakeLastLogged = intakeLoggedToday ? "Today" : dailyNutritionLogRepository
+                .findTopByUserAndDateLessThanEqualOrderByDateDescIdDesc(user, today)
+                .map(log -> log.getDate().format(PRETTY_DATE_FMT)).orElse("Not logged yet");
+        LocalDate nutritionWeekStart = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        int nutritionLogsThisWeek = dailyNutritionLogRepository
+                .findByUserAndDateBetweenOrderByDateAsc(user, nutritionWeekStart, today).size();
 
         List<Goal> userGoals = goalService.listGoalsForViewer(user, null, null, null, false);
         long activeGoalsCount = userGoals.stream().filter(goal -> goal.getStatus() == GoalStatus.ACTIVE).count();
@@ -261,7 +278,7 @@ public class DashboardController {
         model.addAttribute("goalSections", buildGoalSections(userGoals, today));
         model.addAttribute("weeklySummaryCards",
                 buildWeeklySummaryCards(user, settings, summary, weekWorkoutsCompleted, weekWorkoutsRemaining,
-                        weekTasksCompleted, weekTasksRemaining, weekTasksTotal));
+                        weekTasksCompleted, weekTasksRemaining, weekTasksTotal, nutritionLogsThisWeek));
         model.addAttribute("dashboardAmbience",
                 new DashboardAmbienceView(
                         settings == null || settings.isDashboardImmersionEnabled(),
@@ -279,12 +296,12 @@ public class DashboardController {
                 buildProfileRailView(user, settings, isPremium, buildPremiumTooltip(user.getId()), summary, todayTotal));
         model.addAttribute("trainerRail", buildTrainerRailView(user, timeDisplayFormat));
         model.addAttribute("bodyActionCard",
-                buildBodyActionCard(settings, intakeCalories, intakeLoggedToday, intakeLastLogged, summary.getLogsThisWeekCount()));
+                buildBodyActionCard(settings, intakeCalories, intakeLoggedToday, intakeLastLogged, nutritionLogsThisWeek));
         model.addAttribute("scheduleActionCard",
                 buildScheduleActionCard(todayTasks, todayWorkouts, todayTotal, todayPath, todayDay));
         model.addAttribute("actionHub",
                 buildActionHubView(today, todayPath, miniWeek, openTasks, openWorkouts, intakeCalories,
-                        intakeLastLogged, intakeLoggedToday, mealWindow, now, timeDisplayFormat));
+                        intakeLastLogged, intakeLoggedToday, now, timeDisplayFormat));
         model.addAttribute("weekDays", weekDays);
 
         return "client-views/dashboard/client-dashboard";
@@ -385,6 +402,15 @@ public class DashboardController {
         User trainer = currentUserOrThrow(authentication);
         DashboardSummaryDto summary = dashboardSummaryService.getSummary(trainer);
         model.addAttribute("summary", summary);
+        model.addAttribute("trainerDisplayName", trimToNull(trainer.getFirstName()) != null
+                ? trainer.getFirstName().trim() : trainer.getUsername());
+        boolean trainerReady = trainer.isEnabled() && trainer.isTrainerVerified();
+        model.addAttribute("trainerReady", trainerReady);
+        var coaching = trainerReady ? trainerDashboardService.forTrainer(trainer)
+                : new TrainerDashboardService.Summary(0, 0, 0, 0, 0, List.of());
+        model.addAttribute("coaching", coaching);
+        model.addAttribute("activeClientCount", coaching.activeClients());
+        model.addAttribute("pendingClientCount", coaching.pendingRequests());
         return "trainer-views/dashboard/trainer-dashboard";
     }
 
@@ -395,6 +421,7 @@ public class DashboardController {
         User admin = currentUserOrThrow(authentication);
         DashboardSummaryDto summary = dashboardSummaryService.getSummary(admin);
         model.addAttribute("summary", summary);
+        model.addAttribute("gymOperations", gymOperationsService.forAdmin(admin));
         return "gym-views/dashboard/gym-dashboard";
     }
 
@@ -460,7 +487,6 @@ public class DashboardController {
                                                             int intakeCalories,
                                                             String intakeLastLogged,
                                                             boolean intakeLoggedToday,
-                                                            MealWindow mealWindow,
                                                             LocalDateTime now,
                                                             TimeDisplayFormatPreference timeDisplayFormat) {
         List<ClientDashboardActionCardView> cards = new ArrayList<>();
@@ -519,31 +545,27 @@ public class DashboardController {
                     "Queued"));
         }
 
-        boolean mealMissed = mealWindow.missed() && !intakeLoggedToday;
         cards.add(new ClientDashboardActionCardView(
                 "meal",
                 "Nutrition",
-                mealWindow.active() ? "Log " + mealWindow.label() : (mealMissed ? "Missed " + mealWindow.label() : "Log your meals"),
-                mealMissed
-                        ? "The " + mealWindow.label().toLowerCase(Locale.UK) + " window has passed without a log. Add it now so the day stays accurate."
-                        : (mealWindow.active()
-                        ? "You are in the " + mealWindow.label().toLowerCase(Locale.UK) + " window. Logging now keeps the day grounded."
-                        : "Meal logging is your clean fallback when nothing timed is about to hit. Keep intake current and easy to review."),
+                intakeLoggedToday ? "Review today’s nutrition" : "Log today’s nutrition",
+                intakeLoggedToday ? "Your saved intake is available to review or update."
+                        : "No nutrition record is saved for today. Add your intake when you are ready.",
                 "/nutrition",
                 "Log Meal",
-                mealMissed ? "outline" : "soft",
+                "soft",
                 "MEAL",
-                mealMissed ? "Missed" : (mealWindow.active() ? "Now" : "Keep ready"),
-                List.of(intakeCalories + " kcal logged", "Last entry " + intakeLastLogged),
+                intakeLoggedToday ? "Saved" : "Ready",
+                List.of(intakeLoggedToday ? intakeCalories + " kcal logged" : "No intake logged today", "Last entry " + intakeLastLogged),
                 "Baseline",
                 "Nutrition context makes the rest of the dashboard easier to interpret.",
-                mealWindow.active() ? 520 : (mealMissed ? 480 : 180),
-                mealWindow.active() ? mealWindow.label() : mealWindow.nextLabel(),
-                mealWindow.active() ? "best logging window" : (mealMissed ? "window passed" : "fallback action"),
-                mealWindow.targetIso(),
-                mealWindow.active(),
-                mealMissed,
-                mealMissed ? "Missed meal log" : (mealWindow.active() ? "Meal window live" : "Fallback")));
+                180,
+                intakeLoggedToday ? intakeCalories + " kcal" : "Ready to log",
+                "today’s nutrition",
+                null,
+                false,
+                false,
+                intakeLoggedToday ? "Saved intake" : "Nutrition log"));
 
         cards.sort(Comparator.comparingInt(ClientDashboardActionCardView::getPriority).reversed());
         ClientDashboardActionCardView primaryCard = cards.isEmpty() ? null : cards.get(0);
@@ -1146,7 +1168,8 @@ public class DashboardController {
                                                             int weekWorkoutsRemaining,
                                                             int weekTasksCompleted,
                                                             int weekTasksRemaining,
-                                                            int weekTasksTotal) {
+                                                            int weekTasksTotal,
+                                                            int nutritionLogsThisWeek) {
         List<String> selected = parseWeeklyMetricKeys(settings != null ? settings.getWeeklySummaryMetrics() : null);
 
         List<HealthRecord> topHealthRecords = user != null
@@ -1172,9 +1195,9 @@ public class DashboardController {
                         "outline"));
                 case "MEALS_LOGGED" -> cards.add(new WeeklySummaryCard(
                         "Meals logged",
-                        String.valueOf(summary.getLogsThisWeekCount()),
+                        String.valueOf(nutritionLogsThisWeek),
                         "Nutrition logs recorded",
-                        ratioPercent(summary.getLogsThisWeekCount(), 7),
+                        ratioPercent(nutritionLogsThisWeek, 7),
                         "Logging consistency over the last 7 days",
                         "emerald"));
                 case "HABITS_COMPLETED" -> cards.add(new WeeklySummaryCard(
@@ -1210,9 +1233,9 @@ public class DashboardController {
                     "emerald"));
             cards.add(new WeeklySummaryCard(
                     "Meals logged",
-                    String.valueOf(summary.getLogsThisWeekCount()),
+                    String.valueOf(nutritionLogsThisWeek),
                     "Nutrition logs recorded",
-                    ratioPercent(summary.getLogsThisWeekCount(), 7),
+                    ratioPercent(nutritionLogsThisWeek, 7),
                     "Logging consistency over the last 7 days",
                     "outline"));
             cards.add(new WeeklySummaryCard(
@@ -1482,57 +1505,6 @@ public class DashboardController {
         return "Scheduled workout";
     }
 
-    private MealWindow resolveMealWindow(LocalTime now) {
-        if (!now.isBefore(LocalTime.of(6, 30)) && now.isBefore(LocalTime.of(10, 30))) {
-            return new MealWindow(true, false, "Breakfast", "Breakfast", LocalDateTime.of(LocalDate.now(clock), LocalTime.of(10, 30))
-                    .atZone(clock.getZone()).toInstant().toString());
-        }
-        if (!now.isBefore(LocalTime.of(11, 30)) && now.isBefore(LocalTime.of(14, 30))) {
-            return new MealWindow(true, false, "Lunch", "Lunch", LocalDateTime.of(LocalDate.now(clock), LocalTime.of(14, 30))
-                    .atZone(clock.getZone()).toInstant().toString());
-        }
-        if (!now.isBefore(LocalTime.of(17, 30)) && now.isBefore(LocalTime.of(21, 0))) {
-            return new MealWindow(true, false, "Dinner", "Dinner", LocalDateTime.of(LocalDate.now(clock), LocalTime.of(21, 0))
-                    .atZone(clock.getZone()).toInstant().toString());
-        }
-        String nextLabel = nextMealLabel(now);
-        boolean missed = now.isAfter(LocalTime.of(10, 30)) && now.isBefore(LocalTime.of(11, 30))
-                || now.isAfter(LocalTime.of(14, 30)) && now.isBefore(LocalTime.of(17, 30))
-                || now.isAfter(LocalTime.of(21, 0));
-        LocalTime nextStart = resolveNextMealStart(now);
-        String targetIso = nextStart != null
-                ? LocalDateTime.of(LocalDate.now(clock).plusDays(nextStart.isBefore(now) ? 1 : 0), nextStart)
-                .atZone(clock.getZone()).toInstant().toString()
-                : null;
-        return new MealWindow(false, missed, missed ? nextLabel : "Next " + nextLabel, nextLabel, targetIso);
-    }
-
-    private String nextMealLabel(LocalTime now) {
-        if (now.isBefore(LocalTime.of(10, 30))) {
-            return "Breakfast";
-        }
-        if (now.isBefore(LocalTime.of(14, 30))) {
-            return "Lunch";
-        }
-        if (now.isBefore(LocalTime.of(21, 0))) {
-            return "Dinner";
-        }
-        return "Breakfast";
-    }
-
-    private LocalTime resolveNextMealStart(LocalTime now) {
-        if (now.isBefore(LocalTime.of(6, 30))) {
-            return LocalTime.of(6, 30);
-        }
-        if (now.isBefore(LocalTime.of(11, 30))) {
-            return LocalTime.of(11, 30);
-        }
-        if (now.isBefore(LocalTime.of(17, 30))) {
-            return LocalTime.of(17, 30);
-        }
-        return LocalTime.of(6, 30);
-    }
-
     private List<String> parseWeeklyMetricKeys(String raw) {
         Set<String> keys = new LinkedHashSet<>();
         if (raw != null && !raw.isBlank()) {
@@ -1648,13 +1620,6 @@ public class DashboardController {
     }
 
     private record LatestTrainerNote(String sourceTitle, String noteBody, String meta) {
-    }
-
-    private record MealWindow(boolean active,
-                              boolean missed,
-                              String label,
-                              String nextLabel,
-                              String targetIso) {
     }
 
     public record TopActionCard(String kicker,

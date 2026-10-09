@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "merch_orders")
+@Table(name = "merch_orders", uniqueConstraints = @UniqueConstraint(
+        name = "uq_merch_order_user_checkout", columnNames = {"user_id", "checkout_key"}))
 @Getter
 @Setter
 public class MerchOrder {
@@ -25,6 +26,18 @@ public class MerchOrder {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "checkout_key", length = 36)
+    private String checkoutKey;
+
+    @Column(name = "checkout_currency", length = 3)
+    private String checkoutCurrency;
+
+    @Column(name = "checkout_success_url", length = 2048)
+    private String checkoutSuccessUrl;
+
+    @Column(name = "checkout_cancel_url", length = 2048)
+    private String checkoutCancelUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)

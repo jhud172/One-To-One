@@ -21,7 +21,10 @@ class NoteServiceImplTest {
     private NoteRepository noteRepository;
 
     @Mock
-    private NoteFolderService noteFolderService;
+    private NoteFolderRepository folderRepository;
+
+    @org.mockito.Spy
+    private NoteSanitizer noteSanitizer = new NoteSanitizer();
 
     @InjectMocks
     private NoteServiceImpl service;
@@ -58,5 +61,13 @@ class NoteServiceImplTest {
         assertEquals("New title", updated.getTitle());
         assertEquals("New content", updated.getContent());
         assertTrue(updated.isPublic());
+    }
+
+    @Test
+    void richFormattingPersistsWithoutScriptsStylesOrUnsafeLinks() {
+        String safe = noteSanitizer.sanitize("<p class='evil ql-align-center' style='text-align:center;color:red'>" +
+                "<font size='4'><u>Formatted text</u></font><a href='javascript:alert(1)' onclick='bad()'>Link</a></p>");
+        org.assertj.core.api.Assertions.assertThat(safe).contains("ql-align-center", "ql-size-large", "<u>Formatted text</u>")
+                .doesNotContain("evil", "style=", "onclick=", "javascript:");
     }
 }

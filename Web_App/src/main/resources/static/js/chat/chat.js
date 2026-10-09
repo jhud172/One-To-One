@@ -403,15 +403,19 @@ function initCharlieWidget(config) {
         sendBtn.disabled = state.sending || !isWithinLimit || (!hasText && !state.pendingAttachments.length);
     };
 
-    const openPanel = () => {
+    let panelReturnFocus = fab;
+    const openPanel = (trigger = document.activeElement) => {
+        panelReturnFocus = trigger instanceof HTMLElement ? trigger : fab;
         overlayManager?.open("charlie");
         revealChatPanel(panel);
         panel.classList.add("open");
         panel.setAttribute("aria-hidden", "false");
         panel.removeAttribute("inert");
         fab.setAttribute("aria-expanded", "true");
+        document.querySelector('#platformPanelTrack [data-action="charlie"]')?.setAttribute("aria-expanded", "true");
         fab.setAttribute("aria-label", getChatCopy("closeCharlie", "Close Charlie"));
         syncHeaderState();
+        window.requestAnimationFrame(() => { if (panel.classList.contains("open")) input.focus(); });
     };
 
     const closePanel = (options = {}) => {
@@ -424,12 +428,16 @@ function initCharlieWidget(config) {
         panel.setAttribute("inert", "");
         concealChatPanelAfterTransition(panel);
         fab.setAttribute("aria-expanded", "false");
+        document.querySelector('#platformPanelTrack [data-action="charlie"]')?.setAttribute("aria-expanded", "false");
         fab.setAttribute("aria-label", getChatCopy("openCharlie", "Open Charlie"));
         closeComposerOptions();
         setChatPlusAccessOpen(false);
         closeInlineClearConfirm({ restoreFocus: false });
         if (!options.fromOverlayManager) overlayManager?.release("charlie");
-        if (options.restoreFocus && focusWasInsidePanel) fab.focus();
+        if (options.restoreFocus && focusWasInsidePanel) {
+            const target = panelReturnFocus?.isConnected ? panelReturnFocus : fab;
+            target.focus();
+        }
     };
 
     overlayManager?.register("charlie", {
@@ -698,7 +706,7 @@ function initCharlieWidget(config) {
         }
     };
 
-    window.toggleChatPanel = () => (panel.classList.contains("open") ? closePanel() : openPanel());
+    window.toggleChatPanel = trigger => (panel.classList.contains("open") ? closePanel() : openPanel(trigger));
     window.openCharlieChatWithMessage = (message) => {
         if (!message || typeof message !== "string") return;
         openPanel();
@@ -706,7 +714,7 @@ function initCharlieWidget(config) {
         appendMessage({ who: "ai", text: message.trim(), attachments: [], navActions: [] });
     };
 
-    fab.addEventListener("click", (event) => { event.preventDefault(); window.toggleChatPanel(); });
+    fab.addEventListener("click", (event) => { event.preventDefault(); window.toggleChatPanel(fab); });
     closeBtn.addEventListener("click", () => closePanel({ restoreFocus: true }));
     clearBtn.addEventListener("click", openInlineClearConfirm);
     clearInlineCancel?.addEventListener("click", () => closeInlineClearConfirm({ restoreFocus: true }));

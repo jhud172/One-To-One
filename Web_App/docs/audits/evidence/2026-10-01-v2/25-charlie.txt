@@ -1,0 +1,124 @@
+- banner:
+  - link "One To One Logo One To One":
+    - /url: /
+    - img "One To One Logo"
+    - generic: One To One
+  - navigation "Primary navigation":
+    - link "Dashboard":
+      - /url: /dashboard
+      - generic: Dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: /chat
+      - generic: Charlie
+    - link "Trainers":
+      - /url: /client/trainers
+      - generic: Trainers
+    - link "Shop":
+      - /url: /merch
+      - generic: Shop
+    - link "Leaderboard":
+      - /url: /levels
+      - generic: Leaderboard
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - generic "Premium member":
+      - button "Premium features enabled":
+      - status: Premium Active
+    - button "Open profile menu":
+- main:
+  - complementary:
+    - generic: Conversations
+    - generic: Coach
+    - textbox "Search chats"
+    - button "✨ New chat"
+    - button "New chat":
+      - generic: New chat
+  - heading "Charlie — Pro Command Centre" [level=1]
+  - paragraph: Context-aware assistant, always on.
+  - button "Focus":
+    - text: Focus
+  - generic: Premium · Unlimited
+  - generic: "Data use notice: This platform uses AI to assist with recommendations, scheduling, and insights. AI outputs are generated automatically and should not be considered professional medical or fitness advice. Always consult a qualified professional where appropriate."
+  - generic: Ask about workouts, planning, or tomorrow's momentum.
+  - button "📅 Plan tomorrow"
+  - button "⚡ Optimise this week"
+  - button "🏋 Adjust today's workout"
+  - button "📊 7-day summary"
+  - button "📈 30-day insights"
+  - button "💪 Chest exercises"
+  - button "🦵 Leg exercises"
+  - button "🔄 Workout variations"
+  - button "💊 Creatine guide"
+  - button "🧬 BCAA advice"
+  - button "🎯 Reduce workload today"
+  - generic: /plan
+  - generic: /summary
+  - generic: /next
+  - generic: /7days
+  - generic: /exercises
+  - generic: Shift + Enter for new line
+  - textbox "Ask about workouts, supplements, exercises, or your progress…"
+  - button "Send ✨"
+  - complementary:
+    - generic: Live Metrics
+    - button "Refresh metrics":
+    - generic: 0%
+    - generic: Today's completion
+    - generic: 0%
+    - generic: Tasks left
+    - generic: "1"
+    - generic: Workouts left
+    - generic: "1"
+    - generic: Streak
+    - generic: —
+    - generic: Next workout
+    - generic: Client Premium Plan · 2026-10-08
+    - generic: Insights
+    - generic "✦ Weekly completion"
+    - generic "✦ 7-day summary"
+    - generic "✦ 30-day summary"
+    - generic "✦ Activity streak"
+    - generic "✦ Next session"
+    - generic: Quick Actions
+    - button "💪 Chest exercises + demos"
+    - button "💊 Creatine guide"
+    - button "🔄 Mix up my workouts"
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - button "Scroll platform actions left":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Scroll platform actions right":
+  - button "Customize platform panel":

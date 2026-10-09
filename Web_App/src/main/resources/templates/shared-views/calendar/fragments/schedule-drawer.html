@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="scheduleDrawer(viewMode)">
+    <div id="scheduleDrawer" class="calendar-schedule-shelf" role="dialog" aria-modal="true"
+         aria-labelledby="scheduleDrawerTitle" aria-hidden="true" data-is-premium="true" inert
+         th:attr="data-invalid-window=#{ui.deploy.invalidWindow},data-replace-help=#{ui.deploy.replaceHelp},data-review-needed=#{ui.deploy.reviewNeeded},data-impact-summary=#{ui.deploy.impactSummary},data-undo=#{ui.deploy.undo},data-refresh=#{ui.deploy.refresh},data-undo-error=#{ui.deploy.undoError},data-undo-expired=#{ui.deploy.undoExpired},data-success=#{ui.deploy.success}">
+        <div class="calendar-schedule-overlay" data-drawer-overlay></div>
+        <div class="calendar-schedule-panel" data-drawer-panel>
+            <div class="calendar-schedule-header">
+                <div class="calendar-schedule-context">
+                    <p class="calendar-schedule-eyebrow" th:text="#{ui.01707}">Schedule control centre</p>
+                    <h2 class="calendar-schedule-title" id="scheduleDrawerTitle" th:text="#{ui.01708}">Deploy schedules</h2>
+                    <p class="calendar-schedule-context-value" th:text="#{ui.01709}">Apply places schedule workouts into your selected calendar range.</p>
+                    <div class="calendar-schedule-context-grid">
+                        <div class="calendar-schedule-context-item">
+                            <span class="calendar-schedule-context-label" th:text="#{ui.00664}">View</span>
+                            <span id="schedule-context-view" class="calendar-schedule-context-value" th:text="${#messages.msg(viewMode == 'week' ? 'ui.01787' : 'ui.01710')}">Month</span>
+                        </div>
+                        <div class="calendar-schedule-context-item">
+                            <span class="calendar-schedule-context-label" th:text="#{ui.01711}">Deploy window</span>
+                            <span id="schedule-context-summary" class="calendar-schedule-context-value" th:text="${#messages.msg(viewMode == 'week' ? 'ui.01788' : 'ui.01712')}">Starts &#8212; Monthly</span>
+                        </div>
+                        <div class="calendar-schedule-context-item">
+                            <span class="calendar-schedule-context-label" th:text="#{ui.01713}">Visible dates</span>
+                            <span id="schedule-context-range" class="calendar-schedule-context-value">&#8212;</span>
+                        </div>
+                        <div class="calendar-schedule-context-item">
+                            <span class="calendar-schedule-context-label" th:text="#{ui.01722}">Entries in view</span>
+                            <span id="schedule-context-meta" class="calendar-schedule-context-value" th:text="#{ui.01715}">Checking...</span>
+                        </div>
+                    </div>
+                    <div class="calendar-schedule-scope" role="group" aria-label="Apply scope selection" th:attr="aria-label=#{ui.01716}">
+                        <button type="button" class="calendar-schedule-scope-btn is-active" data-schedule-scope="visible" th:text="#{ui.01717}">Visible range</button>
+                        <button type="button" class="calendar-schedule-scope-btn" data-schedule-scope="day" th:text="#{ui.01718}">Selected day</button>
+                        <button type="button" class="calendar-schedule-scope-btn" data-schedule-scope="custom" th:text="#{ui.01719}">Custom range</button>
+                    </div>
+                </div>
+                <button type="button" class="calendar-schedule-close" data-drawer-close th:text="#{ui.00857}">Close</button>
+            </div>
+            <div class="calendar-schedule-body">
+                <div class="calendar-schedule-context-grid mb-3">
+                    <div class="calendar-schedule-context-item">
+                        <span class="calendar-schedule-context-label" th:text="#{ui.01718}">Selected day</span>
+                        <span id="schedule-context-selected-day" class="calendar-schedule-context-value" th:text="#{ui.01640}">None</span>
+                    </div>
+                    <div class="calendar-schedule-context-item">
+                        <span class="calendar-schedule-context-label" th:text="#{ui.01722}">Entries in view</span>
+                        <span id="schedule-context-existing" class="calendar-schedule-context-value" th:text="#{ui.01715}">Checking...</span>
+                    </div>
+                </div>
+                <label class="sr-only" for="schedule-search" th:text="#{ui.01723}">Search schedules</label>
+                <input id="schedule-search"
+                       type="text"
+                       placeholder="Search schedules..."
+                       class="calendar-schedule-search"  th:placeholder="#{ui.01724}"/>
+                <div class="calendar-schedule-scope mt-3" role="group" aria-label="Schedule filters" th:attr="aria-label=#{ui.01725}">
+                    <label class="sr-only" for="schedule-filter-type" th:text="#{ui.01726}">Filter by type</label>
+                    <select id="schedule-filter-type" class="calendar-schedule-scope-btn">
+                        <option value="all" th:text="#{ui.01727}">All types</option>
+                        <option value="weekly" th:text="#{ui.01728}">Weekly</option>
+                        <option value="rotational" th:text="#{ui.01729}">Rotational</option>
+                        <option value="custom" th:text="#{ui.01730}">Custom</option>
+                    </select>
+                    <label class="sr-only" for="schedule-filter-status" th:text="#{ui.01731}">Filter by status</label>
+                    <select id="schedule-filter-status" class="calendar-schedule-scope-btn">
+                        <option value="all" th:text="#{ui.01732}">All status</option>
+                        <option value="active" th:text="#{ui.00134}">Active</option>
+                        <option value="archived" th:text="#{ui.00592}">Archived</option>
+                        <option value="applied" th:text="#{ui.01733}">Applied</option>
+                        <option value="not applied" th:text="#{ui.01734}">Not applied</option>
+                    </select>
+                    <label class="sr-only" for="schedule-filter-frequency" th:text="#{ui.01735}">Filter by frequency</label>
+                    <select id="schedule-filter-frequency" class="calendar-schedule-scope-btn">
+                        <option value="all" th:text="#{ui.01736}">Any frequency</option>
+                        <option value="high" th:text="#{ui.01737}">High</option>
+                        <option value="mid" th:text="#{ui.01738}">Medium</option>
+                        <option value="low" th:text="#{ui.01739}">Low</option>
+                    </select>
+                </div>
+                <div class="calendar-schedule-scope mt-2" role="group" aria-label="Quick chips" th:attr="aria-label=#{ui.01740}">
+                    <label class="calendar-schedule-scope-btn"><input id="schedule-filter-favourites" type="checkbox" class="mr-1"><th:block th:text="#{ui.01683}">Favourites</th:block></label>
+                    <label class="calendar-schedule-scope-btn"><input id="schedule-filter-recent" type="checkbox" class="mr-1"><th:block th:text="#{ui.01741}">Applied this month</th:block></label>
+                    <label class="calendar-schedule-scope-btn" th:text="#{ui.01742}">Applies to this view</label>
+                    <label class="sr-only" for="schedule-sort" th:text="#{ui.01743}">Sort schedules</label>
+                    <select id="schedule-sort" class="calendar-schedule-scope-btn">
+                        <option value="recentlyApplied" th:text="#{ui.01744}">Recently applied</option>
+                        <option value="mostUsed" th:text="#{ui.01745}">Most used</option>
+                        <option value="recentlyCreated" th:text="#{ui.01746}">Upcoming soonest</option>
+                        <option value="name" th:text="#{ui.00131}">Name</option>
+                    </select>
+                </div>
+                <div class="calendar-schedule-context-grid mt-3">
+                    <div class="calendar-schedule-context-item">
+                        <span class="calendar-schedule-context-label" th:text="#{ui.01747}">Pinned</span>
+                        <div id="schedule-pinned-list" class="calendar-schedule-actions"></div>
+                    </div>
+                    <div class="calendar-schedule-context-item">
+                        <span class="calendar-schedule-context-label" th:text="#{ui.01748}">Recent</span>
+                        <div id="schedule-recent-list" class="calendar-schedule-actions"></div>
+                    </div>
+                </div>
+                <ul id="schedule-list" class="calendar-schedule-list mt-4 space-y-2">
+                    <li th:if="${#lists.isEmpty(schedules)}" class="calendar-schedule-empty" th:text="${#messages.msg(viewMode == 'week' ? 'ui.01789' : 'ui.01749')}">No schedules yet. Create one and start applying it to your month.</li>
+                    <li th:each="schedule : ${schedules}"
+                        th:with="active=${scheduleActiveIds != null and scheduleActiveIds.contains(schedule.id)},
+                                 hasEntries=${schedule.entries != null and !#lists.isEmpty(schedule.entries)},
+                                 latestApplied=${scheduleLatestAppliedById != null ? scheduleLatestAppliedById[schedule.id] : null},
+                                 status=${latestApplied != null ? 'Applied' : (active ? 'Active' : (hasEntries ? 'Archived' : 'Not applied'))}"
+                        th:attr="data-schedule-id=${schedule.id},data-schedule-name=${schedule.name},data-schedule-status=${#strings.toLowerCase(status)},data-schedule-type=${schedule.scheduleType.name()},data-schedule-apply-count=${latestApplied != null ? 1 : 0},data-schedule-latest-applied=${latestApplied != null ? #temporals.format(latestApplied, 'yyyy-MM-dd') : ''},data-schedule-rotation=${schedule.scheduleType.name()}">
+                        <article class="calendar-schedule-card sched-card" th:attr="data-schedule-id=${schedule.id},draggable=true,data-schedule-drag=${schedule.id}">
+                            <header class="calendar-schedule-card-header">
+                                <div>
+                                    <h3 class="calendar-schedule-card-title" th:text="${schedule.name}">Schedule</h3>
+                                    <p class="calendar-schedule-card-subtitle" th:text="${schedule.description != null and !schedule.description.isBlank() ? schedule.description : 'Ready for calendar deployment'}"></p>
+                                </div>
+                                <div class="calendar-schedule-card-tools">
+                                    <button type="button" class="calendar-schedule-pin" data-pin-toggle th:attr="data-schedule-id=${schedule.id},aria-label=#{ui.01750}" aria-label="Pin schedule">&#128204;</button>
+                                    <button type="button" class="calendar-schedule-favourite" data-favourite-toggle th:attr="data-schedule-id=${schedule.id},aria-label=#{ui.01751}" aria-label="Toggle favourite"><span data-fav-icon>&#9734;</span></button>
+                                </div>
+                            </header>
+                            <div class="calendar-schedule-metrics">
+                                <div class="calendar-schedule-metric"><span th:text="#{ui.00623}">Type</span><strong th:text="${#strings.capitalize(#strings.toLowerCase(schedule.scheduleType.name()).replace('_', ' '))}">Weekly</strong></div>
+                                <div class="calendar-schedule-metric"><span th:text="#{ui.01752}">Frequency</span><strong data-meta-field="sessionsPerWeek">&#8212;</strong></div>
+                                <div class="calendar-schedule-metric"><span th:text="#{ui.01753}">Active days</span><strong data-meta-field="activeDayLabels">&#8212;</strong></div>
+                            </div>
+                            <div class="calendar-schedule-card-footer">
+                                <span class="calendar-schedule-status" data-deploy-status th:classappend="${status == 'Active' ? ' is-active' : (status == 'Applied' ? ' is-active' : ' is-archived')}" th:text="${status}">Not applied</span>
+                                <span class="calendar-schedule-last-applied" th:text="${latestApplied != null ? 'Last applied ' + #temporals.format(latestApplied, 'dd MMM yyyy') : 'Last applied -'}">Last applied &#8212;</span>
+                            </div>
+                            <details class="sched-card-menu">
+                                <summary class="calendar-schedule-action" th:text="#{ui.01755}">Details</summary>
+                                <div class="calendar-schedule-metrics mt-2">
+
+                                    <div class="calendar-schedule-metric"><span th:text="#{ui.01758}">Conflict check</span><strong th:text="#{ui.01759}">Use Review impact</strong></div>
+                                    <div class="calendar-schedule-health" data-health-indicators></div>
+                                </div>
+                                <div class="calendar-schedule-actions mt-2">
+                                    <a th:href="@{'/schedules/' + ${schedule.id} + '/entries'}" class="calendar-schedule-action" th:text="#{ui.00138}">Edit</a>
+                                    <button type="button" class="calendar-schedule-action" data-duplicate-schedule th:attr="data-schedule-id=${schedule.id}" th:text="#{ui.01760}">Duplicate</button>
+                                    <form th:action="@{'/schedules/' + ${schedule.id} + '/deactivate'}"
+                                          method="post"
+                                          data-confirm="Archive this schedule?"
+                                          class="inline">
+                                        <input type="hidden" th:if="${_csrf != null}"
+                                               th:name="${_csrf.parameterName}"
+                                               th:value="${_csrf.token}" />
+                                        <button type="submit" class="calendar-schedule-action" th:text="#{ui.01761}">Archive</button>
+                                    </form>
+                                </div>
+                            </details>
+                            <div class="calendar-schedule-card-actions">
+                                <button type="button" class="calendar-schedule-action calendar-schedule-action--primary" th:attr="data-schedule-id=${schedule.id}" th:text="#{ui.00925}">Apply</button>
+                                <a th:href="@{'/schedules/' + ${schedule.id} + '/entries'}" class="calendar-schedule-action" th:text="#{ui.00448}">Manage</a>
+                            </div>
+                        </article>
+                    </li>
+                </ul>
+                <div class="calendar-schedule-context-item mt-4" data-deploy-panel>
+                    <span class="calendar-schedule-context-label" th:text="#{ui.01762}">Apply setup</span>
+                    <div class="calendar-schedule-context-grid">
+                        <div class="calendar-schedule-context-item">
+                            <label class="calendar-schedule-context-label" for="schedule-deploy-start" th:text="#{ui.00589}">Start date</label>
+                            <input id="schedule-deploy-start" type="date" required class="calendar-jump-input" />
+                        </div>
+                        <div class="calendar-schedule-context-item">
+                            <label class="calendar-schedule-context-label" for="schedule-deploy-repeat" th:text="#{ui.01763}">Repeat</label>
+                            <select id="schedule-deploy-repeat" class="calendar-schedule-scope-btn">
+                                <option value="weekly" th:text="#{ui.01728}">Weekly</option>
+                                <option value="daily" th:text="#{ui.01764}">Daily</option>
+                                <option value="monthly" th:text="#{ui.00969}">Monthly</option>
+                                <option value="yearly" th:text="#{ui.01765}">Yearly</option>
+                                <option value="custom" th:text="#{ui.01730}">Custom</option>
+                                <option value="forever" th:text="#{ui.deploy.yearLimit}">Next 12 months</option>
+                            </select>
+                        </div>
+                        <div id="schedule-repeat-custom" class="calendar-schedule-context-item" hidden>
+                            <label class="calendar-schedule-context-label" for="schedule-repeat-interval" th:text="#{ui.01767}">Every</label>
+                            <div class="calendar-schedule-actions">
+                                <input id="schedule-repeat-interval" type="number" min="1" max="52" value="1" class="calendar-jump-input" />
+                                <select id="schedule-repeat-unit" class="calendar-schedule-scope-btn" aria-label="Repeat unit" th:attr="aria-label=#{ui.deploy.unit}">
+                                    <option value="week" th:text="#{ui.01768}">week(s)</option>
+                                    <option value="day" th:text="#{ui.01769}">day(s)</option>
+                                    <option value="month" th:text="#{ui.01770}">month(s)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="schedule-repeat-end-row" class="calendar-schedule-context-item">
+                            <label class="calendar-schedule-context-label" for="schedule-repeat-end" th:text="#{ui.01771}">End date</label>
+                            <input id="schedule-repeat-end" type="date" required class="calendar-jump-input" />
+                        </div>
+                    </div>
+                    <p class="calendar-schedule-repeat-help" th:text="#{ui.deploy.repeatHelp}">The first week follows the schedule’s weekdays. Each workout then repeats at your chosen interval, within this date range.</p>
+                    <div class="calendar-schedule-scope mt-2" role="group" aria-label="Deployment strategy" th:attr="aria-label=#{ui.01772}">
+                        <button type="button" class="calendar-schedule-scope-btn is-active" aria-pressed="true" data-deploy-strategy="merge" th:text="#{ui.01773}">Merge</button>
+                        <button type="button" class="calendar-schedule-scope-btn" aria-pressed="false" data-deploy-strategy="skip" th:text="#{ui.01774}">Skip conflicts</button>
+                        <button type="button" class="calendar-schedule-scope-btn" aria-pressed="false" data-deploy-strategy="replace" th:text="#{ui.01775}">Replace</button>
+                    </div>
+                    <p id="schedule-strategy-help" class="calendar-schedule-context-value mt-2" th:text="#{ui.01776}">Adds new entries without removing what is already scheduled.</p>
+                    <p id="schedule-impact-summary" role="status" aria-live="polite" aria-atomic="true" class="calendar-schedule-context-value mt-2" th:text="#{ui.01777}">Pick a schedule, choose where it goes, then deploy.</p>
+                </div>
+                <div class="calendar-schedule-preview-controls">
+                    <label class="calendar-schedule-scope-btn"><input id="schedule-preview-toggle" type="checkbox" checked class="mr-1"><th:block th:text="#{ui.01756}">Preview week</th:block></label>
+                    <button type="button" id="schedule-preview-clear" class="calendar-schedule-action" th:text="#{ui.01778}">Clear preview</button>
+                </div>
+                <div id="schedule-preview-confirm" class="calendar-schedule-context-item hidden mt-3">
+                    <span class="calendar-schedule-context-label" th:text="#{ui.01781}">Ready to deploy</span>
+                    <span id="schedule-preview-confirm-name" class="calendar-schedule-context-value" th:text="#{ui.01782}">Schedule</span>
+                    <div class="calendar-schedule-actions mt-2">
+                        <button type="button" id="schedule-preview-confirm-apply" class="calendar-schedule-action calendar-schedule-action--primary" th:text="#{ui.01783}">Confirm</button>
+                        <button type="button" id="schedule-preview-confirm-cancel" class="calendar-schedule-action" th:text="#{ui.00125}">Cancel</button>
+                    </div>
+                </div>
+                <a href="/schedules" class="btn btn--primary btn--md mt-4 w-full" th:text="#{ui.01784}">View all schedules</a>
+                <a href="/schedules/builder" class="btn btn--ghost btn--sm mt-3 w-full" th:text="#{ui.01785}">Create new schedule</a>
+                <p class="calendar-schedule-context-value text-center mt-2" th:text="#{ui.deploy.nativeHelp}">Starts on your chosen date. Matching workouts already scheduled are kept; applying the same range again will not duplicate them.</p>
+            </div>
+            <div class="calendar-schedule-deploy-footer" data-deploy-footer hidden>
+                    <button type="button" id="schedule-impact-review" class="calendar-schedule-action" th:text="#{ui.01779}">Review impact</button>
+                    <button type="button" id="schedule-impact-apply" disabled class="calendar-schedule-action calendar-schedule-action--primary" th:text="#{ui.01780}">Deploy schedule</button>
+                    <button type="button" id="schedule-deploy-cancel" class="calendar-schedule-action" th:text="#{ui.00125}">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</html>

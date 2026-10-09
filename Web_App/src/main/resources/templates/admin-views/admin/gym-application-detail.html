@@ -1,7 +1,7 @@
 <th:block xmlns:th="http://www.thymeleaf.org"
           th:replace="~{base :: layout(#{ui.00043}, null, ~{::content}, null)}">
 
-    <div th:fragment="content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div th:fragment="content" class="application-operations-v2 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
                 <p class="text-xs uppercase tracking-[0.22em] text-slate-500" th:text="#{ui.00016}">Gym application</p>
@@ -19,7 +19,7 @@
 
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             <section class="space-y-4">
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/40">
+                <article class="support-case-v2">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00018}">Application summary</h2>
                     <dl class="mt-4 grid grid-cols-1 gap-4 text-sm text-slate-600 sm:grid-cols-2 dark:text-slate-300">
                         <div>
@@ -45,7 +45,7 @@
                     </div>
                 </article>
 
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/40">
+                <article class="support-case-v2">
                     <div class="flex items-center justify-between gap-3">
                         <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00024}">Application timeline</h2>
                         <span class="text-xs text-slate-500" th:text="${openApplicationCount} + ' open applications'">0 open applications</span>
@@ -53,8 +53,8 @@
                     <div class="mt-4 space-y-3">
                         <div th:each="message : ${messages}" class="rounded-2xl border border-slate-200 px-4 py-3 dark:border-slate-700">
                             <div class="flex items-center justify-between gap-3">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="${message.senderType}">ADMIN</p>
-                                <p class="text-xs text-slate-400" th:text="${#temporals.format(message.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-30 10:00</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500" th:text="${message.senderType}">ADMIN</p><span class="operations-delivery-v2" th:text="${message.emailed} ? #{ui.operations.accepted} : #{ui.operations.portalOnly}"></span>
+                                <p class="text-xs text-slate-400" th:text="${#temporals.format(message.createdAt.atZone(T(java.time.ZoneId).of('Europe/London')), 'dd MMM yyyy HH:mm')}">2026-03-30 10:00</p>
                             </div>
                             <p th:if="${message.subject != null}" class="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${message.subject}">Subject</p>
                             <p class="mt-2 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200" th:text="${message.body}">Body</p>
@@ -64,54 +64,54 @@
             </section>
 
             <section class="space-y-4">
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/40">
+                <article class="support-case-v2">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00025}">Send follow-up</h2>
                     <form th:action="@{/admin/gym-applications/{id}/message(id=${gymApplication.id})}" method="post" class="mt-4 space-y-3">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00026}">Subject</label>
-                            <input type="text" name="subject" maxlength="200" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Follow-up on your gym application"  th:placeholder="#{ui.00027}"/>
+                            <label for="application-message-subject" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00026}">Subject</label>
+                            <input type="text" id="application-message-subject" th:value="${applicationDraftAction == 'message'} ? ${applicationSubject} : ''" name="subject" maxlength="200" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Follow-up on your gym application"  th:placeholder="#{ui.00027}"/>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00028}">Message</label>
-                            <textarea name="message" rows="5" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Ask for extra details, documents, or clarify next steps." th:placeholder="#{ui.00029}"></textarea>
+                            <label for="application-message-message" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00028}">Message</label>
+                            <textarea id="application-message-message" th:text="${applicationDraftAction == 'message'} ? ${applicationMessage} : ''" required name="message" rows="5" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Ask for extra details, documents, or clarify next steps." th:placeholder="#{ui.00029}"></textarea>
                         </div>
                         <button type="submit" class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500" th:text="#{ui.00030}">Send email update</button>
                     </form>
                 </article>
 
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/40">
+                <article class="support-case-v2">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00031}">Review actions</h2>
 
-                    <form th:action="@{/admin/gym-applications/{id}/request-info(id=${gymApplication.id})}" method="post" class="mt-4 space-y-3">
+                    <form th:action="@{/admin/gym-applications/{id}/request-info(id=${gymApplication.id})}" method="post" th:if="${!applicationClosed}" class="mt-4 space-y-3">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <input type="hidden" name="subject" value="More information needed for your 1 to 1 gym application" />
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00032}">Request more information</label>
-                            <textarea name="message" rows="4" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Tell the gym exactly what still needs to be provided." th:placeholder="#{ui.00033}"></textarea>
+                            <label for="application-request-info-message" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00032}">Request more information</label>
+                            <textarea id="application-request-info-message" th:text="${applicationDraftAction == 'request-info'} ? ${applicationMessage} : ''" required name="message" rows="4" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Tell the gym exactly what still needs to be provided." th:placeholder="#{ui.00033}"></textarea>
                         </div>
                         <button type="submit" class="inline-flex items-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500" th:text="#{ui.00034}">Move to needs info</button>
                     </form>
 
-                    <form th:action="@{/admin/gym-applications/{id}/decline(id=${gymApplication.id})}" method="post" class="mt-5 space-y-3">
+                    <form th:action="@{/admin/gym-applications/{id}/decline(id=${gymApplication.id})}" method="post" th:attr="data-confirm=#{ui.00039}" th:if="${!applicationClosed}" class="mt-5 space-y-3">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <input type="hidden" name="subject" value="Update on your 1 to 1 gym application" />
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00035}">Decline reason</label>
-                            <textarea name="message" rows="4" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Explain why the application is being declined." th:placeholder="#{ui.00036}"></textarea>
+                            <label for="application-decline-message" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00035}">Decline reason</label>
+                            <textarea id="application-decline-message" th:text="${applicationDraftAction == 'decline'} ? ${applicationMessage} : ''" required name="message" rows="4" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Explain why the application is being declined." th:placeholder="#{ui.00036}"></textarea>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00037}">Internal review notes</label>
-                            <textarea name="reviewNotes" rows="3" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Private internal notes for the review team." th:placeholder="#{ui.00038}"></textarea>
+                            <label for="application-decline-reviewNotes" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00037}">Internal review notes</label>
+                            <textarea id="application-decline-reviewNotes" th:text="${applicationDraftAction == 'decline'} ? ${applicationNotes} : ''" name="reviewNotes" rows="3" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Private internal notes for the review team." th:placeholder="#{ui.00038}"></textarea>
                         </div>
                         <button type="submit" class="inline-flex items-center rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-500" th:text="#{ui.00039}">Decline application</button>
                     </form>
 
-                    <form th:action="@{/admin/gym-applications/{id}/approve(id=${gymApplication.id})}" method="post" class="mt-5 space-y-3">
+                    <form th:action="@{/admin/gym-applications/{id}/approve(id=${gymApplication.id})}" method="post" th:attr="data-confirm=#{ui.00042}" th:if="${!applicationClosed}" class="mt-5 space-y-3">
                         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00040}">Approval note</label>
-                            <textarea name="welcomeMessage" rows="4" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Optional message sent alongside the live account approval." th:placeholder="#{ui.00041}"></textarea>
+                            <label for="application-approve-welcomeMessage" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1" th:text="#{ui.00040}">Approval note</label>
+                            <textarea id="application-approve-welcomeMessage" th:text="${applicationDraftAction == 'approve'} ? ${applicationWelcome} : ''" name="welcomeMessage" rows="4" maxlength="5000" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" placeholder="Optional message sent alongside the live account approval." th:placeholder="#{ui.00041}"></textarea>
                         </div>
                         <button type="submit" class="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500" th:text="#{ui.00042}">Approve and create account</button>
                     </form>

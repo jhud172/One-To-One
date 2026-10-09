@@ -1080,11 +1080,11 @@ button {
     animation-name: birthday-masthead-rise;
 }
 
-.birthday-promise__copy,
-.birthday-terms,
-.birthday-countdown__intro,
-.birthday-countdown__clock,
-.birthday-finale__content {
+.birthday-ready .birthday-promise__copy,
+.birthday-ready .birthday-terms,
+.birthday-ready .birthday-countdown__intro,
+.birthday-ready .birthday-countdown__clock,
+.birthday-ready .birthday-finale__content {
     opacity: 0;
     transform: translateY(34px);
     transition: opacity 720ms ease, transform 720ms cubic-bezier(.22, 1, .36, 1);
@@ -1742,3 +1742,9 @@ button {
         transform: none;
     }
 }
+
+/* The gift remains fully readable when animation cannot run. */
+[hidden] { display: none !important; }
+.birthday-open-button { min-height: 44px; margin-top: 1rem; padding: .75rem 1rem; border: 1px solid var(--birthday-cyan); border-radius: .7rem; background: transparent; color: var(--birthday-white); font: inherit; font-weight: 700; cursor: pointer; }
+.birthday-open-button:focus-visible { outline: 3px solid var(--birthday-cyan); outline-offset: 4px; }
+html:not(.birthday-ready) :is(.birthday-promise__copy,.birthday-terms,.birthday-countdown__intro,.birthday-countdown__clock,.birthday-finale__content) { opacity: 1; transform: none; }

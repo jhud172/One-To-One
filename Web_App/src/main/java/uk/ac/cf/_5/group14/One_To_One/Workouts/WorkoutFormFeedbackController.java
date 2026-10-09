@@ -48,8 +48,7 @@ public class WorkoutFormFeedbackController {
         }
         try {
             WorkoutSetVideo video = feedbackService.getLatestVideo(user, sessionId, setId);
-            AiFormFeedback feedback = feedbackService.getFeedback(video);
-            return ResponseEntity.ok(feedbackService.buildFeedbackPayload(video, feedback));
+            return ResponseEntity.ok(feedbackService.buildFeedbackPayload(video));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.notFound().build();
         }

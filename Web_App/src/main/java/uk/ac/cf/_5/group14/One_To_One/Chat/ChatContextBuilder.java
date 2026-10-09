@@ -170,7 +170,7 @@ public class ChatContextBuilder {
         int total = tasksTotal + woTotal;
         int done = tasksDone + woDone;
         int pct = total > 0 ? (done * 100) / total : 0;
-        if (pct >= 80) return "ðŸ”¥ Great week â€” " + pct + "% completion rate!";
+        if (pct >= 80) return "ðŸ”¥ Great week — " + pct + "% completion rate!";
         if (pct >= 50) return "ðŸ“ˆ Solid effort this week (" + pct + "% done). Keep pushing!";
         return "âš ï¸ Only " + pct + "% completed this week. Consider reducing workload or improving consistency.";
     }

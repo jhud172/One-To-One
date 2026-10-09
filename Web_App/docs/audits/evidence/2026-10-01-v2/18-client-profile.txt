@@ -1,0 +1,257 @@
+- banner:
+  - link "One To One Logo One To One":
+    - /url: /
+    - img "One To One Logo"
+    - generic: One To One
+  - navigation "Primary navigation":
+    - link "Dashboard":
+      - /url: /dashboard
+      - generic: Dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: /chat
+      - generic: Charlie
+    - link "Trainers":
+      - /url: /client/trainers
+      - generic: Trainers
+    - link "Shop":
+      - /url: /merch
+      - generic: Shop
+    - link "Leaderboard":
+      - /url: /levels
+      - generic: Leaderboard
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - generic "Premium member":
+      - button "Premium features enabled":
+      - status: Premium Active
+    - button "Open profile menu":
+- main:
+  - complementary:
+    - img "Profile photo"
+    - heading "Avery" [level=1]
+    - button "Premium membership details":
+      - generic: Premium membership active
+    - paragraph: "@demo_client"
+    - group "Profile completion guidance":
+      - generic: Profile radar
+      - generic: 100%
+      - generic: Profile completed
+      - button "Dismiss"
+      - paragraph: Profile radar checklist
+      - paragraph: Profile complete
+      - paragraph: Everything important is filled in and verified.
+      - generic: All done
+    - paragraph: Premium client demo account with a busy but consistent training rhythm, a live trainer link, and a fully styled profile setup.
+    - button "Show more"
+    - paragraph: Visible milestones
+    - generic: Achieved
+    - generic: Reached Level 5
+    - generic: Achieved
+    - generic: Verified email
+    - generic: Achieved
+    - generic: Verified phone
+    - generic: Achieved
+    - generic: Premium member
+    - generic "Profile stats":
+      - paragraph: "1840"
+      - paragraph: Points
+      - paragraph: "10"
+      - paragraph: Level
+      - paragraph: "0"
+      - paragraph: Logs
+    - button "Customise Profile":
+      - generic: Customise Profile
+    - paragraph: Account actions
+    - link "Goals":
+      - /url: /goals
+      - text: Goals
+    - link "Orders":
+      - /url: /orders
+      - text: Orders
+    - button "Options": Options
+    - button "Settings":
+      - text: Settings
+  - heading "Profile Details" [level=2]
+  - paragraph: Username
+  - paragraph: "@demo_client"
+  - paragraph: Email
+  - paragraph: demo_client@example.com
+  - generic: Verified
+  - paragraph: Phone number
+  - paragraph: +44 7911123456
+  - generic: Verified
+  - paragraph: Name
+  - paragraph: Avery Client
+  - paragraph: Date of birth
+  - button "Date of birth can only be set once and cannot be changed":
+    - 'tooltip "One-time input: once saved, date of birth cannot be changed."'
+  - paragraph: 18 Apr 1998
+  - generic: Locked
+  - paragraph: Bio
+  - paragraph: Premium client demo account with a busy but consistent training rhythm, a live trainer link, and a fully styled profile setup.
+  - heading "Premium Feature – Customise Profile" [level=3]
+  - paragraph: Premium customiser active
+  - paragraph: Your selected profile customisation settings are active.
+  - generic: Premium
+  - paragraph: Banner
+  - paragraph: LAGOON
+  - paragraph: Ring
+  - paragraph: AURORA PULSE
+  - paragraph: Card back
+  - paragraph: NEBULA
+  - paragraph: Milestones
+  - generic: Reached Level 5
+  - generic: Verified email
+  - generic: Verified phone
+  - generic: Premium member
+  - heading "Health Conditions Why conditions affect training Health conditions shape recovery, exercise intensity, and movement safety. We use them to tailor workouts and recommendations." [level=2]:
+    - text: Health Conditions
+    - img "Why conditions affect training"
+    - generic: Health conditions shape recovery, exercise intensity, and movement safety. We use them to tailor workouts and recommendations.
+  - paragraph: Track permanent or time-limited conditions that affect your training.
+  - paragraph: Premium members receive inbox follow-ups when timed conditions end.
+  - heading "Permanent conditions" [level=3]
+  - list:
+    - listitem: No permanent conditions saved.
+  - text: Add condition
+  - textbox "Add condition"
+  - button "Add permanent"
+  - heading "Timed conditions" [level=3]
+  - list:
+    - listitem: No timed conditions saved.
+  - text: Condition name
+  - textbox "Condition name"
+  - text: Start date
+  - textbox "Start date": 2026-10-01
+  - text: Duration (days)
+  - spinbutton "Duration (days)": "14"
+  - button "Add timed condition"
+  - dialog:
+    - heading [level=2]: Options
+    - heading [level=3]: Appearance
+    - heading [level=3]: Appearance
+    - paragraph: Choose between light and dark mode.
+    - button [pressed]:
+      - text: Light
+    - button:
+      - text: Auto
+    - button:
+      - text: Dark
+    - heading [level=3]: Calendar display
+    - paragraph: Control how tasks and workouts appear on the calendar.
+    - radio [checked]
+    - generic: Detailed
+    - generic: All tasks and workouts in a single combined list.
+    - radio
+    - generic: Grouped
+    - generic: Tasks and workouts organised into separate categories.
+    - heading [level=3]: Preferences
+    - heading [level=3]: Exercise preferences
+    - paragraph: Update goals, training preferences, and more.
+    - link:
+      - /url: /select-preferences
+      - text: Open preferences
+    - heading [level=3]: Templates
+    - heading [level=3]: Workout session templates
+    - paragraph: "Choose your preferred workout layout: Flow, Professional, Plain, or Futuristic. Create custom layouts in the template builder."
+    - link:
+      - /url: /workout-templates
+      - text: Manage templates
+    - heading [level=3]: Payments
+    - heading [level=3]: Payment & Cards
+    - paragraph: Manage saved payment methods. Only the last 4 digits are shown.
+    - paragraph: No saved cards yet.
+    - generic: + Add New Card
+    - heading [level=3]: Password
+    - heading [level=3]: Password change
+    - paragraph: Use secure reset flow to change your password.
+    - link:
+      - /url: /forgot-password
+      - text: Change password
+  - dialog:
+    - heading [level=2]: Settings
+    - button:
+      - text: Close
+    - heading [level=3]: Activity
+    - heading [level=3]: Exercise logs
+    - paragraph: Review your progress, trends, and workout history.
+    - link:
+      - /url: /exercise-log/list
+      - text: View exercise logs
+    - heading [level=3]: Data Sharing
+    - heading [level=3]: Accessibility
+    - paragraph: Colour blind mode and disability support toggles.
+    - generic: Colour blind mode
+    - checkbox
+    - generic: Hearing support
+    - checkbox
+    - generic: Mobility support
+    - checkbox
+    - generic: Vision support
+    - checkbox
+    - button: Save accessibility
+    - heading [level=3]: Trainer data sharing
+    - paragraph: Choose what your active trainer can view.
+    - generic: Recovery signals
+    - checkbox
+    - generic: Nutrition logs
+    - checkbox
+    - generic: Sleep signals
+    - checkbox
+    - generic: Fatigue signals
+    - checkbox
+    - generic: Weight trend
+    - checkbox
+    - paragraph: Only your active trainer can see shared signals.
+    - button: Save sharing
+    - heading [level=3]: Request data export
+    - paragraph: We will prepare a downloadable export and notify you in your inbox.
+    - button: Request export
+    - heading [level=3]: Danger Zone
+    - paragraph: Use this action only when you are sure. It cannot be undone.
+    - heading [level=3]: Delete account
+    - paragraph: This action permanently removes all your data and cannot be undone.
+    - text: Type DELETE to confirm
+    - textbox
+    - button: Delete account
+- button "Open Charlie"
+- text: Add photo Send message
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - button "Scroll platform actions left":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Scroll platform actions right":
+  - button "Customize platform panel":

@@ -181,6 +181,35 @@ public class CalendarTaskWarningServiceTest {
         assertEquals(scheduled, warning.getTriggeredAt());
     }
 
+    @Test
+    void timeRuleTriggersWithoutGraceAndDoesNotMarkTaskLate() {
+        CalendarTaskWarningService service = new CalendarTaskWarningService(warningRepository);
+        CalendarTask task = taskWithId(1L);
+        task.setDate(LocalDate.of(2026, 10, 2));
+        CalendarTaskWarning warning = new CalendarTaskWarning();
+        warning.setTask(task); warning.setTriggerType(CalendarTaskWarningTriggerType.TIME);
+        warning.setTriggerTime(LocalTime.NOON);
+        when(warningRepository.findByTaskIdIn(List.of(1L))).thenReturn(List.of(warning));
+        Instant scheduled = task.getDate().atTime(LocalTime.NOON).atZone(ZoneId.systemDefault()).toInstant();
+        service.applyWarningStates(List.of(task), scheduled.plusSeconds(60));
+        assertEquals(scheduled, warning.getTriggeredAt());
+        assertFalse(task.isInGrace()); assertFalse(task.isLate());
+        verify(warningRepository).saveAll(List.of(warning));
+    }
+
+    @Test
+    void futureCompletionTriggerDoesNotStartGraceEarly() {
+        CalendarTaskWarningService service = new CalendarTaskWarningService(warningRepository);
+        CalendarTask task = taskWithId(1L); task.setGracePeriodMinutes(15);
+        CalendarTaskWarning warning = new CalendarTaskWarning();
+        warning.setTask(task); warning.setTriggerType(CalendarTaskWarningTriggerType.ON_TASK_COMPLETE);
+        Instant now = Instant.parse("2026-10-02T10:00:00Z");
+        warning.setTriggeredAt(now.plusSeconds(60));
+        when(warningRepository.findByTaskIdIn(List.of(1L))).thenReturn(List.of(warning));
+        service.applyWarningStates(List.of(task), now);
+        assertFalse(task.isInGrace()); assertFalse(task.isLate());
+    }
+
     private static CalendarTask taskWithId(Long id) {
         CalendarTask task = new CalendarTask();
         task.setId(id);

@@ -121,6 +121,7 @@ public class CustomInvalidSessionStrategy implements InvalidSessionStrategy {
         return uri.startsWith("/css/")
                 || uri.startsWith("/js/")
                 || uri.startsWith("/img/")
+                || uri.startsWith("/models/one-to-one/")
                 || uri.startsWith("/static/")
                 || uri.startsWith("/webjars/")
                 || uri.equals("/favicon.ico")

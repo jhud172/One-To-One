@@ -1,0 +1,83 @@
+/* Solid, readable account surfaces; role and verification behaviour is unchanged. */
+body.version-two .guest-auth.guest-experience {
+    --guest-ink: var(--v2-ink);
+    --guest-copy: var(--v2-muted);
+    --guest-muted: var(--v2-muted);
+    --guest-mint: var(--v2-accent);
+    --guest-green: var(--v2-accent);
+    --guest-green-deep: var(--v2-accent);
+    --guest-night: var(--v2-page);
+    --guest-night-soft: var(--v2-surface);
+    --auth-journey-cyan: var(--v2-accent);
+    --auth-journey-mint: var(--v2-accent);
+    --auth-journey-ink: var(--v2-ink);
+    --auth-journey-copy: var(--v2-muted);
+    --auth-journey-muted: var(--v2-muted);
+    --auth-journey-line: var(--v2-border);
+    --auth-journey-line-strong: var(--v2-control-border);
+    background: var(--v2-page);
+    color: var(--v2-ink);
+    padding-block: clamp(1.5rem, 4vw, 3.5rem);
+}
+body.version-two .guest-auth :is(.guest-auth__panel, .auth-card, .verify-card) {
+    --auth-field-bg: var(--v2-surface);
+    --auth-field-bg-hover: var(--v2-surface);
+    --auth-field-border: var(--v2-control-border);
+    --auth-field-border-hover: var(--v2-accent);
+    --auth-field-text: var(--v2-ink);
+    --auth-field-placeholder: var(--v2-muted);
+    --auth-field-focus: var(--v2-focus);
+    --auth-field-ring: transparent;
+    background: var(--v2-surface);
+    border-color: var(--v2-border);
+    border-radius: var(--v2-radius-stage);
+    box-shadow: var(--v2-shadow-panel);
+    opacity: 1;
+    transform: none;
+    transition: border-color var(--motion-duration-micro) var(--motion-ease-standard);
+}
+body.version-two .guest-auth .guest-auth__panel::after { content: none; }
+body.version-two .guest-auth .guest-auth__assurance { background: transparent; border-color: var(--v2-border); opacity: 1; transform: none; }
+body.version-two .guest-auth .auth-heading { font-size: clamp(2.5rem, 4.5vw, 3.75rem); line-height: 1.08; }
+body.version-two .guest-auth .auth-alert--dev { background: var(--v2-raised); color: var(--v2-ink); border-color: var(--v2-control-border); }
+body.version-two .guest-auth :is(.auth-dev-alert__title, .auth-dev-alert__demo, .auth-dev-alert__code) { color: var(--v2-ink); }
+body.version-two .guest-auth .auth-dev-alert__copy { color: var(--v2-muted); }
+body.version-two .guest-auth .auth-role-story__title { color: var(--v2-ink); }
+body.version-two .guest-auth .auth-role-story__eyebrow { color: var(--v2-accent); }
+body.version-two .guest-auth :is(.auth-heading, .verify-title, .auth-field__label, .verify-label) { color: var(--v2-ink); }
+body.version-two .guest-auth :is(.auth-subheading, .verify-copy, .role-hint, .guest-auth__assurance-rail) { color: var(--v2-muted); }
+body.version-two .guest-auth :is(.auth-field__error, .guest-auth__panel .text-red-600, .guest-auth__panel .text-red-700) { color: var(--v2-danger) !important; }
+body.version-two .guest-auth :is(.auth-field__input, .code-input-part, .verify-code-input) { background: var(--v2-surface); color: var(--v2-ink); border-color: var(--v2-control-border); box-shadow: none; }
+body.version-two .guest-auth :is(.auth-field__input, .code-input-part, .verify-code-input):hover:not(:focus) { background: var(--v2-surface); border-color: var(--v2-accent); box-shadow: none; }
+body.version-two .guest-auth :is(.auth-field__input, .code-input-part, .verify-code-input):focus { border-color: var(--v2-focus); box-shadow: none; outline: 3px solid var(--v2-focus); outline-offset: 2px; }
+body.version-two .guest-auth :is(.auth-field__input, .code-input-part)[aria-invalid="true"] { border-color: var(--v2-danger); }
+body.version-two .guest-auth .role-slider { background: var(--v2-raised); border-color: var(--v2-border); box-shadow: none; }
+body.version-two .guest-auth .role-slider__indicator { background: var(--v2-accent); box-shadow: none; }
+body.version-two .guest-auth .role-slider__option { color: var(--v2-muted); }
+body.version-two .guest-auth .role-slider__option.active { color: var(--v2-on-accent); }
+body.version-two .guest-auth .role-slider__option:not(.active):hover { color: var(--v2-accent); background: var(--v2-accent-soft); }
+body.version-two .guest-auth :is(.auth-btn, .verify-primary) { background: var(--v2-accent); color: var(--v2-on-accent); border-color: var(--v2-accent); box-shadow: none; }
+body.version-two .guest-auth :is(.auth-btn, .verify-primary):hover { background: var(--v2-accent-hover); box-shadow: none; transform: none; }
+body.version-two .guest-auth :is(.auth-btn, .verify-primary)::before { content: none; }
+body.version-two .guest-auth form.is-submitting .auth-btn--primary[aria-busy="true"] {
+    color: var(--v2-on-accent);
+}
+body.version-two .guest-auth form.is-submitting .auth-btn--primary[aria-busy="true"]::before {
+    content: "";
+    position: static;
+    display: inline-block;
+    flex: 0 0 1rem;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid currentColor;
+    border-inline-end-color: transparent;
+    border-radius: 50%;
+    transform: none;
+    animation: v2-auth-spin 720ms linear infinite;
+}
+@keyframes v2-auth-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    body.version-two .guest-auth form.is-submitting .auth-btn--primary[aria-busy="true"]::before { animation: none; }
+}
+body.version-two .guest-auth :is(.auth-accent-bar, .verify-card.guest-auth__panel::before) { background: linear-gradient(90deg, var(--v2-accent), var(--v2-connection)); animation: none; box-shadow: none; }
+body.version-two .guest-auth :is(.guest-auth__signal-line, .guest-auth__brand-mark)::before { animation: none; }

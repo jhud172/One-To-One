@@ -7,15 +7,16 @@
     <input type="hidden" id="inbox_csrf" th:value="${_csrf != null ? _csrf.token : ''}" />
     <input type="hidden" id="inbox_csrf_header" th:value="${_csrf != null ? _csrf.headerName : ''}" />
 
-        <div class="role-surface role-surface__page inbox-thread-surface" id="inboxThreadRoot"
-            th:attr="data-thread-id=${conversationId}, data-current-user-id=${currentUserId}, data-role-surface=${roleSurface.roleKey}">
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div class="role-surface role-surface__page inbox-thread-surface inbox-v2" id="inboxThreadRoot"
+            th:attr="data-thread-id=${conversationId}, data-thread-status=${thread.status.name()}, data-current-user-id=${currentUserId}, data-role-surface=${roleSurface.roleKey}, data-load-error=#{ui.inbox.loadError}, data-send-error=#{ui.inbox.sendError}, data-locked=#{ui.inbox.locked}, data-payment-error=#{ui.02093}, data-sent=#{ui.inbox.sent}, data-read=#{ui.inbox.read}, data-view-attachment=#{ui.inbox.viewAttachment}, data-mark-read=#{ui.inbox.markRead}, data-conversation=#{ui.02083}, data-notification=#{ui.02002}, data-open=#{ui.00451}, data-checkin=#{ui.inbox.checkin}, data-unconfirmed=#{ui.inbox.unconfirmed}, data-unsaved=#{ui.inbox.unsaved}, data-read-failed=#{ui.inbox.readFailed}, data-rejected=${inboxSendError != null}, data-checkin-rejected=${inboxCheckinDraft == true}">
+        <div class="inbox-feedback"><p id="inboxStatus" role="status" aria-live="polite" th:text="${thread.status.name() != 'OPEN'} ? #{ui.inbox.locked} : (${inboxSendError == 'OFF_PLATFORM_PAYMENT'} ? #{ui.02093} : (${inboxSendError != null} ? #{ui.inbox.sendError} : (${inboxSent == true} ? #{ui.inbox.sent} : '')))"></p><button id="inboxReload" type="button" th:text="#{ui.inbox.reload}">Reload inbox</button></div>
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 inbox-workspace-grid">
 
             <!-- Sidebar: Conversations -->
-            <aside class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+            <aside aria-label="Conversations" th:attr="aria-label=#{ui.02083}" class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
                 <div class="border-b border-slate-200/70 px-5 py-4 dark:border-slate-800">
                     <div class="flex items-center justify-between gap-3">
-                        <h1 class="text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${roleSurface.inboxHeading}">Inbox</h1>
+                        <h2 class="detail-section-title" th:text="${roleSurface.inboxHeading}">Inbox</h2>
                         <a href="/inbox" class="text-sm font-semibold text-slate-900 hover:underline dark:text-slate-100" th:text="#{ui.00485}">All</a>
                     </div>
                 </div>
@@ -30,20 +31,20 @@
                     <li th:each="c : ${conversations}">
                         <a th:href="@{/inbox/{id}(id=${c.conversationId})}"
                            class="group block px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/30"
-                           th:classappend="${c.conversationId == conversationId} ? ' bg-slate-50 dark:bg-slate-900/30' : ''">
+                           th:classappend="${c.conversationId == conversationId} ? ' bg-slate-50 dark:bg-slate-900/30' : ''" th:attr="aria-current=${c.conversationId == conversationId ? 'page' : null}">
                             <div class="flex items-start gap-3">
                                 <div class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-sm font-semibold text-slate-900 ring-1 ring-slate-200/70 dark:bg-slate-900/60 dark:text-slate-100 dark:ring-slate-800" aria-hidden="true">
-                                    <span th:text="${c.title != null ? #strings.toUpperCase(#strings.substring(c.title,0,1)) : '•'}"></span>
+                                    <span th:text="${!#strings.isEmpty(c.title) ? #strings.toUpperCase(#strings.substring(c.title,0,1)) : '•'}"></span>
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center justify-between gap-2">
                                         <p class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100" th:text="${c.title}"></p>
                                         <span th:if="${c.unreadCount != null && c.unreadCount > 0}"
-                                              class="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 px-1.5 text-xs font-semibold text-white dark:bg-slate-100 dark:text-slate-900"
-                                              th:text="${c.unreadCount}"></span>
+                                              class="inbox-unread-badge inline-flex min-w-5 shrink-0 items-center justify-center"
+                                              th:text="${c.unreadCount}" th:attr="aria-label=${c.unreadCount + ' ' + #messages.msg('ui.inbox.unreadLabel')}"></span>
                                     </div>
-                                    <p class="mt-1 truncate text-sm text-slate-600 dark:text-slate-300" th:text="${c.lastMessageSnippet}"></p>
-                                    <p class="mt-1 text-xs text-slate-500" th:text="${c.lastMessageAt}"></p>
+                                    <p class="mt-1 truncate text-sm text-slate-600 dark:text-slate-300" data-inbox-preview th:text="${c.lastMessageSnippet}"></p>
+                                    <p class="mt-1 text-xs text-slate-500" dir="ltr" data-inbox-preview-date th:text="${inboxConversationDates[c.conversationId]}"></p>
                                 </div>
                             </div>
                         </a>
@@ -56,8 +57,8 @@
                 <div class="border-b border-slate-200/70 px-5 py-4 dark:border-slate-800">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
-                            <h2 class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100"
-                                th:text="${otherUser != null ? otherUser.fullName : 'Conversation'}">Conversation</h2>
+                            <h1 class="detail-title inbox-thread-title"
+                                th:text="${otherUser != null ? otherUser.fullName : #messages.msg('ui.02083')}">Conversation</h1>
                             <p class="mt-0.5 text-sm text-slate-600 dark:text-slate-300"
                                th:text="${otherUser != null ? ('@' + otherUser.username) : conversationId}"></p>
                         </div>
@@ -65,6 +66,7 @@
                     </div>
                 </div>
 
+                <p class="inbox-human-hint" th:text="#{ui.inbox.humanHint}"></p>
                 <div class="flex flex-col">
                     <div class="px-5 py-5">
                         <div id="inboxMessagesEmpty" th:classappend="${messages != null && !messages.isEmpty()} ? ' hidden' : ''" class="rounded-2xl border border-slate-200/70 bg-slate-50 p-5 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900/25 dark:text-slate-200">
@@ -72,41 +74,54 @@
                             <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="${roleSurface.threadEmptyCopy}">Send the first message.</p>
                         </div>
 
-                        <div id="inboxMessages" th:classappend="${messages == null || messages.isEmpty()} ? ' hidden' : ''" class="space-y-3">
-                            <div th:each="m : ${messages}" class="flex">
+                        <div id="inboxMessages" role="log" tabindex="0" aria-live="polite" aria-relevant="additions text" th:attr="aria-label=#{ui.02083}" th:classappend="${messages == null || messages.isEmpty()} ? ' hidden' : ''" class="space-y-3">
+                            <div th:each="m : ${messages}" class="flex" th:classappend="${currentUserId == m.senderUserId} ? ' inbox-message-own' : ' inbox-message-other'">
                                 <div class="max-w-2xl rounded-2xl border border-slate-200/70 bg-white px-4 py-3 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                                    <p class="text-xs text-slate-500" th:text="${m.createdAt}"></p>
-                                    <p class="mt-1 whitespace-pre-wrap text-slate-800 dark:text-slate-200" th:text="${m.bodyText}"></p>
+                                    <p th:if="${m.type.name() == 'CHECKIN'}" class="inbox-checkin-label" th:text="#{ui.inbox.checkin}"></p>
+                                    <time class="text-xs text-slate-500" dir="ltr" th:datetime="${m.createdAt}" th:text="${inboxMessageDates[m.id]}"></time>
+                                    <p class="mt-1 whitespace-pre-wrap text-slate-800 dark:text-slate-200" dir="auto" th:text="${m.bodyText}"></p>
+                                    <a th:if="${inboxAttachmentLinks.containsKey(m.id)}" th:href="${inboxAttachmentLinks[m.id]}" target="_blank" rel="noopener noreferrer" class="inbox-attachment" th:text="${!#strings.isEmpty(m.attachmentName) ? m.attachmentName : #messages.msg('ui.inbox.viewAttachment')}"></a>
+                                    <p th:if="${currentUserId == m.senderUserId}" class="inbox-receipt" th:text="${inboxReadMessages.contains(m.id)} ? #{ui.inbox.read} : #{ui.inbox.sent}"></p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="border-t border-slate-200/70 bg-white/80 px-5 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/30">
+                        <p id="inbox-message-hint" class="inbox-composer-hint" th:text="#{ui.inbox.messageHint}"></p><p id="inbox-attachment-hint" class="inbox-composer-hint" th:text="#{ui.inbox.attachmentHint}"></p>
                         <form class="flex flex-wrap items-end gap-3" id="inboxSendForm" th:action="@{/inbox/{id}/send(id=${conversationId})}" method="post">
                             <input th:name="${_csrf.parameterName}" th:type="hidden" th:value="${_csrf.token}"/>
 
                             <label class="block w-full">
                                 <span class="sr-only" th:text="#{ui.00028}">Message</span>
-                                <textarea name="body" id="inboxBody" required rows="2"
+                                <textarea name="body" id="inboxBody" dir="auto" aria-describedby="inbox-message-hint" maxlength="4000" rows="2" th:readonly="${thread.status.name() != 'OPEN'}" th:text="${inboxDraftBody}"
                                           class="block w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-100"
                                           th:placeholder="${roleSurface.messagePlaceholder}"></textarea>
                             </label>
 
                             <div class="flex w-full flex-wrap items-center gap-3 sm:w-auto">
-                                <label class="inline-flex items-center gap-2 text-xs text-slate-500">
-                                    <input type="file" disabled class="hidden" />
-                                    <span class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-slate-800" th:text="#{ui.02006}">Attachments coming soon</span>
-                                </label>
-                                <input type="url" id="inboxAttachmentUrl" placeholder="Attachment link (optional)"
+                                <label for="inboxAttachmentUrl" th:text="#{ui.02007}">Attachment link (optional)</label>
+                                <input type="url" id="inboxAttachmentUrl" dir="ltr" aria-describedby="inbox-attachment-hint" name="attachmentUrl" maxlength="500" th:value="${inboxDraftAttachment}" th:readonly="${thread.status.name() != 'OPEN'}" placeholder="Attachment link (optional)"
                                        class="min-w-[220px] rounded-2xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-400 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-100"  th:placeholder="#{ui.02007}"/>
                             </div>
 
-                            <button type="submit"
+                            <button type="submit" th:disabled="${thread.status.name() != 'OPEN'}"
                                     class="role-surface__action role-surface__action--primary" th:text="#{ui.02008}">
                                 Send
                             </button>
                         </form>
+                        <details class="inbox-checkin-composer" th:open="${inboxCheckinDraft}"><summary th:text="#{ui.02097}"></summary>
+                            <form method="post" data-inbox-checkin-form th:action="@{/messages/{id}/send(id=${conversationId})}">
+                                <input type="hidden" name="type" value="CHECKIN">
+                                <p th:if="${inboxCheckinDraft}" role="alert" th:text="#{ui.inbox.checkinHint}"></p>
+                                <fieldset th:disabled="${thread.status.name() != 'OPEN'}"><legend th:text="#{ui.inbox.checkin}"></legend>
+                                    <div class="inbox-checkin-fields"><div><label for="checkinMood" th:text="#{ui.02098}"></label><input id="checkinMood" dir="ltr" name="checkinMood" type="text" inputmode="numeric" pattern="(?:[1-9]|10)" maxlength="2" th:value="${inboxCheckinMood}"></div>
+                                    <div><label for="checkinEnergy" th:text="#{ui.02099}"></label><input id="checkinEnergy" dir="ltr" name="checkinEnergy" type="text" inputmode="numeric" pattern="(?:[1-9]|10)" maxlength="2" th:value="${inboxCheckinEnergy}"></div></div>
+                                    <label for="checkinNotes" th:text="#{ui.00175}"></label><textarea id="checkinNotes" dir="auto" name="checkinNotes" rows="3" maxlength="3000" th:text="${inboxCheckinNotes}"></textarea>
+                                    <p id="checkinHint" th:text="#{ui.inbox.checkinHint}"></p><button class="role-surface__action role-surface__action--primary" type="submit" th:text="#{ui.02097}"></button>
+                                </fieldset>
+                            </form>
+                        </details>
                     </div>
                 </div>
             </section>
@@ -115,8 +130,9 @@
     </div>
 </div>
 
-</th:block>
+
 
 <th:block th:fragment="scripts">
     <script th:src="@{/js/messaging/inbox.js(v=${uiCssVersion})}" defer></script>
+</th:block>
 </th:block>

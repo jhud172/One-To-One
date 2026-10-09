@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import uk.ac.cf._5.group14.One_To_One.CalendarData.ActivityType;
+import uk.ac.cf._5.group14.One_To_One.CalendarData.CalendarFocusAgenda;
 import uk.ac.cf._5.group14.One_To_One.CalendarData.CalendarTask;
 import uk.ac.cf._5.group14.One_To_One.CalendarData.CalendarTaskService;
 import uk.ac.cf._5.group14.One_To_One.CalendarData.CalendarTaskWarning;
@@ -508,15 +510,7 @@ public class CalendarController {
         List<ScheduleOccurrence> occurrencesForDay = scheduleOccurrenceService.getOccurrencesForUserOnDate(user, date);
         model.addAttribute("occurrences", occurrencesForDay);
 
-        // scheduled workouts for this weekday
-        int dow = date.getDayOfWeek().getValue();
-        var schedules = workoutScheduleService.findByUserAndDayOfWeek(user, dow);
-        List<uk.ac.cf._5.group14.One_To_One.StrengthLog.WorkoutSession> sessions = new java.util.ArrayList<>();
-        for (var s : schedules) {
-            var ws = workoutSessionService.findByUserDateAndWorkout(user, date, s.getWorkout())
-                .orElseGet(() -> workoutSessionService.createIfMissing(user, date, s.getWorkout()));
-            sessions.add(ws);
-        }
+        List<WorkoutSession> sessions = getPlannerSessions(user, date, occurrencesForDay);
 
         CalendarWorkoutOrderingPreference workoutOrdering = CalendarWorkoutOrderingPreference.SCHEDULE_ORDER;
         if (settings != null && settings.getCalendarWorkoutOrdering() != null) {
@@ -701,10 +695,11 @@ public class CalendarController {
     public String focusView(
             @PathVariable String dateStr,
             @CurrentUser User user,
-            Model model
+            Model model,
+            HttpSession session
     ) {
         LocalDate date = LocalDate.parse(dateStr, DATE_FORMAT);
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
 
         model.addAttribute("isToday", date.equals(today));
         model.addAttribute("todayDate", today.format(DATE_FORMAT));
@@ -737,13 +732,18 @@ public class CalendarController {
         }
         model.addAttribute("dailyFocus", dailyFocus);
 
-        // Get workouts
-        List<WorkoutSession> workoutSessions = workoutSessionService.findByUserAndDate(user, date);
-        model.addAttribute("workoutSessions", workoutSessions);
-
         List<ScheduleOccurrence> occurrences = scheduleOccurrenceService.getOccurrencesForUserOnDate(user, date);
         model.addAttribute("occurrences", occurrences);
+        List<WorkoutSession> workoutSessions = getPlannerSessions(user, date, occurrences);
+        model.addAttribute("workoutSessions", workoutSessions);
 
+        model.addAttribute("focusAgenda", CalendarFocusAgenda.from(
+                tasks, workoutSessions, occurrences, getTimelineSlotsForDate(session, date)));
+        model.addAttribute("disableNavbar", true);
+        model.addAttribute("disableFooter", true);
+        model.addAttribute("disableQuickActions", true);
+        model.addAttribute("disableGlobalChatbot", true);
+        model.addAttribute("compactTopContent", true);
         return "shared-views/calendar/focus";
     }
 
@@ -1010,10 +1010,11 @@ public class CalendarController {
     }
 
     @PostMapping("/day/{dateStr}/toggle-complete")
-        public Object toggleComplete(
+    public Object toggleComplete(
             @PathVariable String dateStr,
             @CurrentUser User user,
             @RequestParam Long taskId,
+            @RequestParam(required = false) String returnTo,
             HttpServletRequest request
     ) {
         taskService.toggleCompleted(taskId, user);
@@ -1057,7 +1058,8 @@ public class CalendarController {
             return ResponseEntity.ok(Map.of("success", true, "completed", completed));
         }
 
-        return "redirect:/calendar/day/" + dateStr;
+        if ("detail".equals(returnTo)) return "redirect:/calendar/task/" + taskId;
+        return "redirect:/calendar/" + ("focus".equals(returnTo) ? "focus/" : "day/") + dateStr;
     }
 
     @PostMapping("/day/{dateStr}/timeline-slot")
@@ -1105,6 +1107,26 @@ public class CalendarController {
             logger.error("Failed to update timeline slot", ex);
             return ResponseEntity.internalServerError().body(Map.of("success", false, "error", "Unable to update timeline slot"));
         }
+    }
+
+    /** Keep both planner modes consistent, including saved sessions outside recurring schedules. */
+    private List<WorkoutSession> getPlannerSessions(User user, LocalDate date, List<ScheduleOccurrence> occurrences) {
+        var candidates = new ArrayList<WorkoutSession>();
+        for (var schedule : workoutScheduleService.findByUserAndDayOfWeek(user, date.getDayOfWeek().getValue())) {
+            candidates.add(workoutSessionService.findByUserDateAndWorkout(user, date, schedule.getWorkout())
+                    .orElseGet(() -> workoutSessionService.createIfMissing(user, date, schedule.getWorkout())));
+        }
+        candidates.addAll(workoutSessionService.findByUserAndDate(user, date));
+        var occurrenceIds = new HashSet<Long>();
+        for (var occurrence : occurrences) occurrenceIds.add(occurrence.getId());
+        var seen = new HashSet<Long>();
+        var result = new ArrayList<WorkoutSession>();
+        for (var candidate : candidates) {
+            // An occurrence already provides the launch/review action for its linked session.
+            if (candidate.getSourceOccurrenceId() != null && occurrenceIds.contains(candidate.getSourceOccurrenceId())) continue;
+            if (candidate.getId() == null || seen.add(candidate.getId())) result.add(candidate);
+        }
+        return result;
     }
 
     @SuppressWarnings("unchecked")
@@ -1157,13 +1179,28 @@ public class CalendarController {
             @RequestParam(required = false) String time,
             @RequestParam(required = false) String notes,
             @RequestParam(defaultValue = "false") boolean exercise,
-            @RequestParam(required = false) String activityType
+            @RequestParam(required = false) String activityType,
+            @RequestParam(required = false) String returnTo,
+            RedirectAttributes redirectAttributes
     ) {
         CalendarTask task = taskService.getTaskById(id);
-        if (task == null) return "redirect:/calendar";
+        if (!ownsTask(task, user)) return "redirect:/calendar";
+        String destination = "detail".equals(returnTo) ? "/calendar/task/" + id : "/calendar/day/" + task.getDate();
+        try {
+            if (title == null || title.isBlank() || title.length() > 255) throw new IllegalArgumentException();
+            if (time != null && !time.isBlank()) LocalTime.parse(time);
+        } catch (IllegalArgumentException | java.time.format.DateTimeParseException ex) {
+            redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.invalidEdit");
+            redirectAttributes.addFlashAttribute("taskFeedbackError", true);
+            redirectAttributes.addFlashAttribute("taskEditTitle", title);
+            redirectAttributes.addFlashAttribute("taskEditTime", time);
+            redirectAttributes.addFlashAttribute("taskEditNotes", notes);
+            return "redirect:" + destination;
+        }
         ActivityType parsedActivityType = parseActivityType(activityType);
-        taskService.updateTask(id, user, title, time, notes, exercise, parsedActivityType);
-        return "redirect:/calendar/day/" + task.getDate();
+        taskService.updateTask(id, user, title.trim(), time, notes, exercise, parsedActivityType);
+        redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.saved");
+        return "redirect:" + destination;
     }
 
     @PostMapping("/task/{id}/delete")
@@ -1172,7 +1209,7 @@ public class CalendarController {
             @CurrentUser User user
     ) {
         CalendarTask task = taskService.getTaskById(id);
-        if (task == null || task.getDate() == null) return "redirect:/calendar";
+        if (!ownsTask(task, user) || task.getDate() == null) return "redirect:/calendar";
 
         taskService.deleteTask(id, user);
         return "redirect:/calendar/day/" + task.getDate();
@@ -1220,6 +1257,8 @@ public class CalendarController {
 
         model.addAttribute("task", task);
         model.addAttribute("date", task.getDate());
+        model.addAttribute("calendarWarningZone", java.time.ZoneId.systemDefault().getId());
+        model.addAttribute("compactTopContent", true);
 
         List<CalendarTaskWarning> warnings = taskWarningService.listWarningsForTask(task.getId());
         model.addAttribute("taskWarnings", warnings);
@@ -1235,12 +1274,20 @@ public class CalendarController {
     public String updateGracePeriod(
             @PathVariable Long id,
             @CurrentUser User user,
-            @RequestParam(required = false) Integer gracePeriodMinutes
+            @RequestParam(required = false) String gracePeriodMinutes,
+            RedirectAttributes redirectAttributes
     ) {
         CalendarTask task = taskService.getTaskById(id);
-        if (task == null || task.getDate() == null) return "redirect:/calendar";
-
-        taskService.updateGracePeriodMinutes(id, user, gracePeriodMinutes);
+        if (!ownsTask(task, user)) return "redirect:/calendar";
+        try {
+            Integer minutes = gracePeriodMinutes == null || gracePeriodMinutes.isBlank() ? null : Integer.valueOf(gracePeriodMinutes);
+            if (minutes != null && minutes <= 0) throw new IllegalArgumentException();
+            taskService.updateGracePeriodMinutes(id, user, minutes);
+            redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.saved");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.invalidGrace");
+            redirectAttributes.addFlashAttribute("taskFeedbackError", true);
+        }
         return "redirect:/calendar/task/" + id;
     }
 
@@ -1248,7 +1295,8 @@ public class CalendarController {
     public String addTimeWarning(
             @PathVariable Long id,
             @CurrentUser User user,
-            @RequestParam String triggerTime
+            @RequestParam String triggerTime,
+            RedirectAttributes redirectAttributes
     ) {
         CalendarTask task = taskService.getTaskById(id);
         if (task == null) return "redirect:/calendar";
@@ -1262,8 +1310,10 @@ public class CalendarController {
         try {
             LocalTime t = LocalTime.parse(triggerTime);
             taskWarningService.addTimeWarning(task, t);
-        } catch (Exception ignored) {
-            // ignore invalid time input
+            redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.ruleSaved");
+        } catch (java.time.format.DateTimeParseException ex) {
+            redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.invalidTime");
+            redirectAttributes.addFlashAttribute("taskFeedbackError", true);
         }
 
         return "redirect:/calendar/task/" + id;
@@ -1273,11 +1323,12 @@ public class CalendarController {
     public String addOnCompleteWarning(
             @PathVariable Long id,
             @CurrentUser User user,
-            @RequestParam Long triggerTaskId
+            @RequestParam Long triggerTaskId,
+            RedirectAttributes redirectAttributes
     ) {
         CalendarTask task = taskService.getTaskById(id);
         CalendarTask triggerTask = taskService.getTaskById(triggerTaskId);
-        if (task == null || triggerTask == null) return "redirect:/calendar";
+        if (task == null) return "redirect:/calendar";
 
         if (task.getUser() == null || task.getUser().getId() == null || user == null || user.getId() == null) {
             return "redirect:/calendar";
@@ -1286,8 +1337,30 @@ public class CalendarController {
             return "redirect:/calendar";
         }
 
+        if (!ownsTask(triggerTask, user) || task.getId().equals(triggerTaskId) || !Objects.equals(task.getDate(), triggerTask.getDate())) {
+            redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.invalidTrigger");
+            redirectAttributes.addFlashAttribute("taskFeedbackError", true);
+            return "redirect:/calendar/task/" + id;
+        }
         taskWarningService.addOnTaskCompleteWarning(task, triggerTask);
+        redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.ruleSaved");
         return "redirect:/calendar/task/" + id;
+    }
+
+    @PostMapping("/task/{id}/warning/{warningId}/delete")
+    public String deleteTaskWarning(@PathVariable Long id, @PathVariable Long warningId,
+                                   @CurrentUser User user, RedirectAttributes redirectAttributes) {
+        CalendarTask task = taskService.getTaskById(id);
+        if (!ownsTask(task, user)) return "redirect:/calendar";
+        if (taskWarningService.deleteWarningForTask(warningId, task)) {
+            redirectAttributes.addFlashAttribute("taskFeedback", "ui.task.ruleRemoved");
+        }
+        return "redirect:/calendar/task/" + id;
+    }
+
+    private boolean ownsTask(CalendarTask task, User user) {
+        return task != null && task.getUser() != null && user != null && user.getId() != null
+                && Objects.equals(task.getUser().getId(), user.getId());
     }
 
     private Map<String, List<CalendarTask>> toIsoDateKeyedTaskMap(Map<LocalDate, List<CalendarTask>> source, LocalDate rangeStart, LocalDate rangeEnd) {

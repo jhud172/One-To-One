@@ -111,9 +111,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function buildPreviewHtml(item) {
-        const title = item.dataset.title || "Unknown";
-        const time = item.dataset.time || "&#8212;";
-        const notes = item.dataset.notes || "No notes";
+        const title = window.OneToOneDom.escapeHtml(item.dataset.title || "Unknown");
+        const time = window.OneToOneDom.escapeHtml(item.dataset.time || "\u2014");
+        const notes = window.OneToOneDom.escapeHtml(item.dataset.notes || "No notes");
         const completed = item.dataset.completed === "true";
         const type = item.dataset.type;
         const isWorkout = type === "occurrence" || type === "workout";
@@ -133,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
         }
 
-        const date = item.dataset.date || '';
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(item.dataset.date || '') ? item.dataset.date : '';
         if (type === "task") {
             const dayLink = date ? `/calendar/day/${date}#tasks` : '/calendar';
             if (!completed) {
@@ -465,6 +465,12 @@ document.addEventListener("DOMContentLoaded", () => {
         attachDayCardNavigation(document);
         return;
     }
+
+    // Adjacent weeks are visual animation buffers, not additional tab stops.
+    [prevSlot, nextSlot].forEach(slot => {
+        slot.setAttribute('inert', '');
+        slot.setAttribute('aria-hidden', 'true');
+    });
 
     const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1127,4 +1133,3 @@ document.addEventListener("DOMContentLoaded", () => {
         snapToCenter();
     });
 });
-

@@ -99,7 +99,7 @@ public class StripePaymentProviderService implements PaymentProviderService {
     @Override
     public PaymentSubscriptionVerification verifyCheckoutSession(String sessionId) {
         ensureConfigured();
-        if (sessionId == null || sessionId.isBlank()) {
+        if (isSimulationMode() || sessionId == null || !sessionId.matches("cs_[A-Za-z0-9_]+")) {
             return new PaymentSubscriptionVerification(false, providerName(), null, null, null, "Missing checkout session.");
         }
 
@@ -120,13 +120,25 @@ public class StripePaymentProviderService implements PaymentProviderService {
             String status = session.path("status").asText("");
             String customerId = session.path("customer").asText("");
             String subscriptionId = session.path("subscription").asText("");
-            if (!"complete".equalsIgnoreCase(status) || subscriptionId.isBlank()) {
+            if (!"complete".equalsIgnoreCase(status) || !"paid".equals(session.path("payment_status").asText())
+                    || !"subscription".equals(session.path("mode").asText()) || customerId.isBlank() || subscriptionId.isBlank()) {
                 return new PaymentSubscriptionVerification(false, providerName(), customerId, subscriptionId, null, "Subscription checkout was not completed.");
             }
 
+            JsonNode metadata = session.path("metadata");
+            Long userId = Long.valueOf(metadata.path("userId").asText(""));
+            PlatformPlan plan = PlatformPlan.valueOf(metadata.path("plan").asText(""));
+            if (!"platform_premium".equals(metadata.path("scope").asText()) || userId <= 0
+                    || !String.valueOf(userId).equals(session.path("client_reference_id").asText())
+                    || (plan != PlatformPlan.MONTHLY && plan != PlatformPlan.YEARLY)) {
+                return new PaymentSubscriptionVerification(false, providerName(), null, null, null, "Subscription checkout details could not be verified.");
+            }
             Instant currentPeriodEnd = fetchCurrentPeriodEnd(subscriptionId);
-            return new PaymentSubscriptionVerification(true, providerName(), customerId, subscriptionId, currentPeriodEnd, "Subscription activated.");
-        } catch (IOException e) {
+            if (currentPeriodEnd == null) {
+                return new PaymentSubscriptionVerification(false, providerName(), null, null, null, "Subscription details are unavailable. Please try again.");
+            }
+            return new PaymentSubscriptionVerification(true, providerName(), customerId, subscriptionId, currentPeriodEnd, "Subscription activated.", userId, plan);
+        } catch (IOException | IllegalArgumentException e) {
             log.warn("Stripe pricing checkout verification failed", e);
             return new PaymentSubscriptionVerification(false, providerName(), null, null, null, "Subscription checkout could not be verified.");
         }
@@ -167,8 +179,7 @@ public class StripePaymentProviderService implements PaymentProviderService {
 
             JsonNode subscription = mapper.readTree(body);
             boolean providerCancelAtPeriodEnd = subscription.path("cancel_at_period_end").asBoolean(cancelAtPeriodEnd);
-            long epochSeconds = subscription.path("current_period_end").asLong(0L);
-            Instant periodEnd = epochSeconds > 0L ? Instant.ofEpochSecond(epochSeconds) : null;
+            Instant periodEnd = StripeSubscriptionPayload.periodEnd(subscription);
             return new PaymentSubscriptionUpdate(
                     true,
                     providerCancelAtPeriodEnd,
@@ -200,8 +211,10 @@ public class StripePaymentProviderService implements PaymentProviderService {
                 return null;
             }
             JsonNode subscription = mapper.readTree(body);
-            long epochSeconds = subscription.path("current_period_end").asLong(0L);
-            return epochSeconds > 0L ? Instant.ofEpochSecond(epochSeconds) : null;
+            String status = subscription.path("status").asText("");
+            Instant periodEnd = StripeSubscriptionPayload.periodEnd(subscription);
+            if ((!"active".equals(status) && !"trialing".equals(status)) || periodEnd == null || !periodEnd.isAfter(Instant.now())) return null;
+            return periodEnd;
         }
     }
 

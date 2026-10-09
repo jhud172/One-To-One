@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="documents(files, requestId, editable)" class="verification-evidence">
+    <h3 th:text="#{ui.proReview.files}">Qualification documents</h3>
+    <p th:text="#{ui.proReview.filePrivacy}">Only you and platform reviewers can download these files.</p>
+    <p th:if="${files == null or #lists.isEmpty(files)}" th:text="#{ui.proReview.filesEmpty}">No documents attached.</p>
+    <ul th:if="${files != null and !#lists.isEmpty(files)}" class="verification-evidence__files">
+        <li th:each="file : ${files}">
+            <a th:href="@{/verification/documents/{id}(id=${file.id})}" th:text="${file.fileName}" download></a>
+            <span th:text="${#numbers.formatDecimal(file.byteSize / 1024.0, 1, 1)} + ' KiB'"></span>
+            <form th:if="${editable}" th:action="@{/trainer/verification/{id}/documents/{documentId}/remove(id=${requestId},documentId=${file.id})}" method="post">
+                <button type="submit" th:text="#{ui.proReview.removeFile}" th:aria-label="#{ui.proReview.removeNamedFile(${file.fileName})}">Remove document</button>
+            </form>
+        </li>
+    </ul>
+</div>
+<div th:fragment="timeline(events)" class="verification-evidence">
+    <h3 th:text="#{ui.proReview.timeline}">Review timeline</h3>
+    <p th:if="${events == null or #lists.isEmpty(events)}" th:text="#{ui.proReview.historyUnavailable}">This request predates the review timeline. Earlier changes are unavailable.</p>
+    <ol th:if="${events != null and !#lists.isEmpty(events)}" class="verification-evidence__timeline">
+        <li th:each="event : ${events}">
+            <div class="verification-evidence__event-heading">
+                <strong th:text="${#messages.msg('ui.proReview.event.' + event.action.name())}">Review update</strong>
+                <time th:datetime="${event.createdAt}" th:text="${#temporals.format(event.createdAt.atZone(T(java.time.ZoneId).of('Europe/London')), 'd MMM yyyy HH:mm')}"></time>
+            </div>
+            <p th:if="${event.documentName != null}" th:text="${event.documentName}"></p>
+            <details th:if="${event.trainerNotes != null or event.adminNotes != null}">
+                <summary th:text="#{ui.proReview.eventDetails}">Details at this point</summary>
+                <dl>
+                    <div th:if="${event.trainerNotes != null}"><dt th:text="#{ui.00154}">Trainer notes</dt><dd th:text="${event.trainerNotes}"></dd></div>
+                    <div th:if="${event.adminNotes != null}"><dt th:text="#{ui.00155}">Admin notes</dt><dd th:text="${event.adminNotes}"></dd></div>
+                </dl>
+            </details>
+        </li>
+    </ol>
+</div>
+</body>
+</html>

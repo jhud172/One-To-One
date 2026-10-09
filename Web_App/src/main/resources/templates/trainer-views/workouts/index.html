@@ -1,404 +1,80 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          th:replace="~{base :: layout(#{ui.02876}, ~{::styles}, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="styles"></div>
-
-    <div th:fragment="content">
-        <div class="workout-studio role-surface" th:attr="data-role-surface=${roleSurface.roleKey}" aria-label="Workout Studio">
-            <!-- Mode Navigation -->
-            <div class="studio-mode-nav" role="tablist" aria-label="Workout studio views" th:attr="aria-label=#{ui.02877}">
-                <button type="button" id="studio-tab-my-workouts" class="studio-mode-tab active" data-mode="my-workouts"
-                        role="tab" aria-selected="true" aria-controls="studio-panel-my-workouts" tabindex="0">
-                    <svg class="mode-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                    </svg>
-                    <th:block th:text="#{ui.02878}">My Workouts</th:block>
-                </button>
-                <button type="button" id="studio-tab-library" class="studio-mode-tab" data-mode="library"
-                        role="tab" aria-selected="false" aria-controls="studio-panel-library" tabindex="-1">
-                    <svg class="mode-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                    </svg>
-                    <th:block th:text="#{ui.02688}">Exercise Library</th:block>
-                </button>
-                <button type="button" id="studio-tab-builder" class="studio-mode-tab" data-mode="builder"
-                        role="tab" aria-selected="false" aria-controls="studio-panel-builder" tabindex="-1">
-                    <svg class="mode-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    <th:block th:text="#{ui.02879}">Builder</th:block>
-                </button>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02876}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content">
+    <div class="workout-studio studio-v2 role-surface" th:attr="data-draft-changed=${studioDraftChanged == true or studioError != null},data-role-surface=${roleSurface.roleKey},data-mode=${studioMode},data-row-title=#{ui.studio.order('{0}')},data-add-for=#{ui.studio.addFor('{0}')},data-remove-for=#{ui.studio.removeFor('{0}')},data-added=#{ui.studio.added('{0}')},data-favourite=#{ui.studio.favourite},data-unfavourite=#{ui.studio.unfavourite},data-favourite-failed=#{ui.studio.favouriteFailed},data-custom-saved=#{ui.studio.customSaved},data-custom-failed=#{ui.studio.customFailed},data-limits=#{ui.studio.limits}">
+        <header class="studio-v2__header">
+            <div><p class="studio-v2__eyebrow" th:text="#{ui.02878}">My workouts</p><h1 th:text="#{ui.02876}">Workout studio</h1><p th:text="#{ui.studio.owned}">These workouts belong to your account. Saving does not schedule a session or publish a programme.</p></div>
+            <a class="training-launch__action" href="/workout-management" th:text="#{ui.result.return}">Back to training</a>
+        </header>
+        <p th:if="${!roleSurface.coachingToolsPrimary}" class="studio-v2__notice"><span th:text="#{ui.02880}">This is a personal account tool.</span> <a th:href="${roleSurface.dashboardPath}" th:text="#{ui.00619}">Return to your operational dashboard</a></p>
+        <p class="studio-v2__error" th:if="${studioError != null}" role="alert" th:text="${#messages.msg(studioError)}">Check the workout details.</p>
+        <p th:if="${studioDraftChanged == true}" class="studio-v2__notice" role="status" th:text="#{ui.studio.rowsChanged}">Draft updated. Save when ready.</p>
+        <p class="studio-v2__status" data-studio-status role="status" aria-live="polite"></p>
+        <nav class="studio-mode-nav" role="tablist" th:attr="aria-label=#{ui.02877}">
+            <a href="/workouts?mode=my-workouts" id="studio-tab-my-workouts" data-mode-tab="my-workouts" role="tab" aria-controls="studio-panel-my-workouts" th:attr="aria-selected=${studioMode == 'my-workouts'}" th:text="#{ui.02878}">My workouts</a>
+            <a href="/workouts?mode=library" id="studio-tab-library" data-mode-tab="library" role="tab" aria-controls="studio-panel-library" th:attr="aria-selected=${studioMode == 'library'}" th:text="#{ui.02688}">Exercise library</a>
+            <a href="/workouts?mode=builder" id="studio-tab-builder" data-mode-tab="builder" role="tab" aria-controls="studio-panel-builder" th:attr="aria-selected=${studioMode == 'builder'}" th:text="#{ui.02879}">Builder</a>
+        </nav>
+        <section class="studio-mode-panel" id="studio-panel-my-workouts" data-mode-panel="my-workouts" role="tabpanel" aria-labelledby="studio-tab-my-workouts" th:attr="hidden=${studioMode != 'my-workouts'} ? 'hidden' : null">
+            <div class="studio-v2__section-heading"><h2 th:text="#{ui.02878}">My workouts</h2><a class="training-launch__action training-launch__action--primary" href="/workouts?mode=builder" data-open-builder th:text="#{ui.02798}">Create workout</a></div>
+            <div class="studio-v2__search studio-enhanced-control"><label for="studio-workout-search" th:text="#{ui.studio.search}">Search your workouts</label><input id="studio-workout-search" type="search" data-workout-search></div>
+            <p th:if="${#lists.isEmpty(templates)}" class="studio-v2__empty" th:text="#{ui.02510}">No workouts yet</p>
+            <p class="studio-v2__empty" data-workout-no-matches hidden th:text="#{ui.studio.noMatches}">No matches. Change your search.</p>
+            <ul class="studio-v2__workouts">
+                <li th:each="template : ${templates}" data-workout-card th:attr="data-search=${template.name + ' ' + (template.description ?: '')}">
+                    <article><header><h3 th:text="${template.name}">Workout</h3><time th:datetime="${template.updatedAt}" th:text="${#temporals.format(template.updatedAt, 'd MMM yyyy')}">Date</time></header>
+                        <p th:if="${!#strings.isEmpty(template.description)}" class="studio-v2__description"><bdi th:text="${template.description}">Description</bdi></p>
+                        <p class="studio-v2__count" th:text="#{ui.studio.count(${#lists.size(template.exercises)})}">Exercises: 0</p>
+                        <p th:if="${#lists.isEmpty(template.exercises)}" th:text="#{ui.studio.emptyExercise}">Add an exercise before starting.</p>
+                        <div class="studio-v2__card-actions"><form th:if="${!#lists.isEmpty(template.exercises)}" method="post" th:action="@{/workouts/{id}/start(id=${template.id})}"><button type="submit" class="training-launch__action training-launch__action--primary" th:attr="aria-label=#{ui.training.actionFor(#{ui.02882},${template.name})}" th:text="#{ui.02882}">Start</button></form>
+                            <a class="training-launch__action" th:href="@{/workouts/{id}/edit(id=${template.id})}" th:attr="aria-label=#{ui.training.actionFor(#{ui.00138},${template.name})}" th:text="#{ui.00138}">Edit</a>
+                            <form th:action="@{/workouts/{id}/delete(id=${template.id})}" method="post" th:attr="data-confirm=#{ui.studio.deleteConfirm}"><button type="submit" class="training-launch__action studio-v2__delete" th:attr="aria-label=#{ui.training.actionFor(#{ui.00139},${template.name})}" th:text="#{ui.00139}">Delete</button></form>
+                        </div>
+                    </article>
+                </li>
+            </ul>
+        </section>
+        <section class="studio-mode-panel" id="studio-panel-library" data-mode-panel="library" role="tabpanel" aria-labelledby="studio-tab-library" th:attr="hidden=${studioMode != 'library'} ? 'hidden' : null">
+            <div class="studio-v2__section-heading"><h2 th:text="#{ui.02688}">Exercise library</h2><a class="training-launch__action" href="/workouts?mode=builder" data-open-builder th:text="#{ui.02879}">Builder</a></div>
+            <div class="studio-v2__filters studio-enhanced-control"><div><label for="studio-exercise-search" th:text="#{ui.02884}">Search the exercise library</label><input id="studio-exercise-search" type="search" data-library-search></div>
+                <div><label for="studio-category" th:text="#{ui.00117}">Category</label><select id="studio-category" data-library-category><option value="" th:text="#{ui.00485}">All</option><option th:each="category : ${categories}" th:value="${category}" th:text="${category}"></option></select></div>
             </div>
-
-            <div th:if="${!roleSurface.coachingToolsPrimary}" class="role-surface__notice mb-6">
-                <th:block th:text="#{ui.02880}">This is a personal account tool. It does not publish workouts to gym members or change platform content.</th:block>
-                <a th:href="${roleSurface.dashboardPath}" class="font-semibold underline" th:text="#{ui.00619}">Return to your operational dashboard</a>.
-            </div>
-
-            <!-- MY WORKOUTS MODE -->
-            <div class="studio-mode-panel active" id="studio-panel-my-workouts" data-mode="my-workouts"
-                 role="tabpanel" aria-labelledby="studio-tab-my-workouts">
-                <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 class="text-3xl font-bold text-slate-900" th:text="${roleSurface.workoutHeading}">My workouts</h1>
-                        <p class="mt-1 text-sm text-slate-600" th:text="${roleSurface.workoutCopy}">Your workout templates</p>
-                    </div>
-                    <button class="role-surface__action role-surface__action--primary"
-                            type="button"
-                            data-open-builder>
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        <span th:text="${roleSurface.workoutCreateLabel}">Create workout</span>
-                    </button>
-                </div>
-
-                <div class="my-workouts-grid" th:if="${templates != null and !templates.isEmpty()}">
-                    <div th:each="template : ${templates}" class="workout-card group">
-                        <div class="workout-card-header">
-                            <h3 class="workout-card-title" th:text="${template.name}">Workout Name</h3>
-                            <span class="workout-card-date" th:text="${#temporals.format(template.updatedAt, 'dd MMM')}">12 Feb</span>
-                        </div>
-                        <p class="workout-card-description" th:text="${template.description ?: 'No description'}">Description</p>
-                        <div class="workout-card-metadata">
-                            <div class="workout-card-metadata-item">
-                                <svg class="workout-card-metadata-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                </svg>
-                                <span th:text="${template.exercises.size() + ' exercises'}">5 exercises</span>
-                            </div>
-                            <div class="workout-card-metadata-item">
-                                <svg class="workout-card-metadata-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span th:text="#{ui.02881}">~45 min</span>
-                            </div>
-                        </div>
-                        <div class="workout-card-actions">
-                            <a class="workout-card-btn workout-card-btn-primary" 
-                               th:href="@{/workouts/{id}/start(id=${template.id})}">
-                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <th:block th:text="#{ui.02882}">Start</th:block>
-                            </a>
-                            <a class="workout-card-btn workout-card-btn-secondary"
-                               th:href="@{/workouts/{id}/edit(id=${template.id})}">
-                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                </svg>
-                                <th:block th:text="#{ui.00138}">Edit</th:block>
-                            </a>
-                            <form th:action="@{/workouts/{id}/delete(id=${template.id})}" method="post" class="inline-flex"
-                                  data-confirm="Delete this workout?">
-                                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <button class="workout-card-btn workout-card-btn-danger" type="submit">
-                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                    <th:block th:text="#{ui.00139}">Delete</th:block>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="workout-empty-state" th:if="${templates == null or templates.isEmpty()}">
-                    <svg class="workout-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
-                    <h3 class="workout-empty-title" th:text="#{ui.02510}">No workouts yet</h3>
-                    <p class="workout-empty-description" th:text="${roleSurface.workoutEmptyCopy}">Create your first workout template.</p>
-                    <button class="role-surface__action role-surface__action--primary mt-4"
-                            type="button"
-                            data-open-builder>
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        <span th:text="${roleSurface.workoutCreateLabel}">Create workout</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- EXERCISE LIBRARY MODE -->
-            <div class="studio-mode-panel" id="studio-panel-library" data-mode="library"
-                 role="tabpanel" aria-labelledby="studio-tab-library" hidden>
-                <div class="mb-6">
-                    <h1 class="text-3xl font-bold text-slate-900" th:text="#{ui.02688}">Exercise Library</h1>
-                    <p class="mt-1 text-sm text-slate-600" th:text="#{ui.02883}">Browse and search exercises to build your workouts</p>
-                </div>
-
-                <div class="library-container">
-                    <!-- Search Bar -->
-                    <div class="library-search-bar">
-                        <div class="library-search-input-wrapper">
-                            <svg class="library-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                            <label class="sr-only" for="exercise-library-search" th:text="#{ui.02884}">Search the exercise library</label>
-                            <input id="exercise-library-search" type="text" class="library-search-input" placeholder="Search exercises by name or muscle group..." th:placeholder="#{ui.02690}">
-                        </div>
-                        
-                        <!-- Filters -->
-                        <div class="library-filters">
-                            <button type="button" class="library-filter-tag" data-filter="chest" aria-pressed="false" th:text="#{ui.02885}">Chest</button>
-                            <button type="button" class="library-filter-tag" data-filter="back" aria-pressed="false" th:text="#{ui.00571}">Back</button>
-                            <button type="button" class="library-filter-tag" data-filter="shoulders" aria-pressed="false" th:text="#{ui.02886}">Shoulders</button>
-                            <button type="button" class="library-filter-tag" data-filter="legs" aria-pressed="false" th:text="#{ui.02887}">Legs</button>
-                            <button type="button" class="library-filter-tag" data-filter="arms" aria-pressed="false" th:text="#{ui.02888}">Arms</button>
-                            <button type="button" class="library-filter-tag" data-filter="core" aria-pressed="false" th:text="#{ui.02889}">Core</button>
-                            <button type="button" class="library-filter-tag" data-filter="1" aria-pressed="false" th:text="#{ui.02668}">Beginner</button>
-                            <button type="button" class="library-filter-tag" data-filter="2" aria-pressed="false" th:text="#{ui.02669}">Intermediate</button>
-                            <button type="button" class="library-filter-tag" data-filter="3" aria-pressed="false" th:text="#{ui.02670}">Advanced</button>
-                        </div>
-                    </div>
-
-                    <!-- Exercise Grid (populated by JavaScript) -->
-                    <div class="library-grid">
-                        <!-- Exercises will be loaded here by JavaScript -->
-                        <div class="text-center py-12">
-                            <p class="text-sm text-slate-600" th:text="#{ui.02890}">Loading exercises...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- BUILDER MODE (using existing edit page structure) -->
-            <div class="studio-mode-panel" id="studio-panel-builder" data-mode="builder"
-                 role="tabpanel" aria-labelledby="studio-tab-builder" hidden>
-                <div class="mb-6 flex items-center justify-between">
-                    <div>
-                        <h1 class="text-3xl font-bold text-slate-900" th:text="#{ui.01323}">Workout Builder</h1>
-                        <p class="mt-1 text-sm text-slate-600" th:text="#{ui.02891}">Create a new workout template</p>
-                    </div>
-                    <button class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50"
-                            data-open-custom-exercise>
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        <th:block th:text="#{ui.02892}">Custom Exercise</th:block>
-                    </button>
-                </div>
-
-                <div class="builder-container">
-                    <!-- Builder Main -->
-                    <div class="builder-main">
-                        <form method="post" th:action="@{/workouts}" data-workout-builder>
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            
-                            <!-- Workout Info -->
-                            <div class="builder-form-section">
-                                <div class="grid gap-4 md:grid-cols-2">
-                                    <div>
-                                        <label class="builder-label" th:text="#{ui.02870}">Workout Name</label>
-                                        <input type="text" name="name" required placeholder="Upper Body Strength"
-                                               class="builder-input" th:placeholder="#{ui.02893}">
-                                    </div>
-                                    <div>
-                                        <label class="builder-label" th:text="#{ui.00113}">Description</label>
-                                        <input type="text" name="description" placeholder="Push + pull, 45 minutes"
-                                               class="builder-input" th:placeholder="#{ui.02894}">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Exercises Section -->
-                            <div class="builder-exercises-section">
-                                <div class="builder-exercises-header">
-                                    <div>
-                                        <h2 class="builder-exercises-title" th:text="#{ui.02329}">Exercises</h2>
-                                        <p class="text-xs text-slate-500" th:text="#{ui.02895}">Add exercises from the library or create custom ones</p>
-                                    </div>
-                                    <button type="button" class="builder-add-exercise-btn" data-add-exercise>
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                        </svg>
-                                        <th:block th:text="#{ui.02454}">Add Exercise</th:block>
-                                    </button>
-                                </div>
-
-                                <div class="builder-exercises-list" data-exercise-list>
-                                    <!-- Exercise rows will be added here -->
-                                </div>
-
-                                <template data-exercise-template>
-                                    <div class="builder-exercise-item group">
-                                        <div class="builder-exercise-drag-handle">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
-                                            </svg>
-                                        </div>
-                                        <div class="builder-exercise-grid">
-                                            <div>
-                                                <label class="builder-exercise-label" th:text="#{ui.01682}">Exercise</label>
-                                                <select name="__name__.exerciseRef" class="builder-exercise-select">
-                                                    <option value="" th:text="#{ui.02861}">Manual entry</option>
-                                                    <optgroup label="Library">
-                                                        <option th:each="ex : ${exercises}" th:value="${'e:' + ex.id}" th:text="${ex.name}"></option>
-                                                    </optgroup>
-                                                    <optgroup label="Custom">
-                                                        <option th:each="cx : ${customExercises}" th:value="${'c:' + cx.id}" th:text="${cx.name}"></option>
-                                                    </optgroup>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class="builder-exercise-label" th:text="#{ui.00131}">Name</label>
-                                                <input name="__name__.exerciseName" type="text" placeholder="Bench Press"
-                                                       class="builder-exercise-input" th:placeholder="#{ui.02896}">
-                                            </div>
-                                            <div>
-                                                <label class="builder-exercise-label" th:text="#{ui.02330}">Sets</label>
-                                                <input name="__name__.sets" type="number" min="1" value="3"
-                                                       class="builder-exercise-input">
-                                            </div>
-                                            <div>
-                                                <label class="builder-exercise-label" th:text="#{ui.02339}">Reps</label>
-                                                <input name="__name__.reps" type="number" min="1" value="10"
-                                                       class="builder-exercise-input">
-                                            </div>
-                                            <div>
-                                                <label class="builder-exercise-label" th:text="#{ui.02863}">Rest (sec)</label>
-                                                <input name="__name__.restSeconds" type="number" min="0" value="60"
-                                                       class="builder-exercise-input">
-                                            </div>
-                                            <div class="flex items-end">
-                                                <button type="button" class="builder-exercise-remove-btn" data-remove-exercise>
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="builder-exercise-notes">
-                                            <label class="builder-exercise-label" th:text="#{ui.00175}">Notes</label>
-                                            <input name="__name__.notes" type="text" placeholder="Tempo: 3-1-1"
-                                                   class="builder-exercise-input" th:placeholder="#{ui.02864}">
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-
-                            <!-- Save Section -->
-                            <div class="builder-save-section">
-                                <p class="text-xs text-slate-500" th:text="#{ui.02897}">Click save to create your workout template</p>
-                                <button type="submit" class="builder-save-btn">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    <th:block th:text="#{ui.02873}">Save Workout</th:block>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Builder Sidebar -->
-                    <div class="builder-sidebar">
-                        <!-- Stats -->
-                        <div class="builder-sidebar-card">
-                            <h3 class="builder-sidebar-card-title" th:text="#{ui.02898}">Workout Stats</h3>
-                            <div class="builder-stats-grid">
-                                <div class="builder-stat-item">
-                                    <div class="builder-stat-value" data-stat="exercises">0</div>
-                                    <div class="builder-stat-label" th:text="#{ui.02329}">Exercises</div>
-                                </div>
-                                <div class="builder-stat-item">
-                                    <div class="builder-stat-value" data-stat="duration">0</div>
-                                    <div class="builder-stat-label" th:text="#{ui.02899}">Est. Minutes</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Preview -->
-                        <div class="builder-sidebar-card">
-                            <h3 class="builder-sidebar-card-title" th:text="#{ui.00059}">Preview</h3>
-                            <div class="builder-preview-list">
-                                <p class="text-xs text-slate-400 text-center py-4" th:text="#{ui.02900}">Add exercises to see preview</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Custom Exercise Panel (Slide-in) -->
-        <div class="custom-exercise-overlay" aria-hidden="true"></div>
-        <div class="custom-exercise-panel" role="dialog" aria-modal="true" aria-labelledby="custom-exercise-title" aria-hidden="true" inert>
-            <div class="custom-exercise-header">
-                <div class="custom-exercise-header-content">
-                    <h2 class="custom-exercise-title" id="custom-exercise-title" th:text="#{ui.02901}">Create Custom Exercise</h2>
-                    <button class="custom-exercise-close-btn" type="button" aria-label="Close custom exercise panel" th:attr="aria-label=#{ui.02902}">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="custom-exercise-body">
-                <form class="custom-exercise-form">
-                    <div class="custom-exercise-form-group">
-                        <label class="custom-exercise-label" for="custom-exercise-name" th:text="#{ui.02903}">Exercise name</label>
-                        <input id="custom-exercise-name" type="text" class="custom-exercise-input" placeholder="Barbell Squat" th:placeholder="#{ui.02904}">
-                    </div>
-                    <div class="custom-exercise-form-group">
-                        <label class="custom-exercise-label" for="custom-exercise-category" th:text="#{ui.00117}">Category</label>
-                        <select id="custom-exercise-category" class="custom-exercise-select">
-                            <option value="" th:text="#{ui.02905}">Select category</option>
-                            <option value="Chest" th:text="#{ui.02885}">Chest</option>
-                            <option value="Back" th:text="#{ui.00571}">Back</option>
-                            <option value="Shoulders" th:text="#{ui.02886}">Shoulders</option>
-                            <option value="Legs" th:text="#{ui.02887}">Legs</option>
-                            <option value="Arms" th:text="#{ui.02888}">Arms</option>
-                            <option value="Core" th:text="#{ui.02889}">Core</option>
-                        </select>
-                    </div>
-                    <div class="custom-exercise-form-group">
-                        <label class="custom-exercise-label" for="custom-exercise-description" th:text="#{ui.00113}">Description</label>
-                        <textarea id="custom-exercise-description" class="custom-exercise-textarea" rows="3" placeholder="Brief description of the exercise" th:placeholder="#{ui.02906}"></textarea>
-                    </div>
-                    <div class="custom-exercise-form-group">
-                        <label class="custom-exercise-label" for="custom-exercise-how-to" th:text="#{ui.02907}">How to</label>
-                        <textarea id="custom-exercise-how-to" class="custom-exercise-textarea" rows="4" placeholder="Step-by-step instructions" th:placeholder="#{ui.02908}"></textarea>
-                    </div>
-                    <div class="custom-exercise-form-group">
-                        <label class="custom-exercise-label" for="custom-exercise-video-url" th:text="#{ui.02909}">Video URL (YouTube)</label>
-                        <input id="custom-exercise-video-url" type="url" class="custom-exercise-input" placeholder="https://youtube.com/watch?v=..." th:placeholder="#{ui.02673}">
-                    </div>
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="custom-exercise-form-group">
-                            <label class="custom-exercise-label" for="custom-exercise-equipment" th:text="#{ui.02065}">Equipment</label>
-                            <select id="custom-exercise-equipment" class="custom-exercise-select">
-                                <option value="Bodyweight" th:text="#{ui.00348}">Bodyweight</option>
-                                <option value="Barbell" th:text="#{ui.02910}">Barbell</option>
-                                <option value="Dumbbell" th:text="#{ui.02911}">Dumbbell</option>
-                                <option value="Machine" th:text="#{ui.02912}">Machine</option>
-                                <option value="Cable" th:text="#{ui.00354}">Cable</option>
-                                <option value="Kettlebell" th:text="#{ui.02913}">Kettlebell</option>
-                                <option value="Bands" th:text="#{ui.00352}">Bands</option>
-                            </select>
-                        </div>
-                        <div class="custom-exercise-form-group">
-                            <label class="custom-exercise-label" for="custom-exercise-difficulty" th:text="#{ui.02685}">Difficulty</label>
-                            <select id="custom-exercise-difficulty" class="custom-exercise-select">
-                                <option value="1" th:text="#{ui.02668}">Beginner</option>
-                                <option value="2" th:text="#{ui.02669}">Intermediate</option>
-                                <option value="3" th:text="#{ui.02670}">Advanced</option>
-                                <option value="4" th:text="#{ui.02914}">Expert</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="custom-exercise-footer">
-                <div class="custom-exercise-actions">
-                    <button type="button" class="custom-exercise-btn-cancel" th:text="#{ui.00125}">Cancel</button>
-                    <button type="button" class="custom-exercise-btn-save" th:text="#{ui.02915}">Save Exercise</button>
-                </div>
-            </div>
-        </div>
+            <p class="studio-v2__empty" data-library-no-matches hidden th:text="#{ui.studio.noMatches}">No matches. Change your search.</p>
+            <ul class="studio-v2__library">
+                <li th:each="ex : ${exercises}" data-library-card th:attr="data-ref=${'e:' + ex.id},data-name=${ex.name},data-category=${ex.category ?: ''}">
+                    <article><p class="studio-v2__eyebrow" th:if="${ex.category != null}" th:text="${ex.category}">Category</p><h3 th:text="${ex.name}">Exercise</h3>
+                        <details th:if="${!#strings.isEmpty(ex.description)}"><summary th:text="#{ui.00113}">Description</summary><p><bdi th:text="${ex.description}">Description</bdi></p></details>
+                        <div class="studio-v2__card-actions"><a class="training-launch__action" th:href="@{/workouts(mode='builder',exerciseRef=${'e:' + ex.id})}" data-add-ref th:attr="aria-label=#{ui.studio.addFor(${ex.name})}" th:text="#{ui.02454}">Add exercise</a><button type="button" class="studio-v2__favourite studio-enhanced-control" th:attr="data-favourite-id=${ex.id},aria-label=#{ui.studio.favourite}" aria-pressed="false">☆</button></div>
+                    </article>
+                </li>
+                <li th:each="ex : ${customExercises}" data-library-card th:attr="data-ref=${'c:' + ex.id},data-name=${ex.name},data-category=${ex.category ?: ''}">
+                    <article><p class="studio-v2__eyebrow" th:text="#{ui.studio.customOwned}">Your custom exercises</p><h3 th:text="${ex.name}">Exercise</h3><p th:if="${!#strings.isEmpty(ex.description)}"><bdi th:text="${ex.description}">Description</bdi></p><a class="training-launch__action" th:href="@{/workouts(mode='builder',exerciseRef=${'c:' + ex.id})}" data-add-ref th:attr="aria-label=#{ui.studio.addFor(${ex.name})}" th:text="#{ui.02454}">Add exercise</a></article>
+                </li>
+            </ul>
+        </section>
+        <section class="studio-mode-panel" id="studio-panel-builder" data-mode-panel="builder" role="tabpanel" aria-labelledby="studio-tab-builder" th:attr="hidden=${studioMode != 'builder'} ? 'hidden' : null">
+            <div class="studio-v2__section-heading"><h2 th:text="#{ui.01323}">Workout builder</h2><button class="training-launch__action studio-enhanced-control" type="button" data-open-custom-exercise th:text="#{ui.02892}">Custom exercise</button></div>
+            <form method="post" th:action="@{/workouts}" data-studio-builder>
+            <!-- Enter in a text field saves; row commands stay explicit. -->
+            <button type="submit" name="editAction" value="save" hidden aria-hidden="true" tabindex="-1" th:text="#{ui.02873}">Save workout</button>
+                <div class="studio-v2__identity"><div><label for="studio-name" th:text="#{ui.02870}">Workout name</label><input id="studio-name" name="name" th:value="${form.name}" type="text" required maxlength="200"></div><div><label for="studio-description" th:text="#{ui.00113}">Description</label><textarea id="studio-description" name="description" th:text="${form.description}" maxlength="600" rows="2"></textarea></div></div>
+                <div class="studio-v2__plan"><div><h3 th:text="#{ui.02329}">Exercises</h3><p th:text="#{ui.studio.saveHelp}">Use the library or enter a name. Save when ready; an empty template remains a draft.</p></div><a class="training-launch__action" href="/workouts?mode=library" data-open-library th:text="#{ui.02688}">Exercise library</a><button type="submit" name="editAction" value="add" formnovalidate class="training-launch__action" th:disabled="${#lists.size(form.exercises) >= 50}" th:autofocus="${rowFocusIndex != null and rowFocusIndex == -1}" data-add-row th:text="#{ui.02860}">Add row</button></div>
+                <p class="studio-v2__empty" data-empty-rows th:hidden="${!#lists.isEmpty(form.exercises)}" th:text="#{ui.studio.emptyRows}">No exercises in this draft. Add a row.</p>
+                <div data-studio-rows><th:block th:each="row,iter : ${form.exercises}"><th:block th:replace="~{fragments/workout-builder-row :: row(${row},${iter.index})}"></th:block></th:block></div>
+                <template data-studio-row-template><th:block th:replace="~{fragments/workout-builder-row :: row(${null},${0})}"></th:block></template>
+                <div class="studio-v2__save"><p th:text="#{ui.02865}">Autosave is not enabled; click save after edits.</p><button type="submit" class="training-launch__action training-launch__action--primary" th:text="#{ui.02873}">Save workout</button></div>
+            </form>
+        </section>
+        <dialog class="studio-dialog" aria-labelledby="studio-custom-title" data-custom-dialog>
+            <form data-custom-form><header><h2 id="studio-custom-title" th:text="#{ui.02901}">Create custom exercise</h2><button class="training-launch__action" type="button" data-close-custom th:text="#{ui.00125}">Cancel</button></header>
+                <p th:text="#{ui.studio.customHelp}">Saved to your personal exercise library. Your workout draft stays here.</p><p data-custom-status role="status" aria-live="polite"></p>
+                <label for="studio-custom-name" th:text="#{ui.02903}">Exercise name</label><input id="studio-custom-name" name="name" type="text" required maxlength="200">
+                <label for="studio-custom-description" th:text="#{ui.00113}">Description</label><textarea id="studio-custom-description" name="description" maxlength="2000" rows="2"></textarea>
+                <label for="studio-custom-how" th:text="#{ui.02907}">How to</label><textarea id="studio-custom-how" name="howTo" maxlength="4000" rows="3"></textarea>
+                <label for="studio-custom-video" th:text="#{ui.02909}">Video URL</label><input id="studio-custom-video" name="videoUrl" type="url" maxlength="255">
+                <button type="submit" class="training-launch__action training-launch__action--primary" th:text="#{ui.02915}">Save exercise</button>
+            </form>
+        </dialog>
     </div>
-
-    <div th:fragment="pageScripts">
-        <script th:src="@{/js/workouts/workout-studio.js(v=${assetVersion})}" defer></script>
-    </div>
+</div>
+<div th:fragment="pageScripts"><script th:src="@{/js/workouts/workouts-builder.js(v=${assetVersion})}" defer></script><script th:src="@{/js/workouts/workout-studio.js(v=${assetVersion})}" defer></script></div>
 </th:block>

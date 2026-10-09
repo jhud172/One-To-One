@@ -35,7 +35,9 @@ import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(BloodPressureController.class)
+@WebMvcTest(controllers = BloodPressureController.class, excludeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+        type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+        classes = uk.ac.cf._5.group14.One_To_One.WorkoutTemplate.WorkoutDisplayAdvice.class))
 @ActiveProfiles("test")
 class BloodPressureMvcTest {
 
@@ -80,6 +82,7 @@ class BloodPressureMvcTest {
 
         BloodPressureService.BpStats stats = new BloodPressureService.BpStats(120, 80, 110, 130, 75, 85, 5, 3);
         given(service.getRecent(eq(user))).willReturn(Collections.emptyList());
+        given(service.history(eq(user), org.mockito.ArgumentMatchers.anyInt())).willReturn(org.springframework.data.domain.Page.empty());
         given(service.getRange(eq(user), any(LocalDate.class), any(LocalDate.class))).willReturn(Collections.emptyList());
         given(service.computeStats(any())).willReturn(stats);
         given(service.computeStreak(eq(user))).willReturn(3);
@@ -96,6 +99,7 @@ class BloodPressureMvcTest {
 
         BloodPressureService.BpStats stats = new BloodPressureService.BpStats(0, 0, 0, 0, 0, 0, 0, 0);
         given(service.getRecent(eq(user))).willReturn(List.of());
+        given(service.history(eq(user), org.mockito.ArgumentMatchers.anyInt())).willReturn(org.springframework.data.domain.Page.empty());
         given(service.getRange(eq(user), any(LocalDate.class), any(LocalDate.class))).willReturn(List.of());
         given(service.computeStats(any())).willReturn(stats);
         given(service.computeStreak(eq(user))).willReturn(0);

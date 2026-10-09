@@ -14,6 +14,7 @@
     var currentTarget = null;
     var positionFrame = null;
     var navigating = false;
+    var memoryState = null;
 
     var spotlight = document.getElementById("siteTourSpotlight");
     var bubble = document.getElementById("siteTourBubble");
@@ -254,18 +255,28 @@
             var parsed = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY));
             return parsed && parsed.active && parsed.role === role ? parsed : null;
         } catch (error) {
-            return null;
+            return memoryState;
         }
     }
 
     function writeState(index) {
         var nextState = { active: true, role: role, index: index, version: 2 };
-        window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+        memoryState = nextState;
+        try {
+            window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+        } catch (error) {
+            // The current page remains usable when browser storage is blocked.
+        }
         return nextState;
     }
 
     function clearState() {
-        window.sessionStorage.removeItem(STORAGE_KEY);
+        memoryState = null;
+        try {
+            window.sessionStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+            // Storage access is optional for the tour.
+        }
     }
 
     function cleanTourParameter() {
@@ -591,8 +602,12 @@
 
     var params = new URLSearchParams(window.location.search);
     var trigger = params.get("tour");
-    var state = trigger === "start" ? writeState(0) : readState();
+    // Only tour controls carry the continuation flag. Ordinary navigation or
+    // a restored tab should never redirect the user back into an old step.
+    var state = trigger === "start" ? writeState(0) : (trigger === "continue" ? readState() : null);
     if (state) {
         activateStep(state);
+    } else {
+        clearState();
     }
 }());

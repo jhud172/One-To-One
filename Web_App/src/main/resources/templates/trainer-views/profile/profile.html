@@ -6,7 +6,7 @@
 </div>
 
 <div th:fragment="content">
-    <div id="profile-shell" class="profile-page-layout" data-edit-mode="false">
+    <div id="profile-shell" class="profile-page-layout trainer-owner-v2" data-edit-mode="false">
 
         <!-- SIDEBAR: PROFILE CARD -->
         <aside class="profile-sidebar-card"
@@ -29,7 +29,7 @@
                                  class="h-full w-full object-cover" draggable="false" th:alt="#{ui.00426}"/>
                             <span th:if="${user == null || user.profileImageUrl == null}"
                                   class="text-2xl font-bold text-white"
-                                  th:text="${(user != null &amp;&amp; user.firstName != null ? user.firstName.substring(0,1) : '') + (user != null &amp;&amp; user.lastName != null ? user.lastName.substring(0,1) : '')}">TP</span>
+                                  th:text="${(user != null &amp;&amp; !#strings.isEmpty(user.firstName) ? user.firstName.substring(0,1) : '') + (user != null &amp;&amp; !#strings.isEmpty(user.lastName) ? user.lastName.substring(0,1) : '')}">TP</span>
                         </div>
                         <div class="profile-identity-banner__text text-left">
                             <h1 class="profile-identity-banner__name"
@@ -56,7 +56,7 @@
                             <span id="copyTrainerCodeLabel" th:text="#{ui.01076}">Copy</span>
                         </button>
                     </div>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02421}">Share with clients during login</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02709}">This code is part of your trainer sign-in. Keep it private.</p>
                 </div>
 
                 <!-- Profile completion -->
@@ -66,16 +66,23 @@
                             <span class="profile-completion-widget__eyebrow" th:text="#{ui.00710}">Profile radar</span>
                             <span class="profile-completion-widget__percent" th:text="${completionPercent + '%'}">0%</span>
                         </div>
-                        <div class="profile-completion-widget__bar-track">
-                            <div class="profile-completion-widget__bar-fill" th:style="'width:' + ${completionPercent} + '%'"></div>
-                        </div>
+                        <progress class="owner-profile-progress" max="100" th:value="${completionPercent}" th:attr="aria-label=#{ui.00710}"></progress>
                     </div>
                 </div>
 
+                <nav class="owner-section-nav" th:attr="aria-label=#{ui.owner.sectionNavigation}">
+                    <a href="#trainer-details" th:text="#{ui.02423}">Trainer details</a>
+                    <a href="#account-details" th:text="#{ui.01088}">Account settings</a>
+                    <a href="#profile-photo" th:text="#{ui.01091}">Profile image</a>
+                    <a href="#account-preferences" th:text="#{ui.owner.preferences}">Display and accessibility</a>
+                    <a href="#account-data" th:text="#{ui.01095}">Data and account</a>
+                </nav>
                 <!-- Quick actions -->
                 <div class="w-full">
                     <p class="mb-2 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" th:text="#{ui.00722}">Account actions</p>
                     <div class="flex flex-col gap-2">
+                        <a th:if="${user != null and user.trainerVerified}" th:href="@{/trainers/{id}/profile(id=${user.id})}"
+                           class="profile-btn-secondary w-full text-center text-sm" th:text="#{ui.00567}">View profile</a>
                         <a th:href="@{/trainer/profile/edit}"
                            class="profile-btn-secondary w-full text-center text-sm" th:text="#{ui.02422}">
                             Edit public trainer listing
@@ -90,18 +97,20 @@
         </aside>
 
         <!-- MAIN CONTENT -->
-        <main class="profile-main-content">
+        <div class="profile-main-content">
 
+            <header class="owner-page-heading"><p class="owner-page-eyebrow" th:text="#{ui.00419}">Profile</p><h2 th:text="#{ui.00722}">Account actions</h2><p th:text="#{ui.owner.intro}">Manage your account, public trainer details and display preferences.</p></header>
             <!-- Success / error banner -->
-            <div th:if="${profileUpdated}" class="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-4 text-emerald-800 dark:text-emerald-200">
+            <div role="status" th:if="${profileUpdated}" class="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-4 text-emerald-800 dark:text-emerald-200">
                 <p th:text="#{ui.01078}">Profile updated successfully.</p>
             </div>
-            <div th:if="${profileError}" class="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 p-4 text-red-800 dark:text-red-200">
+            <div role="alert" th:if="${profileError}" class="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 p-4 text-red-800 dark:text-red-200">
                 <p th:text="${profileError}"></p>
+                <ul th:if="${profileFieldErrors != null}" class="owner-error-links"><li th:each="entry : ${profileFieldErrors}"><a th:href="'#' + ${entry.key}" th:text="${entry.value}"></a></li></ul>
             </div>
 
             <!-- SECTION 1: Trainer details -->
-            <section class="profile-section">
+            <section class="profile-section" id="trainer-details">
                 <div class="profile-section-header">
                     <div>
                         <h2 class="profile-section-title" th:text="#{ui.02423}">Trainer Details</h2>
@@ -110,7 +119,6 @@
                 </div>
 
                 <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data" id="trainer-details-form">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
                     <div class="divide-y divide-slate-200/70 dark:divide-slate-800/90">
                         <!-- Bio -->
@@ -120,7 +128,7 @@
                                 <textarea id="trainerBio" name="trainerBio" rows="4" maxlength="500"
                                           class="profile-input w-full"
                                           placeholder="Tell clients about yourself..."
-                                          th:text="${trainerProfile != null ? trainerProfile.bio : ''}" th:placeholder="#{ui.02426}"></textarea>
+                                          th:text="${profileDraft != null and profileDraft.trainerBio != null ? profileDraft.trainerBio : (trainerProfile != null ? trainerProfile.bio : '')}" th:placeholder="#{ui.02426}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('trainerBio')}"></textarea>
                                 <p class="mt-1 text-xs text-slate-400" th:text="#{ui.02427}">Max 500 characters.</p>
                             </div>
                         </div>
@@ -132,7 +140,7 @@
                                 <input type="text" id="specializations" name="specializations" maxlength="200"
                                        class="profile-input w-full"
                                        placeholder="e.g. HIIT, Strength, Nutrition"
-                                       th:value="${trainerProfile != null ? trainerProfile.specializations : ''}" th:placeholder="#{ui.02429}"/>
+                                       th:value="${profileDraft != null and profileDraft.specializations != null ? profileDraft.specializations : (trainerProfile != null ? trainerProfile.specializations : '')}" th:placeholder="#{ui.02429}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('specializations')}">
                             </div>
                         </div>
 
@@ -143,7 +151,7 @@
                                 <input type="text" id="location" name="location" maxlength="120"
                                        class="profile-input w-full"
                                        placeholder="City, Region"
-                                       th:value="${trainerProfile != null ? trainerProfile.location : ''}" th:placeholder="#{ui.02430}"/>
+                                       th:value="${profileDraft != null and profileDraft.location != null ? profileDraft.location : (trainerProfile != null ? trainerProfile.location : '')}" th:placeholder="#{ui.02430}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('location')}">
                             </div>
                         </div>
 
@@ -154,7 +162,7 @@
                                 <input type="text" id="primaryGym" name="primaryGym" maxlength="200"
                                        class="profile-input w-full"
                                        placeholder="Gym name (optional)"
-                                       th:value="${trainerProfile != null ? trainerProfile.primaryGym : ''}" th:placeholder="#{ui.02432}"/>
+                                       th:value="${profileDraft != null and profileDraft.primaryGym != null ? profileDraft.primaryGym : (trainerProfile != null ? trainerProfile.primaryGym : '')}" th:placeholder="#{ui.02432}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('primaryGym')}">
                             </div>
                         </div>
 
@@ -162,10 +170,10 @@
                         <div class="profile-field-row py-4">
                             <label for="pricePerSession" class="profile-field-label" th:text="#{ui.02433}">Price per Session (£)</label>
                             <div class="profile-field-value">
-                                <input type="number" id="pricePerSession" name="pricePerSession" min="0" max="9999"
+                                <input type="text" inputmode="numeric" pattern="[0-9]{1,4}" maxlength="4" id="pricePerSession" name="pricePerSession"
                                        class="profile-input w-full"
                                        placeholder="e.g. 45"
-                                       th:value="${trainerProfile != null ? trainerProfile.pricePerSession : ''}" th:placeholder="#{ui.02434}"/>
+                                       th:value="${trainerPriceDraft != null ? trainerPriceDraft : (profileDraft != null and profileDraft.pricePerSession != null ? profileDraft.pricePerSession : (trainerProfile != null ? trainerProfile.pricePerSession : ''))}" th:placeholder="#{ui.02434}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('pricePerSession')}">
                             </div>
                         </div>
                     </div>
@@ -176,53 +184,53 @@
                         <div class="space-y-3">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="showInstagram" name="showInstagram"
-                                       th:checked="${trainerProfile != null and trainerProfile.showInstagram}"
+                                       th:checked="${profileDraft != null and profileDraft.instagramUrl != null ? profileDraft.showInstagram == true : (trainerProfile != null and trainerProfile.showInstagram)}"
                                        class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"/>
                                 <label for="showInstagram" class="w-24 text-sm text-slate-600 dark:text-slate-400" th:text="#{ui.01243}">Instagram</label>
-                                <input type="url" name="instagramUrl" maxlength="500"
+                                <input type="url" id="instagramUrl" name="instagramUrl" th:attr="aria-label=#{ui.01243}" maxlength="500"
                                        class="profile-input flex-1"
                                        placeholder="https://instagram.com/..."
-                                       th:value="${trainerProfile != null ? trainerProfile.instagramUrl : ''}" th:placeholder="#{ui.02436}"/>
+                                       th:value="${profileDraft != null and profileDraft.instagramUrl != null ? profileDraft.instagramUrl : (trainerProfile != null ? trainerProfile.instagramUrl : '')}" th:placeholder="#{ui.02436}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('instagramUrl')}">
                             </div>
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="showTikTok" name="showTikTok"
-                                       th:checked="${trainerProfile != null and trainerProfile.showTikTok}"
+                                       th:checked="${profileDraft != null and profileDraft.tiktokUrl != null ? profileDraft.showTikTok == true : (trainerProfile != null and trainerProfile.showTikTok)}"
                                        class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"/>
                                 <label for="showTikTok" class="w-24 text-sm text-slate-600 dark:text-slate-400" th:text="#{ui.01245}">TikTok</label>
-                                <input type="url" name="tiktokUrl" maxlength="500"
+                                <input type="url" id="tiktokUrl" name="tiktokUrl" th:attr="aria-label=#{ui.01245}" maxlength="500"
                                        class="profile-input flex-1"
                                        placeholder="https://tiktok.com/..."
-                                       th:value="${trainerProfile != null ? trainerProfile.tiktokUrl : ''}" th:placeholder="#{ui.02437}"/>
+                                       th:value="${profileDraft != null and profileDraft.tiktokUrl != null ? profileDraft.tiktokUrl : (trainerProfile != null ? trainerProfile.tiktokUrl : '')}" th:placeholder="#{ui.02437}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('tiktokUrl')}">
                             </div>
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="showYouTube" name="showYouTube"
-                                       th:checked="${trainerProfile != null and trainerProfile.showYouTube}"
+                                       th:checked="${profileDraft != null and profileDraft.youtubeUrl != null ? profileDraft.showYouTube == true : (trainerProfile != null and trainerProfile.showYouTube)}"
                                        class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"/>
                                 <label for="showYouTube" class="w-24 text-sm text-slate-600 dark:text-slate-400" th:text="#{ui.01247}">YouTube</label>
-                                <input type="url" name="youtubeUrl" maxlength="500"
+                                <input type="url" id="youtubeUrl" name="youtubeUrl" th:attr="aria-label=#{ui.01247}" maxlength="500"
                                        class="profile-input flex-1"
                                        placeholder="https://youtube.com/..."
-                                       th:value="${trainerProfile != null ? trainerProfile.youtubeUrl : ''}" th:placeholder="#{ui.02438}"/>
+                                       th:value="${profileDraft != null and profileDraft.youtubeUrl != null ? profileDraft.youtubeUrl : (trainerProfile != null ? trainerProfile.youtubeUrl : '')}" th:placeholder="#{ui.02438}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('youtubeUrl')}">
                             </div>
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="showLinkedIn" name="showLinkedIn"
-                                       th:checked="${trainerProfile != null and trainerProfile.showLinkedIn}"
+                                       th:checked="${profileDraft != null and profileDraft.linkedInUrl != null ? profileDraft.showLinkedIn == true : (trainerProfile != null and trainerProfile.showLinkedIn)}"
                                        class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"/>
                                 <label for="showLinkedIn" class="w-24 text-sm text-slate-600 dark:text-slate-400" th:text="#{ui.01249}">LinkedIn</label>
-                                <input type="url" name="linkedInUrl" maxlength="500"
+                                <input type="url" id="linkedInUrl" name="linkedInUrl" th:attr="aria-label=#{ui.01249}" maxlength="500"
                                        class="profile-input flex-1"
                                        placeholder="https://linkedin.com/..."
-                                       th:value="${trainerProfile != null ? trainerProfile.linkedInUrl : ''}" th:placeholder="#{ui.02439}"/>
+                                       th:value="${profileDraft != null and profileDraft.linkedInUrl != null ? profileDraft.linkedInUrl : (trainerProfile != null ? trainerProfile.linkedInUrl : '')}" th:placeholder="#{ui.02439}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('linkedInUrl')}">
                             </div>
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" id="showWebsite" name="showWebsite"
-                                       th:checked="${trainerProfile != null and trainerProfile.showWebsite}"
+                                       th:checked="${profileDraft != null and profileDraft.websiteUrl != null ? profileDraft.showWebsite == true : (trainerProfile != null and trainerProfile.showWebsite)}"
                                        class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"/>
                                 <label for="showWebsite" class="w-24 text-sm text-slate-600 dark:text-slate-400" th:text="#{ui.01251}">Website</label>
-                                <input type="url" name="websiteUrl" maxlength="500"
+                                <input type="url" id="websiteUrl" name="websiteUrl" th:attr="aria-label=#{ui.01251}" maxlength="500"
                                        class="profile-input flex-1"
                                        placeholder="https://yoursite.com"
-                                       th:value="${trainerProfile != null ? trainerProfile.websiteUrl : ''}" th:placeholder="#{ui.02440}"/>
+                                       th:value="${profileDraft != null and profileDraft.websiteUrl != null ? profileDraft.websiteUrl : (trainerProfile != null ? trainerProfile.websiteUrl : '')}" th:placeholder="#{ui.02440}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('websiteUrl')}">
                             </div>
                         </div>
                     </div>
@@ -234,7 +242,7 @@
             </section>
 
             <!-- SECTION 2: Account settings -->
-            <section class="profile-section mt-6">
+            <section class="profile-section mt-6" id="account-details">
                 <div class="profile-section-header">
                     <div>
                         <h2 class="profile-section-title" th:text="#{ui.01088}">Account Settings</h2>
@@ -243,7 +251,6 @@
                 </div>
 
                 <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data" id="account-settings-form">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
                     <div class="divide-y divide-slate-200/70 dark:divide-slate-800/90">
                         <div class="profile-field-row py-4">
@@ -251,7 +258,7 @@
                             <div class="profile-field-value">
                                 <input type="text" id="firstName" name="firstName" maxlength="100"
                                        class="profile-input w-full"
-                                       th:value="${user != null ? user.firstName : ''}"/>
+                                       th:value="${profileDraft != null and profileDraft.firstName != null ? profileDraft.firstName : (user != null ? user.firstName : '')}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('firstName')}">
                             </div>
                         </div>
                         <div class="profile-field-row py-4">
@@ -259,7 +266,7 @@
                             <div class="profile-field-value">
                                 <input type="text" id="lastName" name="lastName" maxlength="100"
                                        class="profile-input w-full"
-                                       th:value="${user != null ? user.lastName : ''}"/>
+                                       th:value="${profileDraft != null and profileDraft.lastName != null ? profileDraft.lastName : (user != null ? user.lastName : '')}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('lastName')}">
                             </div>
                         </div>
                         <div class="profile-field-row py-4">
@@ -267,7 +274,7 @@
                             <div class="profile-field-value">
                                 <input type="text" id="username" name="username" maxlength="100"
                                        class="profile-input w-full"
-                                       th:value="${user != null ? user.username : ''}"/>
+                                       th:value="${profileDraft != null and profileDraft.username != null ? profileDraft.username : (user != null ? user.username : '')}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('username')}">
                             </div>
                         </div>
                         <div class="profile-field-row py-4">
@@ -275,7 +282,7 @@
                             <div class="profile-field-value">
                                 <input type="email" id="email" name="email" maxlength="255"
                                        class="profile-input w-full"
-                                       th:value="${user != null ? user.email : ''}"/>
+                                       th:value="${profileDraft != null and profileDraft.email != null ? profileDraft.email : (user != null ? user.email : '')}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('email')}">
                             </div>
                         </div>
                         <div class="profile-field-row py-4">
@@ -283,7 +290,7 @@
                             <div class="profile-field-value">
                                 <input type="tel" id="phoneNumber" name="phoneNumber" maxlength="30"
                                        class="profile-input w-full"
-                                       th:value="${user != null ? user.phoneNumber : ''}"/>
+                                       th:value="${profileDraft != null and profileDraft.phoneNumber != null ? profileDraft.phoneNumber : (user != null ? user.phoneNumber : '')}" th:attrappend="aria-invalid=${profileFieldErrors != null and profileFieldErrors.containsKey('phoneNumber')}">
                                 <input type="hidden" name="phoneCountry" th:value="${user != null and user.phoneCountry != null ? user.phoneCountry : 'GB'}"/>
                             </div>
                         </div>
@@ -296,7 +303,7 @@
             </section>
 
             <!-- SECTION 3: Profile image -->
-            <section class="profile-section mt-6">
+            <section class="profile-section mt-6" id="profile-photo">
                 <div class="profile-section-header">
                     <div>
                         <h2 class="profile-section-title" th:text="#{ui.01091}">Profile Image</h2>
@@ -305,7 +312,6 @@
                 </div>
 
                 <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data">
-                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div class="flex items-center gap-4 py-4">
                         <div class="h-16 w-16 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 flex items-center justify-center bg-slate-100 dark:bg-slate-800 flex-shrink-0">
                             <img th:if="${user != null and user.profileImageUrl != null}"
@@ -313,10 +319,10 @@
                                  class="h-full w-full object-cover" th:alt="#{ui.00762}"/>
                             <span th:if="${user == null or user.profileImageUrl == null}"
                                   class="text-xl font-bold text-slate-400"
-                                  th:text="${user != null and user.firstName != null ? #strings.toUpperCase(#strings.substring(user.firstName,0,1)) : '?'}">?</span>
+                                  th:text="${user != null and !#strings.isEmpty(user.firstName) ? #strings.toUpperCase(#strings.substring(user.firstName,0,1)) : '?'}">?</span>
                         </div>
                         <div class="flex-1">
-                            <input type="file" name="profileImage" accept="image/png,image/jpeg,image/webp"
+                            <input type="file" id="profileImage" name="profileImage" th:attr="aria-label=#{ui.01091}" accept="image/png,image/jpeg,image/webp"
                                    class="block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-emerald-700 hover:file:bg-emerald-100 dark:file:bg-emerald-900/30 dark:file:text-emerald-300"/>
                         </div>
                     </div>
@@ -331,8 +337,9 @@
                 </form>
             </section>
 
+            <th:block th:replace="~{universal-fragments/layout/account-preferences :: preferences}"></th:block>
             <!-- SECTION 4: Data & account -->
-            <section class="profile-section mt-6">
+            <section class="profile-section mt-6" id="account-data">
                 <div class="profile-section-header">
                     <div>
                         <h2 class="profile-section-title" th:text="#{ui.01095}">Data &amp; Account</h2>
@@ -346,7 +353,6 @@
                         <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1" th:text="#{ui.01097}">Data Export</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mb-3" th:text="#{ui.01098}">Request a copy of all your account data.</p>
                         <form th:action="@{/profile/data-export}" method="post">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <button type="submit" class="profile-btn-secondary text-sm" th:text="#{ui.00877}">Request data export</button>
                         </form>
                         <ul th:if="${recentExportRequests != null and !#lists.isEmpty(recentExportRequests)}"
@@ -363,8 +369,7 @@
                         <h3 class="text-sm font-semibold text-red-600 dark:text-red-400 mb-1" th:text="#{ui.01100}">Delete Account</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mb-3"><th:block th:text="#{ui.01101}">This action is permanent and cannot be undone. Type</th:block> <strong th:text="#{ui.01102}">DELETE</strong> <th:block th:text="#{ui.01103}">to confirm.</th:block></p>
                         <form th:action="@{/profile/delete}" method="post" class="flex items-center gap-3">
-                            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <input type="text" name="confirmText" placeholder="DELETE"
+                            <input type="text" id="confirmText" name="confirmText" required pattern="DELETE" th:attr="aria-label=#{ui.01100}" placeholder="DELETE"
                                    class="profile-input w-28"
                                    autocomplete="off" th:placeholder="#{ui.01102}"/>
                             <button type="submit"
@@ -376,7 +381,7 @@
                 </div>
             </section>
 
-        </main>
+        </div>
     </div>
 </div>
 

@@ -1,249 +1,49 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
-          th:replace="~{base :: layout(#{ui.02724}, null, ~{::content}, ~{::pageScripts})}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-        <!-- Success/Error Messages -->
-        <div th:if="${successMessage}" class="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-4 text-emerald-800 dark:text-emerald-200">
-            <p th:text="${successMessage}"></p>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.02724}, null, ~{::content}, ~{::pageScripts})}">
+<div th:fragment="content" class="client-workspace-v2 trainer-portfolio-v2 trainer-profile-editor-v2">
+    <header class="detail-header">
+        <div class="detail-header-content">
+            <div><h1 class="detail-title" th:text="#{ui.02707}">Edit trainer profile</h1><p class="detail-subtitle" th:text="#{ui.02708}"></p></div>
+            <a th:if="${user.trainerVerified}" class="detail-btn-secondary" th:href="@{/trainers/{id}/profile(id=${user.id})}" th:text="#{ui.00567}">View profile</a>
+            <a th:unless="${user.trainerVerified}" class="detail-btn-secondary" th:href="@{/trainer/verification}" th:text="#{ui.proReview.title}">Professional verification</a>
         </div>
-        <div th:if="${errorMessage}" class="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 p-4 text-red-800 dark:text-red-200">
-            <p th:text="${errorMessage}"></p>
+        <p class="plan-notice" th:text="#{ui.profile.editorPublicHint}"></p>
+        <p th:if="${profileSaved}" class="checkin-feedback" role="status" th:text="#{preferences.saved}"></p>
+    </header>
+    <section th:if="${formattedTrainerCode != null}" class="detail-section portfolio-private-code" aria-labelledby="private-code-title">
+        <h2 id="private-code-title" class="detail-section-title" th:text="#{ui.01231}">Your trainer code</h2>
+        <div class="connection-actions">
+            <span id="trainerCodeVal" class="portfolio-code" th:text="${formattedTrainerCode}"></span>
+            <button id="copyTrainerCode" type="button" class="detail-btn-secondary" th:attr="data-copied=#{ui.profile.copyDone},data-copy-failed=#{ui.profile.copyFailed}" th:text="#{ui.01076}">Copy</button>
         </div>
-
-        <!-- Page Header -->
-        <div class="mb-6">
-            <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.02707}">Edit Trainer Profile</h1>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.02708}">Manage your profile information and social links</p>
+        <p th:text="#{ui.02709}"></p><p id="trainerCodeCopyStatus" role="status" aria-live="polite"></p>
+    </section>
+    <form th:action="@{/trainer/profile/save}" method="post" th:object="${profile}" class="profile-editor-form">
+        <div th:if="${profileInvalid}" id="profile-errors" class="profile-editor-errors" role="alert">
+            <h2 th:text="#{auth.form.fixErrors}"></h2><p th:text="#{ui.profile.editorInvalid}"></p>
         </div>
-
-        <!-- Trainer Code (read-only display) -->
-        <div th:if="${profile != null and profile.trainerCode != null}"
-             class="mb-6 rounded-xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-5">
-            <p class="mb-1 text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400" th:text="#{ui.01231}">Your Trainer Code</p>
-            <div class="flex flex-wrap items-center gap-3">
-                <span id="trainerCodeVal"
-                      class="font-mono text-2xl font-bold tracking-[0.15em] text-emerald-800 dark:text-emerald-200 select-all"
-                      th:text="${#strings.substring(profile.trainerCode,0,4) + '-' + #strings.substring(profile.trainerCode,4,8) + '-' + #strings.substring(profile.trainerCode,8,12)}">XXXX-XXXX-XXXX</span>
-                <button type="button" id="copyTrainerCode"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400 bg-white dark:bg-emerald-900/30 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 transition hover:bg-emerald-50">
-                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    <span id="copyTrainerCodeLabel" th:text="#{ui.01076}">Copy</span>
-                </button>
+        <fieldset class="detail-section">
+            <legend class="detail-section-title" th:text="#{ui.02657}">Basic information</legend>
+            <div class="profile-editor-fields">
+                <div><label for="location" th:text="#{ui.02710}"></label><input id="location" type="text" maxlength="120" th:field="*{location}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('location')},aria-describedby=${#fields.hasErrors('location') ? 'profile-errors' : null}" th:placeholder="#{ui.02711}"></div>
+                <div><label for="primaryGym" th:text="#{ui.02712}"></label><input id="primaryGym" type="text" maxlength="200" th:field="*{primaryGym}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('primaryGym')},aria-describedby=${#fields.hasErrors('primaryGym') ? 'profile-errors' : null}" th:placeholder="#{ui.02713}"></div>
+                <div><label for="specializations" th:text="#{ui.02428}"></label><input id="specializations" type="text" maxlength="200" th:field="*{specializations}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('specializations')},aria-describedby=${#fields.hasErrors('specializations') ? 'profile-errors' : null}" th:placeholder="#{ui.02717}"></div>
+                <div><label for="pricePerSession" th:text="#{ui.02714}"></label><input id="pricePerSession" type="text" inputmode="numeric" pattern="[0-9]{1,10}" maxlength="10" th:field="*{pricePerSession}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('pricePerSession')},aria-describedby=${#fields.hasErrors('pricePerSession') ? 'price-help profile-errors' : 'price-help'}"><p id="price-help"><span aria-hidden="true">£ · </span><span th:text="#{ui.02715}"></span></p></div>
+                <div class="profile-editor-bio"><label for="bio" th:text="#{ui.02425}"></label><textarea id="bio" rows="5" maxlength="500" th:field="*{bio}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('bio')}" aria-describedby="bio-help" th:placeholder="#{ui.02426}"></textarea><p id="bio-help" th:text="#{ui.02716}"></p></div>
             </div>
-            <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400" th:text="#{ui.02709}">Share this code with clients who need to verify you during login.</p>
-        </div>
-
-        <!-- Profile Form -->
-        <form th:action="@{/trainer/profile/save}" method="post" class="space-y-6">
-            
-            <!-- Basic Information -->
-            <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4" th:text="#{ui.02657}">Basic Information</h2>
-                
-                <div class="space-y-4">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label for="location" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" th:text="#{ui.02710}">
-                                Location (city/region)
-                            </label>
-                            <input type="text" id="location" name="location" maxlength="120"
-                                   th:field="*{profile.location}"
-                                   class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                   placeholder="Cardiff, Wales" th:placeholder="#{ui.02711}">
-                        </div>
-                        <div>
-                            <label for="primaryGym" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" th:text="#{ui.02712}">
-                                Primary gym (optional)
-                            </label>
-                            <input type="text" id="primaryGym" name="primaryGym" maxlength="200"
-                                   th:field="*{profile.primaryGym}"
-                                   class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                   placeholder="Pulse Fitness" th:placeholder="#{ui.02713}">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label for="pricePerSession" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" th:text="#{ui.02714}">
-                            Price per session (optional)
-                        </label>
-                        <div class="flex items-center rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                            <span class="text-slate-500 dark:text-slate-400">£</span>
-                            <input type="number" id="pricePerSession" name="pricePerSession" min="0" step="1"
-                                   th:field="*{profile.pricePerSession}"
-                                   class="ml-2 w-full bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
-                                   placeholder="45">
-                        </div>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02715}">Whole number per session.</p>
-                    </div>
-
-                    <div>
-                        <label for="bio" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" th:text="#{ui.02425}">
-                            Bio
-                        </label>
-                        <textarea id="bio" name="bio" rows="3" maxlength="500"
-                                  th:field="*{profile.bio}"
-                                  class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                  placeholder="Tell clients about yourself..." th:placeholder="#{ui.02426}"></textarea>
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02716}">Maximum 500 characters</p>
-                    </div>
-
-                    <div>
-                        <label for="specializations" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" th:text="#{ui.02428}">
-                            Specializations
-                        </label>
-                        <input type="text" id="specializations" name="specializations" maxlength="200"
-                               th:field="*{profile.specializations}"
-                               class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                               placeholder="e.g., Strength Training, Nutrition, HIIT" th:placeholder="#{ui.02717}">
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" th:text="#{ui.02718}">Comma-separated list</p>
-                    </div>
-                </div>
+        </fieldset>
+        <fieldset class="detail-section">
+            <legend class="detail-section-title" th:text="#{ui.02719}">Social media links</legend>
+            <p th:text="#{ui.02720}"></p>
+            <div class="profile-editor-socials">
+                <div class="profile-editor-social"><div><label for="instagramUrl" th:text="#{ui.01243}"></label><input id="instagramUrl" type="url" maxlength="500" th:field="*{instagramUrl}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('instagramUrl')},aria-describedby=${#fields.hasErrors('instagramUrl') ? 'profile-errors' : null}" th:placeholder="#{ui.02721}"></div><label class="profile-editor-visibility"><input type="checkbox" th:field="*{showInstagram}"><span><span th:text="#{ui.02722}">Show</span> <span th:text="#{ui.01243}"></span></span></label></div>
+                <div class="profile-editor-social"><div><label for="tiktokUrl" th:text="#{ui.01245}"></label><input id="tiktokUrl" type="url" maxlength="500" th:field="*{tiktokUrl}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('tiktokUrl')},aria-describedby=${#fields.hasErrors('tiktokUrl') ? 'profile-errors' : null}" th:placeholder="#{ui.02723}"></div><label class="profile-editor-visibility"><input type="checkbox" th:field="*{showTikTok}"><span><span th:text="#{ui.02722}">Show</span> <span th:text="#{ui.01245}"></span></span></label></div>
+                <div class="profile-editor-social"><div><label for="youtubeUrl" th:text="#{ui.01247}"></label><input id="youtubeUrl" type="url" maxlength="500" th:field="*{youtubeUrl}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('youtubeUrl')},aria-describedby=${#fields.hasErrors('youtubeUrl') ? 'profile-errors' : null}" th:placeholder="#{ui.01248}"></div><label class="profile-editor-visibility"><input type="checkbox" th:field="*{showYouTube}"><span><span th:text="#{ui.02722}">Show</span> <span th:text="#{ui.01247}"></span></span></label></div>
+                <div class="profile-editor-social"><div><label for="linkedInUrl" th:text="#{ui.01249}"></label><input id="linkedInUrl" type="url" maxlength="500" th:field="*{linkedInUrl}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('linkedInUrl')},aria-describedby=${#fields.hasErrors('linkedInUrl') ? 'profile-errors' : null}" th:placeholder="#{ui.01250}"></div><label class="profile-editor-visibility"><input type="checkbox" th:field="*{showLinkedIn}"><span><span th:text="#{ui.02722}">Show</span> <span th:text="#{ui.01249}"></span></span></label></div>
+                <div class="profile-editor-social"><div><label for="websiteUrl" th:text="#{ui.01251}"></label><input id="websiteUrl" type="url" maxlength="500" th:field="*{websiteUrl}" th:errorclass="profile-field-invalid" th:attr="aria-invalid=${#fields.hasErrors('websiteUrl')},aria-describedby=${#fields.hasErrors('websiteUrl') ? 'profile-errors' : null}" th:placeholder="#{ui.01252}"></div><label class="profile-editor-visibility"><input type="checkbox" th:field="*{showWebsite}"><span><span th:text="#{ui.02722}">Show</span> <span th:text="#{ui.01251}"></span></span></label></div>
             </div>
-
-            <!-- Social Media Links -->
-            <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4" th:text="#{ui.02719}">Social Media Links</h2>
-                <p class="text-sm text-slate-600 dark:text-slate-300 mb-6" th:text="#{ui.02720}">
-                    Add your social media profiles. Use the toggle to control visibility on your public profile.
-                </p>
-                
-                <div class="space-y-6">
-                    <!-- Instagram -->
-                    <div class="flex items-start gap-4">
-                        <div class="flex-1">
-                            <label for="instagramUrl" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                <svg class="inline-block w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                                </svg>
-                                <th:block th:text="#{ui.01243}">Instagram</th:block>
-                            </label>
-                            <input type="url" id="instagramUrl" name="instagramUrl" maxlength="500"
-                                   th:field="*{profile.instagramUrl}"
-                                   class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                   placeholder="https://instagram.com/yourusername" th:placeholder="#{ui.02721}">
-                        </div>
-                        <div class="flex items-center pt-6">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" th:field="*{profile.showInstagram}" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                <span class="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02722}">Show</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- TikTok -->
-                    <div class="flex items-start gap-4">
-                        <div class="flex-1">
-                            <label for="tiktokUrl" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                <svg class="inline-block w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                                </svg>
-                                <th:block th:text="#{ui.01245}">TikTok</th:block>
-                            </label>
-                            <input type="url" id="tiktokUrl" name="tiktokUrl" maxlength="500"
-                                   th:field="*{profile.tiktokUrl}"
-                                   class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                   placeholder="https://tiktok.com/@yourusername" th:placeholder="#{ui.02723}">
-                        </div>
-                        <div class="flex items-center pt-6">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" th:field="*{profile.showTikTok}" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                <span class="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02722}">Show</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- YouTube -->
-                    <div class="flex items-start gap-4">
-                        <div class="flex-1">
-                            <label for="youtubeUrl" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                <svg class="inline-block w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                </svg>
-                                <th:block th:text="#{ui.01247}">YouTube</th:block>
-                            </label>
-                            <input type="url" id="youtubeUrl" name="youtubeUrl" maxlength="500"
-                                   th:field="*{profile.youtubeUrl}"
-                                   class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                   placeholder="https://youtube.com/@yourchannel" th:placeholder="#{ui.01248}">
-                        </div>
-                        <div class="flex items-center pt-6">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" th:field="*{profile.showYouTube}" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                <span class="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02722}">Show</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- LinkedIn -->
-                    <div class="flex items-start gap-4">
-                        <div class="flex-1">
-                            <label for="linkedInUrl" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                <svg class="inline-block w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                                </svg>
-                                <th:block th:text="#{ui.01249}">LinkedIn</th:block>
-                            </label>
-                            <input type="url" id="linkedInUrl" name="linkedInUrl" maxlength="500"
-                                   th:field="*{profile.linkedInUrl}"
-                                   class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                   placeholder="https://linkedin.com/in/yourprofile" th:placeholder="#{ui.01250}">
-                        </div>
-                        <div class="flex items-center pt-6">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" th:field="*{profile.showLinkedIn}" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                <span class="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02722}">Show</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Website -->
-                    <div class="flex items-start gap-4">
-                        <div class="flex-1">
-                            <label for="websiteUrl" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                <svg class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                                </svg>
-                                <th:block th:text="#{ui.01251}">Website</th:block>
-                            </label>
-                            <input type="url" id="websiteUrl" name="websiteUrl" maxlength="500"
-                                   th:field="*{profile.websiteUrl}"
-                                   class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                   placeholder="https://yourwebsite.com" th:placeholder="#{ui.01252}">
-                        </div>
-                        <div class="flex items-center pt-6">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" th:field="*{profile.showWebsite}" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                <span class="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.02722}">Show</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex items-center justify-end gap-3">
-                <a th:href="@{/}" 
-                   class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-white/10 transition-colors" th:text="#{ui.00125}">
-                    Cancel
-                </a>
-                <button type="submit"
-                        class="inline-flex min-h-11 items-center justify-center rounded-xl border border-transparent bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors" th:text="#{ui.00686}">
-                    Save Changes
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <th:block th:fragment="pageScripts">
-    <script th:src="@{/js/trainer/trainer-profile-edit-page.js}"></script>
-    </th:block>
-
+        </fieldset>
+        <div class="connection-actions"><button type="submit" class="detail-btn-primary" th:text="#{ui.00686}">Save changes</button><a class="detail-btn-secondary" th:href="@{/trainer/dashboard}" th:text="#{ui.00125}">Cancel</a></div>
+    </form>
+</div>
+<th:block th:fragment="pageScripts"><script th:src="@{/js/trainer/trainer-profile-view-page.js(v=${assetVersion})}"></script></th:block>
 </th:block>

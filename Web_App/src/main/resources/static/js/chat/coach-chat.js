@@ -22,6 +22,23 @@ document.addEventListener("DOMContentLoaded", () => {
     let conversations = [];
     let activeId = null;
     let sending = false;
+    let loading = false;
+    let conversationRequest = 0;
+    let modalOrigin = null;
+    const copy = key => root.dataset[key] || key;
+
+    function announce(text) {
+        const status = document.getElementById("coachStatus");
+        if (status) status.textContent = text;
+    }
+
+    function setBusy(busy) {
+        sending = busy;
+        sendBtn.disabled = busy;
+        newChatBtn.disabled = busy;
+        inputEl.readOnly = busy;
+        root.setAttribute("aria-busy", String(busy));
+    }
 
     // ── Time-of-day theme initialiser ─────────────────────────────────────
     function initTimeTheme() {
@@ -41,17 +58,18 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── Focus mode ────────────────────────────────────────────────────────
     function initFocusMode() {
         if (!page || !focusModeBtn) return;
-        const saved = localStorage.getItem("chatFocusMode") === "true";
+        let saved = false;
+        try { saved = localStorage.getItem("chatFocusMode") === "true"; } catch { /* Optional preference. */ }
+        focusModeBtn.setAttribute("aria-pressed", String(saved));
         if (saved) {
             page.classList.add("focus-mode");
             focusModeBtn.classList.add("active");
-            focusModeBtn.setAttribute("title", "Exit focus mode");
         }
         focusModeBtn.addEventListener("click", () => {
             const active = page.classList.toggle("focus-mode");
             focusModeBtn.classList.toggle("active", active);
-            focusModeBtn.setAttribute("title", active ? "Exit focus mode" : "Toggle focus mode");
-            localStorage.setItem("chatFocusMode", active ? "true" : "false");
+            focusModeBtn.setAttribute("aria-pressed", String(active));
+            try { localStorage.setItem("chatFocusMode", String(active)); } catch { /* Optional preference. */ }
         });
     }
 
@@ -61,11 +79,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".chat-action-chip").forEach(chip => {
         chip.addEventListener("click", () => {
             const text = chip.dataset.chipText;
-            if (text && inputEl) {
+            if (text && inputEl && !sending) {
                 inputEl.value = text;
                 inputEl.focus();
-                // Automatically send
-                sendMessage();
             }
         });
     });
@@ -86,7 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!data) return;
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-        const pct = data.completionPct ?? 0;
+        const number = value => Math.max(0, Number.isFinite(Number(value)) ? Number(value) : 0);
+        const pct = Math.min(100, number(data.completionPct));
         set("metricsCompletionPct", pct + "%");
         set("metricsRingPct", pct + "%");
 
@@ -96,11 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
             ring.setAttribute("stroke-dashoffset", offset.toFixed(2));
         }
 
-        const tasksLeft = (data.tasksTotal ?? 0) - (data.tasksDone ?? 0);
-        const workoutsLeft = (data.workoutsTotal ?? 0) - (data.workoutsDone ?? 0);
+        const tasksLeft = Math.max(0, number(data.tasksTotal) - number(data.tasksDone));
+        const workoutsLeft = Math.max(0, number(data.workoutsTotal) - number(data.workoutsDone));
         set("metricsTasksLeft", tasksLeft);
         set("metricsWorkoutsLeft", workoutsLeft);
-        set("metricsStreak", data.streakDays > 0 ? data.streakDays + " days 🔥" : "—");
+        set("metricsStreak", number(data.streakDays) > 0 ? number(data.streakDays) + " " + copy("days") : "—");
 
         const nextEl = document.getElementById("metricsNextWorkout");
         if (nextEl) {
@@ -109,23 +126,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 : "—";
         }
 
-        // Update 7-day insights panel
-        const panel7 = document.getElementById("insights7DayPanel");
-        if (panel7 && data.sevenDayTasksTotal != null) {
-            const missed7 = data.sevenDayMissedSessions ?? 0;
-            let html7 = `Tasks: <strong>${data.sevenDayTasksCompleted ?? 0}/${data.sevenDayTasksTotal ?? 0}</strong> · Workouts: <strong>${data.sevenDayWorkoutsCompleted ?? 0}/${data.sevenDayWorkoutsTotal ?? 0}</strong>`;
-            if (missed7 > 0) html7 += ` · <span style="color:#d97706">${missed7} missed</span>`;
-            if (data.trendNote) html7 += `<div style="margin-top:4px;font-weight:600">${data.trendNote}</div>`;
-            panel7.innerHTML = html7;
-        }
-
-        // Update 30-day insights panel
-        const panel30 = document.getElementById("insights30DayPanel");
-        if (panel30 && data.thirtyDayTasksTotal != null) {
-            const missed30 = data.thirtyDayMissedSessions ?? 0;
-            let html30 = `Tasks: <strong>${data.thirtyDayTasksCompleted ?? 0}/${data.thirtyDayTasksTotal ?? 0}</strong> · Workouts: <strong>${data.thirtyDayWorkoutsCompleted ?? 0}/${data.thirtyDayWorkoutsTotal ?? 0}</strong>`;
-            if (missed30 > 0) html30 += ` · <span style="color:#dc2626">${missed30} missed</span>`;
-            panel30.innerHTML = html30;
+        // Context and conversation copy are untrusted: render them as text only.
+        for (const [id, prefix] of [["insights7DayPanel", "sevenDay"], ["insights30DayPanel", "thirtyDay"]]) {
+            const panel = document.getElementById(id);
+            if (!panel || data[prefix + "TasksTotal"] == null) continue;
+            panel.textContent = `${copy("tasks")} ${number(data[prefix + "TasksCompleted"])}/${number(data[prefix + "TasksTotal"])} ${copy("workouts")} ${number(data[prefix + "WorkoutsCompleted"])}/${number(data[prefix + "WorkoutsTotal"])} · ${copy("missed")} ${number(data[prefix + "MissedSessions"])} `;
+            if (prefix === "sevenDay" && data.trendNote) {
+                const trend = document.createElement("p");
+                trend.className = "coach-trend-note";
+                trend.textContent = data.trendNote;
+                panel.appendChild(trend);
+            }
         }
     }
 
@@ -140,26 +151,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showModal() {
         if (!limitModal) return;
-        limitModal.classList.remove("hidden");
-        limitModal.classList.add("flex");
+        modalOrigin = document.activeElement;
+        window.OneToOneOverlay?.open("coach-limit");
+        limitModal.showModal();
+        limitModalClose.focus();
     }
 
-    function hideModal() {
+    function hideModal(restoreFocus = true) {
         if (!limitModal) return;
-        limitModal.classList.add("hidden");
-        limitModal.classList.remove("flex");
+        if (limitModal.open) limitModal.close();
+        window.OneToOneOverlay?.release("coach-limit");
+        if (restoreFocus && modalOrigin?.isConnected) modalOrigin.focus();
     }
 
     function updateUsage(usage) {
         if (isPremium || !usageBadge || !usage) return;
         const remaining = usage.remaining != null ? usage.remaining : null;
         if (remaining != null) {
-            usageBadge.textContent = `${remaining} left today`;
+            usageBadge.textContent = `${remaining} ${copy("leftToday")}`;
         }
     }
 
     function clearMessages() {
-        messagesEl.innerHTML = "";
+        messagesEl.replaceChildren();
     }
 
     function addMessage(role, text) {
@@ -174,6 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             bubble.className = "max-w-[80%] whitespace-pre-wrap rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 px-4 py-3 text-sm text-slate-800 shadow-sm dark:border-slate-800/60 dark:from-slate-950 dark:to-slate-900 dark:text-slate-100";
         }
+        bubble.classList.add("coach-message", role === "user" ? "coach-message-user" : "coach-message-assistant");
         bubble.textContent = text;
         wrap.appendChild(bubble);
         messagesEl.appendChild(wrap);
@@ -187,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
         wrap.className = "flex justify-start";
         const bubble = document.createElement("div");
         bubble.className = "max-w-[60%] rounded-2xl border border-slate-200/60 bg-slate-50 px-4 py-3 text-xs italic text-slate-500 dark:border-slate-800/60 dark:bg-slate-900/60 dark:text-slate-400";
-        bubble.textContent = "✨ The Coach is thinking…";
+        bubble.textContent = copy("loading");
         wrap.appendChild(bubble);
         messagesEl.appendChild(wrap);
         messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -199,11 +214,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderConversations(list) {
-        listEl.innerHTML = "";
+        listEl.replaceChildren();
         if (!list.length) {
             const empty = document.createElement("div");
             empty.className = "rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400";
-            empty.textContent = "No conversations yet.";
+            empty.textContent = copy("noMessages");
             listEl.appendChild(empty);
             return;
         }
@@ -216,7 +231,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? "border-slate-900 bg-slate-900 text-white"
                     : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900"
             }`;
-            btn.innerHTML = `<div class="font-semibold">${conv.title || "New chat"}</div>`;
+            const title = document.createElement("div");
+            title.className = "font-semibold";
+            title.textContent = conv.title || copy("newChat");
+            btn.appendChild(title);
+            btn.setAttribute("aria-pressed", String(conv.id === activeId));
+            btn.disabled = sending || loading;
             btn.addEventListener("click", () => openConversation(conv.id));
             listEl.appendChild(btn);
         });
@@ -224,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadConversations() {
         const res = await fetch("/chat/conversations");
-        if (!res.ok) return;
+        if (!res.ok) throw new Error("conversation-list");
         conversations = await res.json();
         const filtered = filterConversations(conversations);
         renderConversations(filtered);
@@ -240,55 +260,60 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function openConversation(id) {
-        activeId = id;
+        if (sending || loading) return;
+        const request = ++conversationRequest;
+        loading = true;
+        sendBtn.disabled = true;
+        newChatBtn.disabled = true;
         renderConversations(filterConversations(conversations));
-        clearMessages();
-        addMessage("assistant", "Loading your thread…");
-        const res = await fetch(`/chat/conversations/${id}/messages?limit=200`);
-        if (!res.ok) return;
-        const data = await res.json();
-        clearMessages();
-        if (!data.length) {
-            addMessage("assistant", "Ask about workouts, planning, or tomorrow's momentum.");
-            return;
+        announce(copy("loading"));
+        try {
+            const res = await fetch(`/chat/conversations/${id}/messages?limit=200`);
+            if (!res.ok) throw new Error("conversation-load");
+            const data = await res.json();
+            if (request !== conversationRequest) return;
+            activeId = id;
+            clearMessages();
+            if (!data.length) addMessage("assistant", copy("greeting"));
+            data.forEach(m => addMessage(m.role === "user" ? "user" : "assistant", m.content));
+            announce("");
+        } catch {
+            announce(copy("error"));
+        } finally {
+            loading = false;
+            sendBtn.disabled = false;
+            newChatBtn.disabled = false;
+            renderConversations(filterConversations(conversations));
         }
-        data.forEach(m => addMessage(m.role === "user" ? "user" : "assistant", m.content));
     }
 
     async function createConversation() {
         const res = await fetch("/chat/conversations", { method: "POST", headers: headers() });
-        if (!res.ok) return null;
+        if (!res.ok) throw new Error("conversation-create");
         const data = await res.json();
-        await loadConversations();
         if (data?.id) {
-            await openConversation(data.id);
+            activeId = data.id;
+            conversations.unshift({id: data.id, title: data.title});
+            clearMessages();
+            renderConversations(filterConversations(conversations));
         }
         return data?.id || null;
     }
 
     async function sendMessage() {
-        if (sending) return;
+        if (sending || loading) return;
         const text = (inputEl.value || "").trim();
         if (!text) return;
-        sending = true;
-        inputEl.value = "";
-
-        if (!activeId) {
-            await createConversation();
-        }
-        if (!activeId) {
-            sending = false;
-            return;
-        }
-
-        // Hide greeting card once user starts chatting
-        const greetingCard = document.getElementById("chatGreetingCard");
-        if (greetingCard) greetingCard.style.display = "none";
-
-        const userRow = addMessage("user", text);
-        addTyping();
-
+        setBusy(true);
+        announce("");
+        let userRow = null;
         try {
+            if (!activeId) await createConversation();
+            if (!activeId) throw new Error("conversation-missing");
+            const greetingCard = document.getElementById("chatGreetingCard");
+            if (greetingCard) greetingCard.hidden = true;
+            userRow = addMessage("user", text);
+            addTyping();
             const res = await fetch(`/chat/conversations/${activeId}/messages`, {
                 method: "POST",
                 headers: headers(),
@@ -298,40 +323,48 @@ document.addEventListener("DOMContentLoaded", () => {
             removeTyping();
 
             if (res.status === 429) {
-                userRow.remove();
                 showModal();
                 return;
             }
 
             const data = await res.json();
             if (!res.ok) {
-                addMessage("assistant", data?.error || "Something went wrong. Try again.");
+                announce(copy("error"));
                 return;
             }
 
-            addMessage("assistant", data.reply || "No response");
+            if (!data.reply) throw new Error("reply-missing");
+            inputEl.value = "";
+            userRow = null;
+            addMessage("assistant", data.reply);
             updateUsage(data.usage);
-            await loadConversations();
+            try { await loadConversations(); } catch { announce(copy("error")); }
 
             // Refresh metrics after each message (lightweight, throttled by natural send cadence)
             refreshMetrics();
         } catch {
             removeTyping();
-            addMessage("assistant", "Network error. Please try again.");
+            announce(copy("error"));
         } finally {
-            sending = false;
+            removeTyping();
+            userRow?.remove();
+            setBusy(false);
+            renderConversations(filterConversations(conversations));
         }
     }
 
     newChatBtn?.addEventListener("click", async () => {
-        activeId = null;
-        await createConversation();
+        if (sending || loading) return;
+        setBusy(true);
+        try { await createConversation(); announce(""); }
+        catch { announce(copy("error")); }
+        finally { setBusy(false); renderConversations(filterConversations(conversations)); }
     });
 
     sendBtn?.addEventListener("click", sendMessage);
 
     inputEl?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" && !event.shiftKey) {
+        if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
             event.preventDefault();
             sendMessage();
         }
@@ -341,10 +374,21 @@ document.addEventListener("DOMContentLoaded", () => {
         renderConversations(filterConversations(conversations));
     });
 
-    limitModalClose?.addEventListener("click", hideModal);
+    limitModalClose?.addEventListener("click", () => hideModal());
+    limitModal?.addEventListener("cancel", event => { event.preventDefault(); hideModal(); });
+    window.OneToOneOverlay?.register("coach-limit", {group: "modal", close: options => hideModal(options.restoreFocus)});
     limitModal?.addEventListener("click", (event) => {
         if (event.target === limitModal) hideModal();
     });
 
-    loadConversations();
+    async function reloadConversations() {
+        if (sending || loading) return;
+        const retry = document.getElementById("coachRetry");
+        if (retry) retry.disabled = true;
+        try { await loadConversations(); announce(""); }
+        catch { announce(copy("error")); }
+        finally { if (retry) retry.disabled = false; }
+    }
+    document.getElementById("coachRetry")?.addEventListener("click", reloadConversations);
+    reloadConversations();
 });

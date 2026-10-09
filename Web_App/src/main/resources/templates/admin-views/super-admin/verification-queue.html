@@ -2,13 +2,19 @@
           xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
           th:replace="~{base :: layout(${pageTitle} ?: #{ui.00194}, null, ~{::content}, ~{::pageScripts})}">
 
-    <div th:fragment="content" class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
+    <div th:fragment="content" class="verification-operations-v2 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div class="support-case-v2">
             <div class="mb-6">
                 <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00166}">Trainer Verification Queue</h1>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.00167}">Review and approve trainer verification requests from gyms.</p>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" th:text="#{ui.proReview.queueIntro}">Review professional applications from independent and gym-affiliated trainers.</p>
             </div>
 
+            <form th:action="@{/super-admin/verification/queue}" method="get" class="operations-filters-v2">
+                <div><label for="verification-search" th:text="#{ui.proReview.search}"></label><input id="verification-search" name="search" type="search" maxlength="120" th:value="${search}"></div>
+                <div><label for="verification-status" th:text="#{ui.00006}"></label><select id="verification-status" name="status"><option value="" th:text="#{ui.00485}"></option><option value="PENDING" th:selected="${selectedStatus == 'PENDING'}" th:text="#{ui.00168}"></option><option value="NEEDS_INFO" th:selected="${selectedStatus == 'NEEDS_INFO'}" th:text="#{ui.00169}"></option></select></div>
+                <button type="submit" class="btn btn--primary" th:text="#{ui.00554}"></button><a th:href="@{/super-admin/verification/queue}" class="btn btn--secondary" th:text="#{ui.00563}"></a>
+            </form>
+            <p><span th:text="${#lists.size(verificationRequests)}"></span> / <span th:text="${totalRequests}"></span></p>
             <!-- Success/Error Messages -->
             <div th:if="${successMessage}" class="mb-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
                 <p class="text-sm text-green-800 dark:text-green-200" th:text="${successMessage}">Success message</p>
@@ -48,7 +54,7 @@
 
             <!-- Verification Queue Table -->
             <div th:if="${!#lists.isEmpty(verificationRequests)}" class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div class="overflow-hidden rounded-xl border border-white/10 lg:col-span-2">
+                <div class="overflow-x-auto rounded-xl border border-white/10 lg:col-span-2">
                     <table class="min-w-full divide-y divide-white/10">
                         <thead class="bg-white/5 dark:bg-slate-800/40">
                             <tr>
@@ -74,7 +80,6 @@
                         </thead>
                         <tbody class="divide-y divide-white/10 bg-white dark:bg-slate-900">
                             <tr th:each="request : ${verificationRequests}" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                                data-select-request
                                 th:attr="data-request-id=${request.id},
                                          data-trainer-name=${trainers[request.trainerUserId] != null ? trainers[request.trainerUserId].firstName + ' ' + trainers[request.trainerUserId].lastName : 'Unknown'},
                                          data-trainer-email=${trainers[request.trainerUserId] != null ? trainers[request.trainerUserId].email : ''},
@@ -86,11 +91,11 @@
                                 <!-- Trainer Info -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div th:if="${trainers} != null and ${trainers[request.trainerUserId]} != null">
-                                        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100" 
+                                        <div class="text-sm font-semibold text-slate-900 dark:text-slate-100"
                                              th:text="${trainers[request.trainerUserId].firstName + ' ' + trainers[request.trainerUserId].lastName}">
                                             Trainer Name
                                         </div>
-                                        <div class="text-xs text-slate-600 dark:text-slate-400" 
+                                        <div class="text-xs text-slate-600 dark:text-slate-400"
                                              th:text="${trainers[request.trainerUserId].email}">
                                             email@example.com
                                         </div>
@@ -112,19 +117,19 @@
 
                                 <!-- Status Badge -->
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span th:if="${request.status.name()} == 'PENDING'" 
+                                    <span th:if="${request.status.name()} == 'PENDING'"
                                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" th:text="#{ui.00168}">
                                         Pending
                                     </span>
-                                    <span th:if="${request.status.name()} == 'APPROVED'" 
+                                    <span th:if="${request.status.name()} == 'APPROVED'"
                                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" th:text="#{ui.00170}">
                                         Approved
                                     </span>
-                                    <span th:if="${request.status.name()} == 'REJECTED'" 
+                                    <span th:if="${request.status.name()} == 'REJECTED'"
                                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" th:text="#{ui.00171}">
                                         Rejected
                                     </span>
-                                    <span th:if="${request.status.name()} == 'NEEDS_INFO'" 
+                                    <span th:if="${request.status.name()} == 'NEEDS_INFO'"
                                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" th:text="#{ui.00169}">
                                         Needs Info
                                     </span>
@@ -133,10 +138,10 @@
                                 <!-- Submitted Date -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-slate-600 dark:text-slate-400">
-                                        <span th:text="${#temporals.format(request.submittedAt, 'MMM dd, yyyy')}">Jan 1, 2024</span>
+                                        <span th:text="${#temporals.format(request.submittedAt.atZone(T(java.time.ZoneId).of('Europe/London')), 'd MMM yyyy')}">Jan 1, 2024</span>
                                     </div>
                                     <div class="text-xs text-slate-500 dark:text-slate-500">
-                                        <span th:text="${#temporals.format(request.submittedAt, 'HH:mm')}">14:30</span>
+                                        <span th:text="${#temporals.format(request.submittedAt.atZone(T(java.time.ZoneId).of('Europe/London')), 'HH:mm')}">14:30</span>
                                     </div>
                                 </td>
 
@@ -150,33 +155,13 @@
                                     </div>
                                 </td>
 
-                                <!-- Actions -->
+                                <!-- Focused review is available without JavaScript. -->
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                     <a th:href="@{/super-admin/verification/{id}(id=${request.id})}"
                                        class="inline-flex items-center px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors" th:text="#{ui.00179}">
                                         View Details
                                     </a>
-                                    <div th:if="${request.status.name()} == 'PENDING' or ${request.status.name()} == 'NEEDS_INFO'" class="inline-flex items-center gap-2">
-                                        <button type="button"
-                                                data-approve-request
-                                                th:attr="data-request-id=${request.id}"
-                                                class="inline-flex items-center px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors" th:text="#{ui.00180}">
-                                            Approve
-                                        </button>
-                                        <button type="button"
-                                                data-reject-request
-                                                th:attr="data-request-id=${request.id}"
-                                                class="inline-flex items-center px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors" th:text="#{ui.00181}">
-                                            Reject
-                                        </button>
-                                        <button type="button"
-                                                data-request-more-info
-                                                th:attr="data-request-id=${request.id}"
-                                                th:if="${request.status.name()} == 'PENDING'"
-                                                class="inline-flex items-center px-3 py-1.5 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition-colors" th:text="#{ui.00164}">
-                                            Request Info
-                                        </button>
-                                    </div>
+                                    <button type="button" data-select-request disabled class="btn btn--secondary" th:text="#{ui.00059}"></button>
                                     <div th:if="${request.status.name()} != 'PENDING'" class="text-xs text-slate-500 dark:text-slate-500 italic">
                                         <span th:if="${request.reviewedAt} != null">
                                             <th:block th:text="#{ui.00152}">Reviewed</th:block> <span th:text="${#temporals.format(request.reviewedAt, 'MMM dd')}">Jan 1</span>
@@ -219,100 +204,11 @@
             </div>
         </div>
 
-        <!-- Action Modals -->
-        
-        <!-- Approve Confirmation Modal -->
-        <div id="approveModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4" th:text="#{ui.00187}">Approve Trainer Verification</h3>
-                <p class="text-sm text-slate-600 dark:text-slate-400 mb-4" th:text="#{ui.00188}">
-                    Are you sure you want to approve this trainer? They will be marked as verified and can start accepting clients.
-                </p>
-                <form id="approveForm" method="post">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                    <div class="flex items-center justify-end gap-3">
-                        <button type="button" data-close-modal="approveModal"
-                                class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/70" th:text="#{ui.00125}">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                                class="inline-flex min-h-11 items-center justify-center rounded-xl bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-700" th:text="#{ui.00180}">
-                            Approve
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
-        <!-- Reject Modal -->
-        <div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4" th:text="#{ui.00189}">Reject Trainer Verification</h3>
-                <form id="rejectForm" method="post">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                    <div class="mb-4">
-                        <label for="rejectAdminNotes" class="block text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                            <th:block th:text="#{ui.00159}">Rejection Reason</th:block> <span class="text-red-500">*</span>
-                        </label>
-                        <textarea id="rejectAdminNotes" 
-                                  name="adminNotes" 
-                                  rows="4"
-                                  required
-                                  maxlength="1000"
-                                  class="block w-full rounded-xl border border-white/20 bg-white/5 dark:bg-slate-800/50 px-4 py-2.5 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                  placeholder="Explain why this trainer is being rejected..." th:placeholder="#{ui.00160}"></textarea>
-                    </div>
-                    <div class="flex items-center justify-end gap-3">
-                        <button type="button" data-close-modal="rejectModal"
-                                class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/70" th:text="#{ui.00125}">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                                class="inline-flex min-h-11 items-center justify-center rounded-xl bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-700" th:text="#{ui.00181}">
-                            Reject
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Request More Info Modal -->
-        <div id="requestInfoModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-            <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4" th:text="#{ui.00190}">Request More Information</h3>
-                <form id="requestInfoForm" method="post">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                    <div class="mb-4">
-                        <label for="requestInfoAdminNotes" class="block text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                            <th:block th:text="#{ui.00191}">What information do you need?</th:block> <span class="text-red-500">*</span>
-                        </label>
-                        <textarea id="requestInfoAdminNotes" 
-                                  name="adminNotes" 
-                                  rows="4"
-                                  required
-                                  maxlength="1000"
-                                  class="block w-full rounded-xl border border-white/20 bg-white/5 dark:bg-slate-800/50 px-4 py-2.5 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                  placeholder="Specify what additional information or clarification is needed..." th:placeholder="#{ui.00192}"></textarea>
-                    </div>
-                    <div class="flex items-center justify-end gap-3">
-                        <button type="button" data-close-modal="requestInfoModal"
-                                class="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/70" th:text="#{ui.00125}">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                                class="inline-flex min-h-11 items-center justify-center rounded-xl bg-orange-600 px-6 py-2 text-sm font-semibold text-white hover:bg-orange-700" th:text="#{ui.00193}">
-                            Send Request
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- JavaScript for Modals -->
     </div>
 
     <th:block th:fragment="pageScripts">
-        <script th:src="@{/js/admin/verification-queue-page.js}"></script>
+        <script th:src="@{/js/admin/verification-queue-page.js(v=${uiCssVersion})}"></script>
     </th:block>
 
 </th:block>

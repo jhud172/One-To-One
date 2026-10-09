@@ -3,12 +3,12 @@ package uk.ac.cf._5.group14.One_To_One.ChatV2;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import uk.ac.cf._5.group14.One_To_One.Chat.ChatService;
-import uk.ac.cf._5.group14.One_To_One.Chat.ChatService.Message;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import uk.ac.cf._5.group14.One_To_One.Users.User;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,16 +18,13 @@ public class ChatV2ThreadService {
     private final ChatFolderRepository folderRepository;
     private final ChatThreadRepository threadRepository;
     private final ChatMessageRepository messageRepository;
-    private final ChatService chatService;
 
     public ChatV2ThreadService(ChatFolderRepository folderRepository,
                                ChatThreadRepository threadRepository,
-                               @Qualifier("chatV2MessageRepository") ChatMessageRepository messageRepository,
-                               ChatService chatService) {
+                               @Qualifier("chatV2MessageRepository") ChatMessageRepository messageRepository) {
         this.folderRepository = folderRepository;
         this.threadRepository = threadRepository;
         this.messageRepository = messageRepository;
-        this.chatService = chatService;
     }
 
     @Transactional(readOnly = true)
@@ -42,11 +39,14 @@ public class ChatV2ThreadService {
 
     @Transactional
     public ChatFolder createFolder(User user, String name, String colorHex, String iconKey) {
+        String safeName = requiredText(name, 120);
+        String safeColor = colour(colorHex);
+        String safeIcon = icon(iconKey);
         ChatFolder folder = new ChatFolder();
         folder.setUser(user);
-        folder.setName(name);
-        folder.setColorHex(colorHex);
-        folder.setIconKey(iconKey);
+        folder.setName(safeName);
+        folder.setColorHex(safeColor);
+        folder.setIconKey(safeIcon);
         folder.setCreatedAt(Instant.now());
         folder.setUpdatedAt(Instant.now());
         return folderRepository.save(folder);
@@ -54,9 +54,12 @@ public class ChatV2ThreadService {
 
     @Transactional
     public ChatFolder updateFolder(ChatFolder folder, String name, String colorHex, String iconKey) {
-        folder.setName(name);
-        folder.setColorHex(colorHex);
-        folder.setIconKey(iconKey);
+        String safeName = requiredText(name, 120);
+        String safeColor = colour(colorHex);
+        String safeIcon = icon(iconKey);
+        folder.setName(safeName);
+        folder.setColorHex(safeColor);
+        folder.setIconKey(safeIcon);
         folder.setUpdatedAt(Instant.now());
         return folderRepository.save(folder);
     }
@@ -64,6 +67,37 @@ public class ChatV2ThreadService {
     @Transactional(readOnly = true)
     public List<ChatThread> listThreads(User user) {
         return threadRepository.findByUserAndArchivedFalseOrderByPinnedDescUpdatedAtDesc(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatThread> listHistory(User user) {
+        return threadRepository.findByUserOrderByPinnedDescUpdatedAtDesc(user);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChatThread> historyPage(User user, ChatFolder folder, String query, int page) {
+        requireFolderOwner(user, folder);
+        long count = folder == null ? threadRepository.countByUserAndTitleContainingIgnoreCase(user, query)
+                : threadRepository.countByUserAndFolderAndTitleContainingIgnoreCase(user, folder, query);
+        PageRequest request = historyPageRequest(page, count, 20);
+        List<ChatThread> rows = folder == null
+                ? threadRepository.findByUserAndTitleContainingIgnoreCaseOrderByPinnedDescUpdatedAtDescIdDesc(user, query, request)
+                : threadRepository.findByUserAndFolderAndTitleContainingIgnoreCaseOrderByPinnedDescUpdatedAtDescIdDesc(user, folder, query, request);
+        return new PageImpl<>(rows, request, count);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChatMessage> historyMessagesPage(ChatThread thread, Integer page) {
+        long count = messageRepository.countByThread(thread);
+        int requested = page == null ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, (count + 29) / 30)) : page;
+        PageRequest request = historyPageRequest(requested, count, 30);
+        return new PageImpl<>(messageRepository.findByThreadOrderByCreatedAtAscIdAsc(thread, request), request, count);
+    }
+
+    private static PageRequest historyPageRequest(int page, long count, int size) {
+        if (page < 1) throw new IllegalArgumentException("Page must be positive");
+        long last = Math.max(1, (count + size - 1) / size);
+        return PageRequest.of((int) Math.min((long) page - 1, last - 1), size);
     }
 
     @Transactional(readOnly = true)
@@ -78,6 +112,7 @@ public class ChatV2ThreadService {
 
     @Transactional
     public ChatThread createThread(User user, ChatFolder folder) {
+        requireFolderOwner(user, folder);
         ChatThread thread = new ChatThread();
         thread.setUser(user);
         thread.setFolder(folder);
@@ -94,14 +129,20 @@ public class ChatV2ThreadService {
     @Transactional
     public ChatThread updateThreadSettings(ChatThread thread, String title, String colorHex, String iconKey,
                                           Boolean pinned, Boolean archived, String customInstructions) {
-        if (title != null && !title.isBlank()) {
-            thread.setTitle(title.trim());
+        String safeTitle = title == null || title.isBlank() ? null : requiredText(title, 160);
+        String safeColour = colorHex == null || colorHex.isBlank() ? null : colour(colorHex);
+        String safeIcon = iconKey == null || iconKey.isBlank() ? null : icon(iconKey);
+        if (customInstructions != null && customInstructions.length() > 10000) {
+            throw new IllegalArgumentException("Instructions must be at most 10,000 characters");
+        }
+        if (safeTitle != null) {
+            thread.setTitle(safeTitle);
         }
         if (colorHex != null && !colorHex.isBlank()) {
-            thread.setColorHex(colorHex.trim());
+            thread.setColorHex(safeColour);
         }
         if (iconKey != null && !iconKey.isBlank()) {
-            thread.setIconKey(iconKey.trim());
+            thread.setIconKey(safeIcon);
         }
         if (pinned != null) {
             thread.setPinned(pinned);
@@ -118,6 +159,7 @@ public class ChatV2ThreadService {
 
     @Transactional
     public ChatThread moveThread(ChatThread thread, ChatFolder folder) {
+        requireFolderOwner(thread.getUser(), folder);
         thread.setFolder(folder);
         thread.setUpdatedAt(Instant.now());
         return threadRepository.save(thread);
@@ -125,10 +167,11 @@ public class ChatV2ThreadService {
 
     @Transactional
     public ChatMessage appendMessage(ChatThread thread, ChatMessageRole role, String content) {
+        String safeContent = requiredText(content, 10000);
         ChatMessage msg = new ChatMessage();
         msg.setThread(thread);
         msg.setRole(role);
-        msg.setContent(content == null ? "" : content.trim());
+        msg.setContent(safeContent);
         msg.setCreatedAt(Instant.now());
         ChatMessage saved = messageRepository.save(msg);
         thread.setUpdatedAt(Instant.now());
@@ -151,18 +194,31 @@ public class ChatV2ThreadService {
         thread.setTitle(fallback);
         threadRepository.save(thread);
 
-        if (!chatService.isAvailable()) return;
-        try {
-            String prompt = "Create a short 4-6 word title for this message. Return only the title.";
-            List<Message> msgs = new ArrayList<>();
-            msgs.add(new Message("system", prompt));
-            msgs.add(new Message("user", firstUserMessage));
-            String reply = chatService.chat(msgs).reply();
-            if (reply != null && !reply.isBlank()) {
-                thread.setTitle(reply.replaceAll("[\"\n]", "").trim());
-                threadRepository.save(thread);
-            }
-        } catch (Exception ignored) {
+    }
+
+    private static String requiredText(String value, int limit) {
+        if (value == null || value.isBlank() || value.trim().length() > limit) {
+            throw new IllegalArgumentException("Invalid text length");
+        }
+        return value.trim();
+    }
+
+    private static String colour(String value) {
+        if (value == null || !value.matches("#[0-9a-fA-F]{6}")) {
+            throw new IllegalArgumentException("Invalid colour");
+        }
+        return value;
+    }
+
+    private static String icon(String value) {
+        if (value == null || !ChatV2IconRegistry.iconMap().containsKey(value)) throw new IllegalArgumentException("Invalid icon");
+        return value;
+    }
+
+    private static void requireFolderOwner(User user, ChatFolder folder) {
+        if (folder != null && (user == null || user.getId() == null || folder.getUser() == null
+                || !user.getId().equals(folder.getUser().getId()))) {
+            throw new IllegalArgumentException("Folder is not available");
         }
     }
 

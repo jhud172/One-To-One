@@ -6,6 +6,7 @@
     const experience = document.querySelector("[data-birthday-main]");
     const intro = document.querySelector("[data-birthday-intro]");
     const holdButton = document.querySelector("[data-birthday-hold]");
+    const openButton = document.querySelector("[data-birthday-open]");
     const holdCaption = document.querySelector("[data-birthday-hold-caption]");
     const replayButton = document.querySelector("[data-birthday-replay]");
     const fireworksButton = document.querySelector("[data-birthday-fireworks]");
@@ -27,6 +28,8 @@
     }
 
     root.classList.add("birthday-ready");
+    [holdButton, openButton, replayButton, fireworksButton, ...document.querySelectorAll('[data-birthday-enhancement]')]
+        .filter(Boolean).forEach((control) => { control.hidden = false; });
     body.classList.add("birthday-is-locked");
     experience.classList.remove("is-unlocked");
     experience.dataset.state = "locked";
@@ -152,12 +155,14 @@
         }
         experience.classList.add("is-unlocked");
         experience.dataset.state = "unlocked";
-        liveRegion.textContent = "Mission unlocked. Your GTA VI birthday promise is ready.";
+        if (liveRegion) liveRegion.textContent = "Mission unlocked. Your GTA VI birthday promise is ready.";
         navigator.vibrate?.([18, 42, 38]);
         const takeoverDuration = playUnlockTakeover();
         window.setTimeout(() => burstConfetti(), Math.max(0, takeoverDuration - 460));
 
         window.setTimeout(() => {
+            promise.setAttribute('tabindex', '-1');
+            promise.focus({ preventScroll: true });
             promise.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
         }, takeoverDuration);
     };
@@ -215,18 +220,21 @@
     holdButton.addEventListener("keyup", endHold);
     holdButton.addEventListener("blur", cancelHold);
     holdButton.addEventListener("contextmenu", (event) => event.preventDefault());
+    openButton?.addEventListener('click', unlockGift);
+    window.addEventListener('blur', cancelHold);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) cancelHold(); });
 
     const sections = document.querySelectorAll(".birthday-promise, .birthday-countdown, .birthday-finale");
-    const observer = new IntersectionObserver((entries) => {
+    const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             if (entry.isIntersecting) {
                 entry.target.classList.add("is-visible");
             }
         });
-    }, { threshold: 0.18 });
-    sections.forEach((section) => observer.observe(section));
+    }, { threshold: 0.18 }) : null;
+    sections.forEach((section) => observer ? observer.observe(section) : section.classList.add('is-visible'));
 
-    const chapterObserver = new IntersectionObserver((entries) => {
+    const chapterObserver = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
         const current = entries
             .filter((entry) => entry.isIntersecting)
             .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
@@ -243,8 +251,8 @@
                 link.removeAttribute("aria-current");
             }
         });
-    }, { rootMargin: "-30% 0px -50%", threshold: [0, 0.15, 0.45] });
-    document.querySelectorAll("[data-birthday-chapter]").forEach((chapter) => chapterObserver.observe(chapter));
+    }, { rootMargin: "-30% 0px -50%", threshold: [0, 0.15, 0.45] }) : null;
+    document.querySelectorAll("[data-birthday-chapter]").forEach((chapter) => chapterObserver?.observe(chapter));
 
     const countdown = document.querySelector("[data-birthday-countdown]");
     const countdownFields = {
@@ -317,7 +325,7 @@
         launchFireworks();
         burstConfetti(42);
         navigator.vibrate?.([14, 34, 22]);
-        liveRegion.textContent = "Birthday fireworks launched.";
+        if (liveRegion) liveRegion.textContent = reduceMotion ? "Happy Birthday, Dad!" : "Birthday fireworks launched.";
     });
 
     replayButton?.addEventListener("click", () => {

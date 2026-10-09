@@ -1,97 +1,10 @@
-<th:block th:replace="~{base :: layout(#{ui.00676}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="detail-container">
-        <!-- Header with key metadata at top -->
-        <div class="detail-header">
-            <div class="detail-header-content">
-                <div class="detail-header-meta">
-                    <p class="detail-label" th:text="#{ui.00656}">Health Record</p>
-                    <h1 class="detail-title" th:text="#{ui.00666}">Health record details</h1>
-                    <p class="detail-subtitle" th:text="#{ui.00667}">Review a specific record.</p>
-                </div>
-                <!-- Primary actions - sticky on larger screens -->
-                <div class="detail-actions-sticky">
-                    <a href="/health-record/list" class="detail-btn-secondary" th:text="#{ui.00668}">Back to list</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Structured content sections -->
-        <div class="detail-sections">
-            <section class="detail-section">
-                <div class="detail-section-content">
-                    <p class="detail-metadata-label" th:text="#{ui.00669}">Date recorded</p>
-                    <p class="detail-metadata-value" th:text="${record.baselineDate}"></p>
-                </div>
-            </section>
-
-            <div class="detail-grid-2">
-                <section class="detail-section">
-                    <h2 class="detail-section-title" th:text="#{ui.00670}">Cardiovascular</h2>
-                    <div class="detail-section-content">
-                        <div class="detail-metadata">
-                            <div class="detail-metadata-item">
-                                <p class="detail-metadata-label" th:text="#{ui.00661}">Blood pressure</p>
-                                <p class="detail-metadata-value">
-                                    <span th:text="${record.systolicBloodPressure}"></span> / <span th:text="${record.diastolicBloodPressure}"></span> <th:block th:text="#{ui.00635}">mmHg</th:block>
-                                </p>
-                            </div>
-                            <div class="detail-metadata-item">
-                                <p class="detail-metadata-label" th:text="#{ui.00639}">Cholesterol</p>
-                                <p class="detail-metadata-value"><span th:text="${record.cholesterol}"></span> <th:block th:text="#{ui.00640}">mmol/L</th:block></p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="detail-section">
-                    <h2 class="detail-section-title" th:text="#{ui.00671}">Body measurements</h2>
-                    <div class="detail-section-content">
-                        <div class="detail-metadata">
-                            <div class="detail-metadata-item">
-                                <p class="detail-metadata-label" th:text="#{ui.00642}">Weight</p>
-                                <p class="detail-metadata-value"><span th:text="${record.weightKg}"></span> <th:block th:text="#{ui.00643}">kg</th:block></p>
-                            </div>
-                            <div class="detail-metadata-item">
-                                <p class="detail-metadata-label" th:text="#{ui.00645}">Height</p>
-                                <p class="detail-metadata-value"><span th:text="${record.heightCm}"></span> <th:block th:text="#{ui.00646}">cm</th:block></p>
-                            </div>
-                            <div class="detail-metadata-item">
-                                <p class="detail-metadata-label" th:text="#{ui.00672}">Waist</p>
-                                <p class="detail-metadata-value"><span th:text="${record.waistCm}"></span> <th:block th:text="#{ui.00646}">cm</th:block></p>
-                            </div>
-                            <div class="detail-metadata-item">
-                                <p class="detail-metadata-label" th:text="#{ui.00673}">BMI</p>
-                                <p class="detail-metadata-value" th:text="${record.bmi}"></p>
-                            </div>
-                            <div class="detail-metadata-item">
-                                <p class="detail-metadata-label" th:text="#{ui.00674}">Waist/height ratio</p>
-                                <p class="detail-metadata-value" th:text="${record.waistHeightRatio}"></p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="detail-section">
-                    <h2 class="detail-section-title" th:text="#{ui.00662}">Activity</h2>
-                    <div class="detail-section-content">
-                        <div class="detail-metadata-item">
-                            <p class="detail-metadata-label" th:text="#{ui.00650}">Activity level</p>
-                            <p class="detail-metadata-value" th:text="${record.activityLevel}"></p>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="detail-section">
-                    <h2 class="detail-section-title" th:text="#{ui.00335}">Physical conditions</h2>
-                    <div class="detail-section-content">
-                        <div th:if="${#lists.isEmpty(record.physicalConditions)}" class="detail-empty" th:text="#{ui.00675}">None recorded</div>
-                        <ul th:if="${!#lists.isEmpty(record.physicalConditions)}" class="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                            <li th:each="pc : ${record.physicalConditions}" th:text="${pc.name}"></li>
-                        </ul>
-                    </div>
-                </section>
-            </div>
-        </div>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.00676}, null, ~{::content}, null)}">
+<div th:fragment="content" class="client-workspace-v2 personal-records-v2 health-records-v2">
+    <header class="detail-header"><div class="detail-header-content"><div><p class="detail-label" th:text="#{ui.00656}"></p><h1 class="detail-title" th:text="#{ui.00666}"></h1><p class="detail-subtitle"><time dir="ltr" th:datetime="${record.baselineDate}" th:text="${record.baselineDate != null ? #temporals.format(record.baselineDate,'dd MMM yyyy HH:mm') : '—'}"></time></p></div><div class="connection-actions"><a class="detail-btn-secondary" th:href="@{/health-record/list}" th:text="#{ui.00668}"></a><a class="detail-btn-primary" th:href="@{/health-record}" th:text="#{ui.00631}"></a></div></div></header>
+    <th:block th:replace="~{client-views/health-record/fragments/health-scope :: healthScope}"></th:block>
+    <div class="personal-record-layout">
+        <section class="detail-section"><h2 class="detail-section-title" th:text="#{ui.health.measurementsTitle}"></h2><dl class="library-exercise-facts"><div><dt th:text="#{ui.00661}"></dt><dd><bdi dir="ltr"><span th:text="${record.systolicBloodPressure ?: '—'}"></span> / <span th:text="${record.diastolicBloodPressure ?: '—'}"></span> <span th:text="#{ui.00635}"></span></bdi></dd></div><div><dt th:text="#{ui.00639}"></dt><dd><bdi dir="ltr"><span th:text="${record.cholesterol ?: '—'}"></span> <span th:text="#{ui.00640}"></span></bdi></dd></div><div><dt th:text="#{ui.00642}"></dt><dd><bdi dir="ltr"><span th:text="${record.weightKg ?: '—'}"></span> <span th:text="#{ui.00643}"></span></bdi></dd></div><div><dt th:text="#{ui.00645}"></dt><dd><bdi dir="ltr"><span th:text="${record.heightCm ?: '—'}"></span> <span th:text="#{ui.00646}"></span></bdi></dd></div><div><dt th:text="#{ui.00648}"></dt><dd><bdi dir="ltr"><span th:text="${record.waistCm ?: '—'}"></span> <span th:text="#{ui.00646}"></span></bdi></dd></div></dl></section>
+        <section class="detail-section"><h2 class="detail-section-title" th:text="#{ui.health.calculatedTitle}"></h2><p class="health-record-help" th:text="#{ui.health.calculatedHint}"></p><dl class="library-exercise-facts"><div><dt th:text="#{ui.00673}"></dt><dd dir="ltr" th:text="${record.bmi ?: '—'}"></dd></div><div><dt th:text="#{ui.00674}"></dt><dd dir="ltr" th:text="${record.waistHeightRatio ?: '—'}"></dd></div></dl><h3 class="detail-section-title" th:text="#{ui.00650}"></h3><p dir="auto" th:text="${record.activityLevel == null or #strings.isEmpty(record.activityLevel) ? '—' : (healthActivityLabels[record.activityLevel] != null ? #messages.msg(healthActivityLabels[record.activityLevel]) : record.activityLevel)}"></p></section>
     </div>
-</th:block>
+    <section class="detail-section health-record-conditions"><h2 class="detail-section-title" th:text="#{ui.00335}"></h2><p th:if="${#lists.isEmpty(record.physicalConditions)}" th:text="#{ui.00675}"></p><ul th:unless="${#lists.isEmpty(record.physicalConditions)}" class="health-record-condition-list"><li th:each="condition : ${record.physicalConditions}" dir="auto" th:text="${condition.name}"></li></ul></section>
+</div></th:block>

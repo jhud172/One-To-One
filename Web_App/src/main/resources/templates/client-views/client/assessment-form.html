@@ -1,55 +1,38 @@
-<th:block xmlns:th="http://www.thymeleaf.org"
-          xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
-          th:replace="~{base :: layout(#{ui.00223}, null, ~{::content}, null)}">
-
-    <div th:fragment="content" class="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="rounded-xl bg-white/5 dark:bg-slate-900/40 ring-1 ring-white/10 shadow-sm p-6">
-            <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100" th:text="#{ui.00223}">Client Assessment</h1>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300" 
-               th:text="'Private assessment for ' + ${client.firstName} + ' ' + ${client.lastName}">Client Assessment</p>
-            <p class="mt-1 text-xs text-slate-500" th:text="#{ui.00224}">This assessment is private and only visible to you.</p>
-
-            <form th:action="@{/trainer/clients/{id}/assessment(id=${client.id})}" method="post" class="mt-6 space-y-6">
-                <!-- Reliability Score -->
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{base :: layout(#{ui.00223}, null, ~{::content}, null)}">
+    <div th:fragment="content" class="client-workspace-v2 assessment-workspace-v2">
+        <nav class="client-workspace-nav" th:attr="aria-label=#{ui.00223}">
+            <a th:href="@{/trainer/clients}" th:text="#{ui.02985}">Clients</a>
+            <a th:href="@{/trainer/assessments}" th:text="#{ui.assessment.history}">Private assessment history</a>
+        </nav>
+        <header class="detail-header">
+            <p class="detail-label" th:text="#{ui.00223}">Client assessment</p>
+            <h1 class="detail-title" th:text="${client.fullName}"></h1>
+            <p class="detail-subtitle" th:text="#{ui.00224}">This assessment is private and only visible to you.</p>
+        </header>
+        <p th:if="${assessmentSaved == true}" role="status" class="checkin-feedback" th:text="#{ui.assessment.saved}">Private assessment saved.</p>
+        <p th:if="${assessmentError == true}" role="alert" class="checkin-review-error" th:text="#{ui.assessment.invalid}">Scores must be between 1 and 5. Notes must be no more than 10,000 characters.</p>
+        <form th:action="@{/trainer/clients/{id}/assessment(id=${client.id})}" method="post" class="detail-section client-checkin-form">
+            <div class="detail-grid-2">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.00225}">Reliability Score (1-5)</label>
-                    <p class="mt-1 text-xs text-slate-500" th:text="#{ui.00226}">How reliable is this client with appointments and commitments?</p>
-                    <input type="number" name="reliabilityScore" min="1" max="5" 
-                           th:value="${assessment?.reliabilityScore}"
-                           class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"/>
+                    <label for="reliabilityScore" th:text="#{ui.00225}">Reliability score (1–5)</label>
+                    <p id="reliabilityHint" class="detail-subtitle" th:text="#{ui.00226}"></p>
+                    <input id="reliabilityScore" type="number" name="reliabilityScore" min="1" max="5" step="1" aria-describedby="reliabilityHint" th:value="${assessmentDraft != null ? assessmentDraft.reliabilityScore : assessment?.reliabilityScore}"/>
                 </div>
-
-                <!-- Communication Score -->
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.00227}">Communication Score (1-5)</label>
-                    <p class="mt-1 text-xs text-slate-500" th:text="#{ui.00228}">How well does this client communicate?</p>
-                    <input type="number" name="communicationScore" min="1" max="5" 
-                           th:value="${assessment?.communicationScore}"
-                           class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"/>
+                    <label for="communicationScore" th:text="#{ui.00227}">Communication score (1–5)</label>
+                    <p id="communicationHint" class="detail-subtitle" th:text="#{ui.00228}"></p>
+                    <input id="communicationScore" type="number" name="communicationScore" min="1" max="5" step="1" aria-describedby="communicationHint" th:value="${assessmentDraft != null ? assessmentDraft.communicationScore : assessment?.communicationScore}"/>
                 </div>
-
-                <!-- Private Notes -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300" th:text="#{ui.00229}">Private Notes</label>
-                    <p class="mt-1 text-xs text-slate-500" th:text="#{ui.00230}">Your private notes about this client</p>
-                    <textarea name="privateNotes" rows="6"
-                             th:text="${assessment?.privateNotes}"
-                             class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                             placeholder="Notes about client's progress, behavior, preferences, etc." th:placeholder="#{ui.00231}"></textarea>
-                </div>
-
-                <!-- Submit -->
-                <div class="flex justify-end gap-3">
-                    <a th:href="@{/trainer/clients}"
-                       class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2" th:text="#{ui.00125}">
-                        Cancel
-                    </a>
-                    <button type="submit"
-                           class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30" th:text="#{ui.00232}">
-                        Save Assessment
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div>
+                <label for="privateNotes" th:text="#{ui.00229}">Private notes</label>
+                <p id="privateNotesHint" class="detail-subtitle" th:text="#{ui.00230}"></p>
+                <textarea id="privateNotes" name="privateNotes" rows="8" maxlength="10000" aria-describedby="privateNotesHint" th:text="${assessmentDraft != null ? assessmentDraft.privateNotes : assessment?.privateNotes}" th:placeholder="#{ui.00231}"></textarea>
+            </div>
+            <div class="connection-actions">
+                <a th:href="@{/trainer/clients}" class="detail-btn-secondary" th:text="#{ui.00125}">Cancel</a>
+                <button type="submit" class="detail-btn-primary" th:text="#{ui.00232}">Save assessment</button>
+            </div>
+        </form>
     </div>
 </th:block>

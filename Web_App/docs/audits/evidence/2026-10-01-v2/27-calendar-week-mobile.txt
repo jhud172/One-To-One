@@ -1,0 +1,206 @@
+- banner:
+  - link "One To One Logo":
+    - /url: /
+    - img "One To One Logo"
+  - link "Development mode":
+    - /url: /dev-mode
+    - generic: Development mode
+  - generic "Choose display language":
+    - generic: EN
+  - region "User profile card":
+    - link "Open profile":
+      - /url: /profile
+      - img "Profile photo"
+    - link "Avery Client":
+      - /url: /profile
+    - button "Open profile menu":
+  - button "Open navigation":
+    - generic: Toggle navigation
+- main:
+  - heading "Calendar week view" [level=1]
+  - link "Month view":
+    - /url: /calendar?view=month
+  - link "Week view":
+    - /url: /calendar?view=week
+  - link "Day view":
+    - /url: /calendar/day/2026-10-01
+  - generic "Calendar layout information":
+    - button "Calendar layout settings help":
+      - generic: i
+    - 'tooltip "Controls how cards display: Detailed combines items, Grouped separates categories. Open calendar settings"':
+      - text: "Controls how cards display: Detailed combines items, Grouped separates categories."
+      - link "Open calendar settings":
+        - /url: /profile
+  - button "Schedules"
+  - button "Toggle workout heatmap legend":
+    - generic: Heatmap legend
+  - generic "Week jump controls":
+    - button "Jump to today"
+    - generic: Jump to date
+    - textbox "Jump to date"
+    - button "Jump to date"
+    - button "Jump to next workout"
+    - generic: Jump to task
+    - textbox "Jump to task":
+      - /placeholder: Task name
+    - button "Jump to task"
+    - paragraph
+  - link "← Prev":
+    - /url: /calendar?view=week&week=39&weekYear=2026
+  - generic: Sept 28th – Oct 4th
+  - generic: "2026"
+  - link "Next →":
+    - /url: /calendar?view=week&week=41&weekYear=2026
+  - generic: ⚡
+  - text: 1 active day
+  - region "Calendar week navigation":
+    - link "Mon 21st":
+      - /url: /calendar/day/2026-09-21
+      - generic: Mon
+      - generic: 21st
+    - group "Scheduled items for 2026-09-21"
+    - link "Tue 22nd":
+      - /url: /calendar/day/2026-09-22
+      - generic: Tue
+      - generic: 22nd
+    - group "Scheduled items for 2026-09-22"
+    - link "Wed 23rd":
+      - /url: /calendar/day/2026-09-23
+      - generic: Wed
+      - generic: 23rd
+    - group "Scheduled items for 2026-09-23"
+    - link "Thu 24th":
+      - /url: /calendar/day/2026-09-24
+      - generic: Thu
+      - generic: 24th
+    - group "Scheduled items for 2026-09-24":
+      - generic: Client premium training block
+      - generic: 07:30
+      - generic: ✓
+      - separator
+      - generic: Trap Bar Deadlift
+      - generic: "From: Client Premium Plan"
+      - generic: ✓
+    - link "Fri 25th":
+      - /url: /calendar/day/2026-09-25
+      - generic: Fri
+      - generic: 25th
+    - group "Scheduled items for 2026-09-25"
+    - link "Sat 26th":
+      - /url: /calendar/day/2026-09-26
+      - generic: Sat
+      - generic: 26th
+    - group "Scheduled items for 2026-09-26"
+    - link "Sun 27th":
+      - /url: /calendar/day/2026-09-27
+      - generic: Sun
+      - generic: 27th
+    - group "Scheduled items for 2026-09-27"
+    - link "Mon 28th":
+      - /url: /calendar/day/2026-09-28
+      - generic: Mon
+      - generic: 28th
+    - group "Scheduled items for 2026-09-28"
+    - link "Tue 29th":
+      - /url: /calendar/day/2026-09-29
+      - generic: Tue
+      - generic: 29th
+    - group "Scheduled items for 2026-09-29"
+    - link "Wed 30th":
+      - /url: /calendar/day/2026-09-30
+      - generic: Wed
+      - generic: 30th
+    - group "Scheduled items for 2026-09-30"
+    - link "Thu 1st":
+      - /url: /calendar/day/2026-10-01
+      - generic: Thu
+      - generic: 1st
+    - generic: Today
+    - group "Scheduled items for 2026-10-01":
+      - generic: Client premium training block
+      - generic: 07:30
+      - separator
+      - generic: Trap Bar Deadlift
+      - generic: "From: Client Premium Plan"
+    - link "Fri 2nd":
+      - /url: /calendar/day/2026-10-02
+      - generic: Fri
+      - generic: 2nd
+    - generic: Tomorrow
+    - group "Scheduled items for 2026-10-02"
+    - link "Sat 3rd":
+      - /url: /calendar/day/2026-10-03
+      - generic: Sat
+      - generic: 3rd
+    - group "Scheduled items for 2026-10-03"
+    - link "Sun 4th":
+      - /url: /calendar/day/2026-10-04
+      - generic: Sun
+      - generic: 4th
+    - group "Scheduled items for 2026-10-04"
+    - link "Mon 5th":
+      - /url: /calendar/day/2026-10-05
+      - generic: Mon
+      - generic: 5th
+    - group "Scheduled items for 2026-10-05"
+    - link "Tue 6th":
+      - /url: /calendar/day/2026-10-06
+      - generic: Tue
+      - generic: 6th
+    - group "Scheduled items for 2026-10-06"
+    - link "Wed 7th":
+      - /url: /calendar/day/2026-10-07
+      - generic: Wed
+      - generic: 7th
+    - group "Scheduled items for 2026-10-07"
+    - link "Thu 8th":
+      - /url: /calendar/day/2026-10-08
+      - generic: Thu
+      - generic: 8th
+    - group "Scheduled items for 2026-10-08":
+      - generic: Client premium training block
+      - generic: 07:30
+      - separator
+      - generic: Trap Bar Deadlift
+      - generic: "From: Client Premium Plan"
+    - link "Fri 9th":
+      - /url: /calendar/day/2026-10-09
+      - generic: Fri
+      - generic: 9th
+    - group "Scheduled items for 2026-10-09"
+    - link "Sat 10th":
+      - /url: /calendar/day/2026-10-10
+      - generic: Sat
+      - generic: 10th
+    - group "Scheduled items for 2026-10-10"
+    - link "Sun 11th":
+      - /url: /calendar/day/2026-10-11
+      - generic: Sun
+      - generic: 11th
+    - group "Scheduled items for 2026-10-11"
+- button "Open Charlie"
+- button "Open quick actions":
+- generic "Platform navigation panel":
+  - navigation "Selected platform actions":
+    - link "My dashboard":
+      - /url: /dashboard
+      - generic: My dashboard
+    - link "Calendar":
+      - /url: /calendar
+      - generic: Calendar
+    - link "Charlie":
+      - /url: "#charlie"
+      - generic: Charlie
+    - link "Action Hub":
+      - /url: "#actions"
+      - generic: Action Hub
+    - link "My workouts":
+      - /url: /workout-management
+      - generic: My workouts
+    - link "My goals":
+      - /url: /goals
+      - generic: My goals
+    - link "Coaching inbox":
+      - /url: /inbox
+      - generic: Coaching inbox
+  - button "Customize platform panel":

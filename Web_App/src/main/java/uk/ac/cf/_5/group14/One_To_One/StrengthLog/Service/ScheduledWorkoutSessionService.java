@@ -1,6 +1,7 @@
 package uk.ac.cf._5.group14.One_To_One.StrengthLog.Service;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -118,11 +119,25 @@ public class ScheduledWorkoutSessionService {
 
     @Transactional
     public void updateSet(User user, Long sessionId, Long setId, Double weight, Integer reps, String notes) {
+        updateSet(user, sessionId, setId, weight, reps, notes, null);
+    }
+
+    @Transactional
+    public void updateSet(User user, Long sessionId, Long setId, Double weight, Integer reps, String notes, Boolean completed) {
         requireOwnedSession(user, sessionId);
         SetLog setLog = requireSetInSession(sessionId, setId);
+        if ((weight != null && (!Double.isFinite(weight) || weight < 0)) || (reps != null && reps < 0)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Weight and repetitions must be zero or greater");
+        }
+        if (notes != null && notes.length() > 255) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Set notes must be 255 characters or fewer");
+        }
         setLog.setWeight(weight);
         setLog.setReps(reps);
         setLog.setNotes(blankToNull(notes));
+        if (completed != null) {
+            setLog.setCompleted(completed);
+        }
         setLogRepository.save(setLog);
         rollUpCompletion(setLog.getExerciseSession());
     }
@@ -167,10 +182,17 @@ public class ScheduledWorkoutSessionService {
     }
 
     @Transactional(readOnly = true)
+    public LaunchItem nextOpenLaunchItem(User user, LocalDate from) {
+        return listLaunchItems(user, from, from.plusDays(21), true).stream()
+                .filter(item -> item.summary().exerciseCount() > 0)
+                .findFirst().orElse(null);
+    }
+
+    @Transactional(readOnly = true)
     public List<HistoryItem> listRecentCompletedSessions(User user, int limit) {
-        return workoutSessionRepository.findTop20ByUserOrderByDateDesc(user).stream()
-                .filter(WorkoutSession::isCompleted)
-                .limit(Math.max(limit, 0))
+        if (limit <= 0) return List.of();
+        return workoutSessionRepository.findByUserAndCompletedTrueOrderByDateDescIdDesc(
+                        user, PageRequest.of(0, Math.min(limit, 20))).stream()
                 .map(session -> new HistoryItem(
                         session.getId(),
                         resolveSessionName(session),
@@ -183,23 +205,21 @@ public class ScheduledWorkoutSessionService {
 
     private List<LaunchItem> listLaunchItems(User user, LocalDate from, LocalDate to, boolean openOnly) {
         List<LaunchItem> items = new ArrayList<>();
+        Map<String, WorkoutSession> linkedSessions = new LinkedHashMap<>();
 
         for (WorkoutSession session : workoutSessionRepository.findByUserAndDateBetweenOrderByDateAsc(user, from, to)) {
-            if (session.getWorkout() == null || session.getSchedule() != null || session.getSourceOccurrenceId() != null) {
+            if (session.getSchedule() != null && session.getSchedule().getId() != null) {
+                linkedSessions.putIfAbsent("schedule:" + session.getSchedule().getId() + ":" + session.getDate(), session);
+                continue;
+            }
+            if (session.getSourceOccurrenceId() != null) {
+                linkedSessions.putIfAbsent("occurrence:" + session.getSourceOccurrenceId(), session);
                 continue;
             }
             if (openOnly && session.isCompleted()) {
                 continue;
             }
-            items.add(new LaunchItem(
-                    resolveSessionName(session),
-                    session.getDate(),
-                    session.isCompleted() ? "Completed workout" : "Scheduled workout",
-                    session.isCompleted() ? "Completed" : "Ready",
-                    "/workout-session/launch/session/" + session.getId(),
-                    session.isCompleted(),
-                    summaryFor(session)
-            ));
+            items.add(savedLaunchItem(session));
         }
 
         Map<String, List<ScheduleOccurrence>> groupedOccurrences = new LinkedHashMap<>();
@@ -213,7 +233,9 @@ public class ScheduledWorkoutSessionService {
                 continue;
             }
             ScheduleOccurrence first = occurrences.get(0);
-            boolean completed = occurrences.stream().allMatch(ScheduleOccurrence::isCompleted);
+            WorkoutSession savedSession = linkedSessions.get(occurrenceGroupKey(first));
+            boolean completed = occurrences.stream().allMatch(ScheduleOccurrence::isCompleted)
+                    || (savedSession != null && savedSession.isCompleted());
             if (openOnly && completed) {
                 continue;
             }
@@ -221,22 +243,44 @@ public class ScheduledWorkoutSessionService {
                     resolveOccurrenceGroupTitle(occurrences),
                     first.getDate(),
                     first.getSchedule() != null ? "Calendar schedule" : "Scheduled workout",
-                    completed ? "Completed" : "Ready",
-                    "/workout-session/launch/occurrence/" + first.getId(),
+                    completed ? "Completed" : savedSession != null ? "In progress" : "Ready",
+                    savedSession != null ? "/workout-session/launch/session/" + savedSession.getId()
+                            : "/workout-session/launch/occurrence/" + first.getId(),
                     completed,
-                    new ScheduledWorkoutSessionViewModel.Summary(
+                    savedSession != null ? summaryFor(savedSession) : new ScheduledWorkoutSessionViewModel.Summary(
                             occurrences.size(),
-                            completed ? occurrences.size() : 0,
-                            occurrences.size(),
-                            completed ? occurrences.size() : 0,
+                            (int) occurrences.stream().filter(ScheduleOccurrence::isCompleted).count(),
                             0,
-                            completed ? 100 : 0
-                    )
+                            0,
+                            0,
+                            0
+                    ),
+                    savedSession != null,
+                    occurrences.stream().anyMatch(item -> item.getTrainerTemplateId() != null)
+                            ? "ui.training.sourceCoach" : "ui.training.sourceCalendar",
+                    "/calendar/day/" + first.getDate()
             ));
         }
 
-        items.sort(Comparator.comparing(LaunchItem::date).thenComparing(LaunchItem::title));
+        // A removed calendar source must not hide an existing saved session.
+        linkedSessions.forEach((key, session) -> {
+            if (!groupedOccurrences.containsKey(key) && (!openOnly || !session.isCompleted())) {
+                items.add(savedLaunchItem(session));
+            }
+        });
+        items.sort(Comparator.comparing(LaunchItem::date)
+                .thenComparing(item -> item.summary().exerciseCount() == 0)
+                .thenComparing(LaunchItem::started, Comparator.reverseOrder()).thenComparing(LaunchItem::title));
         return items;
+    }
+
+    private LaunchItem savedLaunchItem(WorkoutSession session) {
+        return new LaunchItem(resolveSessionName(session), session.getDate(),
+                session.isCompleted() ? "Completed workout" : "Scheduled workout",
+                session.isCompleted() ? "Completed" : "In progress",
+                "/workout-session/launch/session/" + session.getId(), session.isCompleted(), summaryFor(session),
+                true, session.getWorkout() == null ? "ui.training.sourceSaved" : "ui.training.sourceWorkout",
+                "/calendar/day/" + session.getDate());
     }
 
     private WorkoutSession createSessionFromOccurrences(User user, LocalDate date, List<ScheduleOccurrence> occurrences, Schedule schedule) {
@@ -417,7 +461,8 @@ public class ScheduledWorkoutSessionService {
                 resolveExerciseType(exerciseSession),
                 computeExerciseState(exerciseSession),
                 exerciseSession.isCompleted(),
-                setViews
+                setViews,
+                exerciseSession.getExercise() == null ? null : exerciseSession.getExercise().getId()
         );
     }
 
@@ -436,6 +481,8 @@ public class ScheduledWorkoutSessionService {
                 .mapToDouble(setLog -> setLog.getWeight() * setLog.getReps())
                 .sum();
         int completionPercent = totalSets == 0 ? 0 : (int) Math.round((completedSets * 100.0) / totalSets);
+        // Rounding a nearly finished session must not imply every set is done.
+        if (completedSets < totalSets) completionPercent = Math.min(completionPercent, 99);
 
         return new ScheduledWorkoutSessionViewModel.Summary(
                 exerciseCount,
@@ -571,7 +618,10 @@ public class ScheduledWorkoutSessionService {
             String statusLabel,
             String launchUrl,
             boolean completed,
-            ScheduledWorkoutSessionViewModel.Summary summary
+            ScheduledWorkoutSessionViewModel.Summary summary,
+            boolean started,
+            String sourceKey,
+            String sourceUrl
     ) {
     }
 

@@ -12,6 +12,7 @@ public interface InboxService {
     MessageThread getConversationOrThrow(User user, Long threadId);
     List<Message> getMessages(User user, Long threadId);
     void markRead(User user, Long threadId);
+    void markRead(User user, Long threadId, Long upToId);
     Message sendMessage(User user, Long threadId, String body, String attachmentName, String attachmentUrl, String attachmentType);
     Long startOrGetDirectConversation(User currentUser, Long otherUserId);
 }

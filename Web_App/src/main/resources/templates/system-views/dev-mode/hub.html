@@ -68,6 +68,18 @@
                 </div>
             </dl>
 
+            <form method="get" th:action="@{/dev-mode}" class="devhub-search">
+                <label for="devhub-search" th:text="#{ui.operations.routeSearch}">Search development routes</label>
+                <div class="devhub-search__controls">
+                    <input id="devhub-search" type="search" name="search" maxlength="100"
+                           th:value="${devHubSearch}" th:attr="aria-invalid=${devHubError != null},aria-describedby=${devHubError != null ? 'devhub-error' : null}">
+                    <button type="submit" th:text="#{ui.00260}">Search</button>
+                    <a th:href="@{/dev-mode}" th:text="#{ui.00563}">Clear filters</a>
+                </div>
+                <p th:if="${devHubError}" id="devhub-error" role="alert" th:text="${devHubError}"></p>
+                <p th:text="#{ui.operations.routeMatches(${#lists.size(devHubView.publicPages) + #lists.size(devHubView.loginRequiredPages) + #lists.size(devHubView.restrictedPages)}, ${devHubTotal})}">Matching registered routes</p>
+            </form>
+
             <div class="devhub-workspace" data-guest-reveal>
                 <aside class="devhub-sidebar" aria-label="Dev Hub route groups" th:attr="aria-label=#{ui.02360}">
                     <div class="devhub-sidebar__nav">

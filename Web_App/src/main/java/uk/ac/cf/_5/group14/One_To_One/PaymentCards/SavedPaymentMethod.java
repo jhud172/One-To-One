@@ -24,7 +24,7 @@ public class SavedPaymentMethod {
     @Column(name = "card_holder_name", nullable = false, length = 200)
     private String cardHolderName;
 
-    /** Last four digits of the card â€“ stored in plaintext for display. */
+    /** Last four digits of the card – stored in plaintext for display. */
     @Column(name = "last_four", nullable = false, length = 4)
     private String lastFour;
 

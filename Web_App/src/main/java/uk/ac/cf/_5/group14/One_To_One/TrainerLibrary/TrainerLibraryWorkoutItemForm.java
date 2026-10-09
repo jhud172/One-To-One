@@ -1,6 +1,7 @@
 package uk.ac.cf._5.group14.One_To_One.TrainerLibrary;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 
 public class TrainerLibraryWorkoutItemForm {
@@ -21,9 +22,9 @@ public class TrainerLibraryWorkoutItemForm {
     private Integer restSeconds;
 
     @Min(1)
+    @Max(10)
     private Integer rpe;
 
-    @NotNull
     @Min(0)
     private Integer orderIndex;
 

@@ -22,7 +22,7 @@ public class WorkoutSetVideo {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private VideoProcessingStatus status = VideoProcessingStatus.PENDING;
+    private VideoProcessingStatus status = VideoProcessingStatus.STORED;
 
     @Column(nullable = false, length = 500)
     private String path;

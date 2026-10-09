@@ -1,0 +1,52 @@
+{
+  "cache": "20261003v3q",
+  "width": 390,
+  "height": 844,
+  "drawers": [
+    {
+      "bottom": 682.001220703125,
+      "expanded": "true",
+      "key": "explore",
+      "top": 249.12625122070312,
+      "viewport": 844,
+      "width": 368.8125,
+      "restored": true
+    },
+    {
+      "bottom": 682.0005950927734,
+      "expanded": "true",
+      "key": "trainer",
+      "top": 138.00059509277344,
+      "viewport": 844,
+      "width": 368.8125,
+      "restored": true
+    },
+    {
+      "bottom": 682.0005950927734,
+      "expanded": "true",
+      "key": "goals",
+      "top": 138.00059509277344,
+      "viewport": 844,
+      "width": 368.8125,
+      "restored": true
+    },
+    {
+      "bottom": 682.0005950927734,
+      "expanded": "true",
+      "key": "support",
+      "top": 228.39122009277344,
+      "viewport": 844,
+      "width": 368.8125,
+      "restored": true
+    },
+    {
+      "bottom": 682.0005798339844,
+      "expanded": "true",
+      "key": "profile",
+      "top": 138.00057983398438,
+      "viewport": 844,
+      "width": 368.8125,
+      "restored": true
+    }
+  ]
+}

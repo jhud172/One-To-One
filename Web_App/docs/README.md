@@ -6,6 +6,9 @@ This folder is the documentation entry point for the repository.
 
 Use these files first:
 
+- [Version 2.0 implementation record](./qa/2026-10-01-v2-implementation.md) for active rebuild progress, design decisions and verification
+- [Prepared baseline before Version 2.0](./qa/2026-10-01-prepared-baseline.md) for completed bug fixes, verification, affected files and remaining release checks
+- [One To One 2.0 design, workflow and usability audit](./audits/one-to-one-v2-design-workflow-usability-audit-2026-10-01.md) for the page-by-page redesign checklist, proposed features/3D brief, current evidence and release gates
 - [System-Overview.md](./System-Overview.md) for the normal platform baseline
 - [System-Overview-Dev-Mode.md](./System-Overview-Dev-Mode.md) for development-mode-active behavior
 - [audits/frontend-template-structure-audit-2026-03-29.md](./audits/frontend-template-structure-audit-2026-03-29.md) for the current frontend template audit
@@ -28,7 +31,7 @@ Use these files first:
 2. Build CSS once:
 
    ```bash
-   npm run build:css
+   npm run build:frontend
    ```
 
 3. Start the application:
@@ -62,12 +65,18 @@ Example local login:
 - username: `demo`
 - password: `Demo123!`
 
+## Administration and outbound mail
+
+Global support, outreach, waitlist and developer visibility controls require a platform or super administrator. Gym administrators use their scoped gym workspace.
+
+Outreach first prepares a server-held preview of recipients and message, valid for 15 minutes; the separate confirmation submits that preview once. The development no-op mail provider does not report outbound messages as sent. Support case resolution requires synchronous SMTP acceptance; provider acceptance does not confirm inbox delivery. Gym application submission/approval remain saved if their notification fails, with acceptance recorded separately in the portal timeline. Live mail requires the configured SMTP provider and credentials; see `.env.example` for settings. Never use real recipients for local QA.
+
 ## Frontend Build Loop
 
 Build CSS once:
 
 ```bash
-npm run build:css
+npm run build:frontend
 ```
 
 Watch CSS during UI work:
@@ -140,7 +149,7 @@ Render should host the application container and provide:
 Because the repository now has the web application inside `Web_App`, Render must build from that folder. Use one of these setups:
 
 - Recommended Docker setup: use the repo root [`render.yaml`](../../render.yaml), or set Dockerfile Path to `./Web_App/Dockerfile` and Docker Build Context to `./Web_App`.
-- Existing Dashboard service using commands: set Root Directory to `Web_App`, Build Command to `chmod +x ./gradlew && npm ci && npm run build:css && ./gradlew build -x test`, and Start Command to `chmod +x ./gradlew && ./gradlew bootRun --no-daemon`.
+- Existing Dashboard service using commands: set Root Directory to `Web_App`, Build Command to `chmod +x ./gradlew && npm ci && npm run build:frontend && ./gradlew build -x test`, and Start Command to `chmod +x ./gradlew && ./gradlew bootRun --no-daemon`.
 
 For the command-based setup, keep `SPRING_PROFILES_ACTIVE=render` in Render environment variables. The app also falls back to the render profile automatically when Render provides `RENDER=true`.
 
@@ -223,3 +232,8 @@ Keep this file focused on:
 - which docs should be read next
 
 Keep feature detail in the overview files, and keep point-in-time findings in the audit files.
+
+Shared error recovery keeps the actual HTTP error status and instructs users to check saved changes/orders before retrying. Signed-in pages retain legal/help routes. Development route search preserves access restrictions; the development-only legacy waitlist records unconfirmed interest and does not send mail or establish inbox ownership. Native language switching preserves common filter fields, while private tokens and POST inputs are excluded.
+
+
+Version 2.0 local preparation: web `2.0.0-SNAPSHOT`, native `2.0-preview`. `gradlew.bat bootJar` produces `build/libs/one-to-one.jar`, selected explicitly by Docker. See [the prepared checkpoint](qa/2026-10-02-v2-prepared-checkpoint.md) for verified results and unfinished acceptance; the completion goal remains active.

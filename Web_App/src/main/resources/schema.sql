@@ -20,7 +20,11 @@ DROP TABLE IF EXISTS review_moderations CASCADE;
 DROP TABLE IF EXISTS client_assessments CASCADE;
 DROP TABLE IF EXISTS trainer_reviews CASCADE;
 DROP TABLE IF EXISTS trainer_profiles CASCADE;
+DROP TABLE IF EXISTS trainer_gym_affiliation_events CASCADE;
+DROP TABLE IF EXISTS trainer_gym_affiliations CASCADE;
 DROP TABLE IF EXISTS gym_profiles CASCADE;
+DROP TABLE IF EXISTS trainer_verification_documents CASCADE;
+DROP TABLE IF EXISTS trainer_verification_events CASCADE;
 DROP TABLE IF EXISTS trainer_verification_requests CASCADE;
 
 DROP TABLE IF EXISTS off_platform_payment_attempts CASCADE;
@@ -2345,6 +2349,8 @@ CREATE TABLE IF NOT EXISTS vault_notes
     tags                      VARCHAR(255) NOT NULL DEFAULT '',
     mood                      VARCHAR(20)  NULL,
     ai_summary                TEXT         NULL,
+    ai_generated_at           TIMESTAMP    NULL,
+    ai_source_revision        VARCHAR(64)  NULL,
     created_at                TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -2855,6 +2861,10 @@ CREATE TABLE IF NOT EXISTS merch_orders
 (
     id                BIGSERIAL PRIMARY KEY,
     user_id           BIGINT         NOT NULL,
+    checkout_key      VARCHAR(36)    NULL,
+    checkout_currency VARCHAR(3)     NULL,
+    checkout_success_url VARCHAR(2048) NULL,
+    checkout_cancel_url VARCHAR(2048)  NULL,
     status            VARCHAR(30)    NOT NULL DEFAULT 'PENDING',
     payment_status    VARCHAR(30)    NOT NULL DEFAULT 'PENDING_PAYMENT',
     payment_provider  VARCHAR(50)    NULL,
@@ -2877,6 +2887,7 @@ CREATE TABLE IF NOT EXISTS merch_orders
 );
 
 CREATE INDEX IF NOT EXISTS idx_merch_orders_user ON merch_orders (user_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_merch_order_user_checkout ON merch_orders (user_id, checkout_key);
 
 -- =========================
 -- MERCH ORDER ITEMS
@@ -3004,3 +3015,52 @@ CREATE TABLE IF NOT EXISTS card_encryption_key_checks
     verified_at      TIMESTAMP WITH TIME ZONE NOT NULL,
     CONSTRAINT card_encryption_key_check_singleton CHECK (id = 1)
 );
+
+-- A trainer can have several consented gym affiliations. Preserve the original primary-gym field.
+CREATE TABLE IF NOT EXISTS trainer_gym_affiliations (
+    id BIGSERIAL PRIMARY KEY,
+    trainer_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    gym_id BIGINT NOT NULL REFERENCES gym_profiles(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING','ACTIVE','DECLINED','ENDED')),
+    initiated_by VARCHAR(20) NOT NULL CHECK (initiated_by IN ('GYM','TRAINER','LEGACY')),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT uq_trainer_gym_affiliation UNIQUE(trainer_user_id, gym_id)
+);
+CREATE INDEX IF NOT EXISTS idx_gym_affiliation_status ON trainer_gym_affiliations(gym_id, status);
+CREATE TABLE IF NOT EXISTS trainer_gym_affiliation_events (
+    id BIGSERIAL PRIMARY KEY,
+    affiliation_id BIGINT NOT NULL REFERENCES trainer_gym_affiliations(id) ON DELETE CASCADE,
+    actor_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    action VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_gym_affiliation_events ON trainer_gym_affiliation_events(affiliation_id, created_at DESC, id DESC);
+
+-- Private qualification evidence and append-only application review snapshots.
+CREATE TABLE IF NOT EXISTS trainer_verification_events (
+    id BIGSERIAL PRIMARY KEY,
+    request_id BIGINT NOT NULL REFERENCES trainer_verification_requests(id) ON DELETE CASCADE,
+    actor_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    action VARCHAR(24) NOT NULL CHECK (action IN ('LEGACY_SNAPSHOT','SUBMITTED','RESPONDED','NEEDS_INFO','APPROVED','REJECTED','DOCUMENT_ADDED','DOCUMENT_REMOVED')),
+    previous_status VARCHAR(20),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING','NEEDS_INFO','APPROVED','REJECTED')),
+    trainer_notes TEXT,
+    admin_notes TEXT,
+    document_name VARCHAR(120),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_verification_events_request ON trainer_verification_events(request_id, created_at, id);
+
+CREATE TABLE IF NOT EXISTS trainer_verification_documents (
+    id BIGSERIAL PRIMARY KEY,
+    request_id BIGINT NOT NULL REFERENCES trainer_verification_requests(id) ON DELETE CASCADE,
+    uploaded_by_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    file_name VARCHAR(120) NOT NULL,
+    content_type VARCHAR(40) NOT NULL CHECK (content_type IN ('application/pdf','image/png','image/jpeg')),
+    byte_size BIGINT NOT NULL CHECK (byte_size BETWEEN 1 AND 2097152),
+    content BYTEA NOT NULL CHECK (octet_length(content) BETWEEN 1 AND 2097152),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT verification_document_size_matches CHECK (octet_length(content) = byte_size)
+);
+CREATE INDEX IF NOT EXISTS idx_verification_documents_request ON trainer_verification_documents(request_id, created_at, id);

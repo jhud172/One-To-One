@@ -1369,10 +1369,6 @@
   }
 
   @media (max-width: 640px) {
-    .chat-fab-premium {
-      display: flex !important;
-    }
-
     .chat-panel-premium {
       inset: 0;
       max-width: 100vw;

@@ -90,7 +90,7 @@ fun PremiumCard(
         shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = if (tonal) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f)
+                MaterialTheme.colorScheme.primaryContainer
             } else {
                 MaterialTheme.colorScheme.surface
             },

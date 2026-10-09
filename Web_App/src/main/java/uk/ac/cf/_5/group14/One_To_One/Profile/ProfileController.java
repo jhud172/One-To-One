@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,6 +49,7 @@ import uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformSubscription;
 import uk.ac.cf._5.group14.One_To_One.PlatformBilling.PlatformSubscriptionService;
 import uk.ac.cf._5.group14.One_To_One.TrainerProfile.TrainerProfile;
 import uk.ac.cf._5.group14.One_To_One.TrainerProfile.TrainerProfileService;
+import uk.ac.cf._5.group14.One_To_One.TrainerProfile.SocialLinkValidator;
 import uk.ac.cf._5.group14.One_To_One.UserSettings.CalendarTaskLayoutPreference;
 import uk.ac.cf._5.group14.One_To_One.UserSettings.ThemePreference;
 import uk.ac.cf._5.group14.One_To_One.UserSettings.UserSettings;
@@ -58,6 +60,7 @@ import uk.ac.cf._5.group14.One_To_One.Users.User;
 import uk.ac.cf._5.group14.One_To_One.Users.UserRepository;
 import uk.ac.cf._5.group14.One_To_One.Users.UserService;
 
+@lombok.extern.slf4j.Slf4j
 @Controller
 public class ProfileController {
 
@@ -205,9 +208,10 @@ public class ProfileController {
 
         // Payment cards & orders
         List<SavedPaymentMethod> savedCards = cardService.getCardsForUser(user.getId());
-        List<MerchOrder> allOrders = orderService.getOrdersForUser(user.getId());
+        List<MerchOrder> allOrders = orderService.getRecentOrdersForUser(user.getId());
         modelAndView.addObject("savedCards", savedCards);
         modelAndView.addObject("allOrders", allOrders);
+        modelAndView.addObject("orderCount", orderService.countOrdersForUser(user.getId()));
 
         return modelAndView;
     }
@@ -308,9 +312,10 @@ public class ProfileController {
             .collect(Collectors.groupingBy(
                 order -> {
                     if (order.getItems() != null && !order.getItems().isEmpty()) {
-                        return order.getItems().get(0).getProductNameSnapshot();
+                        String name = order.getItems().get(0).getProductNameSnapshot();
+                        return name == null || name.isBlank() ? "" : name;
                     }
-                    return "Unknown Product";
+                    return "";
                 },
                 LinkedHashMap::new,
                 Collectors.toList()
@@ -337,14 +342,12 @@ public class ProfileController {
     public ModelAndView getOrders() {
         User user = authHelper.getAuthenticatedUser();
         if (user == null) return new ModelAndView("redirect:/login");
-        ModelAndView mav = new ModelAndView("shared-views/merch/orders");
-        mav.addObject("orders", orderService.getOrdersForUser(user.getId()));
-        mav.addObject("user", user);
-        return mav;
+        return new ModelAndView("redirect:/orders");
     }
 
     @PostMapping("/profile/update")
     public String updateProfile(@ModelAttribute ProfileUpdateRequest request,
+                                BindingResult bindingResult,
                                 @RequestParam(value = "profileImage", required = false) MultipartFile profileImage,
                                 @RequestParam(value = "bannerTheme", required = false) String bannerTheme,
                                 @RequestParam(value = "ringStyle", required = false) String ringStyle,
@@ -358,32 +361,47 @@ public class ProfileController {
             return "redirect:/login";
         }
         Map<String, String> fieldErrors = new LinkedHashMap<>();
-        boolean changed = applyBasicProfileUpdates(request, user, fieldErrors);
-        changed |= applyProfileImageUpdates(request, profileImage, user, fieldErrors);
+        bindingResult.getFieldErrors().forEach(error -> fieldErrors.put(error.getField(),
+                "Enter a valid value."));
+        TrainerProfile trainerDraft = user.getRole() == Role.TRAINER
+                ? prepareTrainerProfileUpdates(request, user.getId(), fieldErrors) : null;
+        User candidate = new User();
+        candidate.setId(user.getId());
+        copyEditableAccountFields(user, candidate);
+        boolean changed = applyBasicProfileUpdates(request, candidate, fieldErrors);
+        if (user.getRole() == Role.GYM_ADMIN) validateGymProfileFields(request, fieldErrors);
+        // Check textual fields before touching stored images or the managed account.
+        if (fieldErrors.isEmpty()) changed |= applyProfileImageUpdates(request, profileImage, candidate, fieldErrors);
 
         if (!fieldErrors.isEmpty()) {
             redirectAttributes.addFlashAttribute("profileFieldErrors", fieldErrors);
+            if (user.getRole() == Role.GYM_ADMIN || user.getRole() == Role.TRAINER) {
+                redirectAttributes.addFlashAttribute("profileDraft", request);
+                if (bindingResult.hasFieldErrors("pricePerSession")) {
+                    redirectAttributes.addFlashAttribute("trainerPriceDraft", bindingResult.getFieldValue("pricePerSession"));
+                }
+            }
             redirectAttributes.addFlashAttribute("profileError", "Please fix the highlighted fields.");
             return "redirect:/profile";
         }
 
         if (changed) {
+            copyEditableAccountFields(candidate, user);
             userRepository.save(user);
         }
 
         // Apply role-specific profile updates
         Role role = user.getRole();
-        if (role == Role.TRAINER) {
-            applyTrainerProfileUpdates(request, user.getId());
+        if (role == Role.TRAINER && trainerDraft != null) {
+            trainerProfileService.updateProfile(user.getId(), trainerDraft);
             changed = true;
         } else if (role == Role.GYM_ADMIN) {
             applyGymProfileUpdates(request, user.getId());
             changed = true;
         }
 
-        if (changed) {
-            redirectAttributes.addFlashAttribute("profileUpdated", true);
-        }
+        // A valid repeat submission also needs a visible acknowledgement.
+        redirectAttributes.addFlashAttribute("profileUpdated", true);
 
         if (role == Role.CLIENT && platformSubscriptionService.isPremium(user.getId(), clock)) {
             userSettingsService.updateProfileCustomizer(
@@ -401,11 +419,46 @@ public class ProfileController {
         return "redirect:/profile";
     }
 
-    private void applyTrainerProfileUpdates(ProfileUpdateRequest request, Long userId) {
-        if (request == null) {
-            return;
+    private TrainerProfile prepareTrainerProfileUpdates(ProfileUpdateRequest request, Long userId,
+                                                        Map<String, String> errors) {
+        if (request.getTrainerBio() == null && request.getSpecializations() == null
+                && request.getLocation() == null && request.getPrimaryGym() == null
+                && !request.isPricePerSessionProvided() && request.getInstagramUrl() == null
+                && request.getTiktokUrl() == null && request.getYoutubeUrl() == null
+                && request.getLinkedInUrl() == null && request.getWebsiteUrl() == null
+                && request.getShowInstagram() == null && request.getShowTikTok() == null
+                && request.getShowYouTube() == null && request.getShowLinkedIn() == null
+                && request.getShowWebsite() == null) return null;
+        TrainerProfile stored = trainerProfileService.getOrCreateProfile(userId);
+        TrainerProfile profile = new TrainerProfile(userId);
+        profile.setBio(stored.getBio());
+        profile.setSpecializations(stored.getSpecializations());
+        profile.setLocation(stored.getLocation());
+        profile.setPrimaryGym(stored.getPrimaryGym());
+        profile.setPricePerSession(stored.getPricePerSession());
+        profile.setInstagramUrl(stored.getInstagramUrl());
+        profile.setTiktokUrl(stored.getTiktokUrl());
+        profile.setYoutubeUrl(stored.getYoutubeUrl());
+        profile.setLinkedInUrl(stored.getLinkedInUrl());
+        profile.setWebsiteUrl(stored.getWebsiteUrl());
+        profile.setShowInstagram(stored.getShowInstagram());
+        profile.setShowTikTok(stored.getShowTikTok());
+        profile.setShowYouTube(stored.getShowYouTube());
+        profile.setShowLinkedIn(stored.getShowLinkedIn());
+        profile.setShowWebsite(stored.getShowWebsite());
+        validateOptionalProfileField(request.getTrainerBio(), "trainerBio", "Bio", 500, false, errors);
+        validateOptionalProfileField(request.getSpecializations(), "specializations", "Specialisations", 200, false, errors);
+        validateOptionalProfileField(request.getLocation(), "location", "Location", 120, false, errors);
+        validateOptionalProfileField(request.getPrimaryGym(), "primaryGym", "Primary gym", 200, false, errors);
+        if (request.getPricePerSession() != null && (request.getPricePerSession() < 0 || request.getPricePerSession() > 9999)) {
+            errors.put("pricePerSession", "Enter a whole-pound price from 0 to 9999.");
         }
-        TrainerProfile profile = trainerProfileService.getOrCreateProfile(userId);
+        SocialLinkValidator validator = new SocialLinkValidator();
+        if (!validator.isValidInstagramUrl(request.getInstagramUrl())) errors.put("instagramUrl", "Enter a valid Instagram link.");
+        if (!validator.isValidTikTokUrl(request.getTiktokUrl())) errors.put("tiktokUrl", "Enter a valid TikTok link.");
+        if (!validator.isValidYouTubeUrl(request.getYoutubeUrl())) errors.put("youtubeUrl", "Enter a valid YouTube link.");
+        if (!validator.isValidLinkedInUrl(request.getLinkedInUrl())) errors.put("linkedInUrl", "Enter a valid LinkedIn link.");
+        if (!validator.isValidWebsiteUrl(request.getWebsiteUrl())) errors.put("websiteUrl", "Enter a valid website link using http or https.");
         if (request.getTrainerBio() != null) {
             String trimmed = request.getTrainerBio().trim();
             profile.setBio(trimmed.isBlank() ? null : trimmed);
@@ -422,7 +475,7 @@ public class ProfileController {
             String trimmed = request.getPrimaryGym().trim();
             profile.setPrimaryGym(trimmed.isBlank() ? null : trimmed);
         }
-        if (request.getPricePerSession() != null) {
+        if (request.isPricePerSessionProvided()) {
             profile.setPricePerSession(request.getPricePerSession());
         }
         if (request.getInstagramUrl() != null) {
@@ -445,12 +498,44 @@ public class ProfileController {
             String trimmed = request.getWebsiteUrl().trim();
             profile.setWebsiteUrl(trimmed.isBlank() ? null : trimmed);
         }
-        profile.setShowInstagram(Boolean.TRUE.equals(request.getShowInstagram()));
-        profile.setShowTikTok(Boolean.TRUE.equals(request.getShowTikTok()));
-        profile.setShowYouTube(Boolean.TRUE.equals(request.getShowYouTube()));
-        profile.setShowLinkedIn(Boolean.TRUE.equals(request.getShowLinkedIn()));
-        profile.setShowWebsite(Boolean.TRUE.equals(request.getShowWebsite()));
-        trainerProfileService.updateProfile(userId, profile);
+        // An unchecked control is absent: update it only when its associated link was submitted.
+        if (request.getInstagramUrl() != null || request.getShowInstagram() != null) profile.setShowInstagram(Boolean.TRUE.equals(request.getShowInstagram()));
+        if (request.getTiktokUrl() != null || request.getShowTikTok() != null) profile.setShowTikTok(Boolean.TRUE.equals(request.getShowTikTok()));
+        if (request.getYoutubeUrl() != null || request.getShowYouTube() != null) profile.setShowYouTube(Boolean.TRUE.equals(request.getShowYouTube()));
+        if (request.getLinkedInUrl() != null || request.getShowLinkedIn() != null) profile.setShowLinkedIn(Boolean.TRUE.equals(request.getShowLinkedIn()));
+        if (request.getWebsiteUrl() != null || request.getShowWebsite() != null) profile.setShowWebsite(Boolean.TRUE.equals(request.getShowWebsite()));
+        return profile;
+    }
+
+    private void copyEditableAccountFields(User source, User target) {
+        target.setFirstName(source.getFirstName());
+        target.setLastName(source.getLastName());
+        target.setUsername(source.getUsername());
+        target.setUsernameChangedAt(source.getUsernameChangedAt());
+        target.setEmail(source.getEmail());
+        target.setEmailVerified(source.isEmailVerified());
+        target.setEmailVerifiedAt(source.getEmailVerifiedAt());
+        target.setPhoneNumber(source.getPhoneNumber());
+        target.setPhoneCountry(source.getPhoneCountry());
+        target.setPhoneVerified(source.isPhoneVerified());
+        target.setPhoneVerifiedAt(source.getPhoneVerifiedAt());
+        target.setBio(source.getBio());
+        target.setDateOfBirth(source.getDateOfBirth());
+        target.setProfileImageUrl(source.getProfileImageUrl());
+    }
+
+    private void validateGymProfileFields(ProfileUpdateRequest request, Map<String, String> errors) {
+        validateOptionalProfileField(request.getGymName(), "gymName", "Gym name", 120, true, errors);
+        validateOptionalProfileField(request.getGymAddress(), "gymAddress", "Address", 200, false, errors);
+        validateOptionalProfileField(request.getGymCity(), "gymCity", "City", 120, false, errors);
+        validateOptionalProfileField(request.getGymContactName(), "gymContactName", "Contact name", 120, false, errors);
+        validateOptionalProfileField(request.getGymContactPhone(), "gymContactPhone", "Contact phone", 40, false, errors);
+    }
+
+    private void validateOptionalProfileField(String value, String field, String label, int maximum, boolean required, Map<String, String> errors) {
+        if (value == null) return;
+        if (required && value.isBlank()) errors.put(field, label + " is required.");
+        else if (value.trim().length() > maximum) errors.put(field, label + " must be " + maximum + " characters or fewer.");
     }
 
     private void applyGymProfileUpdates(ProfileUpdateRequest request, Long userId) {
@@ -698,47 +783,35 @@ public class ProfileController {
                                              MultipartFile profileImage,
                                              User user,
                                              Map<String, String> fieldErrors) {
-        boolean changed = false;
         boolean removeProfileImage = request != null && request.isRemoveProfileImage();
-
-        if (removeProfileImage && user.getProfileImageUrl() != null && !user.getProfileImageUrl().isBlank()) {
-            try {
-                profileImageStorageService.deleteProfileImage(user.getProfileImageUrl());
-            } catch (IOException ignored) {
-                // If file is already missing or storage cleanup fails, still clear DB reference.
-            }
+        boolean hasUpload = profileImage != null && !profileImage.isEmpty();
+        if (!hasUpload) {
+            if (!removeProfileImage || user.getProfileImageUrl() == null) return false;
+            try { profileImageStorageService.deleteProfileImage(user.getProfileImageUrl()); }
+            catch (IOException ignored) { /* A missing file does not prevent removing its reference. */ }
             user.setProfileImageUrl(null);
-            changed = true;
-        }
-
-        if (profileImage == null || profileImage.isEmpty()) {
-            return changed;
+            return true;
         }
 
         String imageType = profileImage.getContentType();
-        boolean allowedType = "image/png".equals(imageType)
-                || "image/jpeg".equals(imageType)
-                || "image/webp".equals(imageType);
+        boolean allowedType = "image/png".equals(imageType) || "image/jpeg".equals(imageType) || "image/webp".equals(imageType);
         if (!allowedType || profileImage.getSize() > MAX_PROFILE_IMAGE_BYTES) {
             fieldErrors.put("profileImage", "Please choose a PNG, JPG, or WebP file under 2MB.");
-            return changed;
+            return false;
         }
-
         try {
             String previousImageUrl = user.getProfileImageUrl();
             String imageUrl = profileImageStorageService.storeProfileImage(user.getId(), profileImage);
-            if (imageUrl == null) {
-                return changed;
-            }
-
+            if (imageUrl == null) return false;
             user.setProfileImageUrl(imageUrl);
             if (previousImageUrl != null && !previousImageUrl.equals(imageUrl)) {
-                profileImageStorageService.deleteProfileImage(previousImageUrl);
+                try { profileImageStorageService.deleteProfileImage(previousImageUrl); }
+                catch (IOException ex) { log.warn("Could not clean up previous profile image for user {}", user.getId()); }
             }
             return true;
         } catch (IllegalArgumentException | IOException ex) {
             fieldErrors.put("profileImage", safeExceptionMessage(ex, "We couldn't update your profile image."));
-            return changed;
+            return false;
         }
     }
 
@@ -878,14 +951,13 @@ public class ProfileController {
     public String updateCalendarDisplay(@RequestParam(value = "layout", required = false) String layout,
                                         RedirectAttributes redirectAttributes) {
         User user = authHelper.getAuthenticatedUser();
-        if (layout != null) {
-            try {
-                CalendarTaskLayoutPreference layoutPref = CalendarTaskLayoutPreference.valueOf(layout);
-                userSettingsService.updateCalendarPreferences(user, null, layoutPref);
-                redirectAttributes.addFlashAttribute("settingsUpdated", true);
-            } catch (IllegalArgumentException e) {
-                redirectAttributes.addFlashAttribute("settingsError", "Invalid calendar layout preference.");
-            }
+        try {
+            if (layout == null || layout.isBlank()) throw new IllegalArgumentException();
+            CalendarTaskLayoutPreference layoutPref = CalendarTaskLayoutPreference.valueOf(layout.trim());
+            userSettingsService.updateCalendarPreferences(user, null, layoutPref);
+            redirectAttributes.addFlashAttribute("settingsUpdated", true);
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("settingsError", "Invalid calendar layout preference.");
         }
         return "redirect:/profile";
     }
@@ -894,13 +966,13 @@ public class ProfileController {
     public String updateTheme(@RequestParam(value = "theme", required = false) String theme,
                               RedirectAttributes redirectAttributes) {
         User user = authHelper.getAuthenticatedUser();
-        ThemePreference themePref = ThemePreference.SYSTEM;
-        if (theme != null) {
-            try {
-                themePref = ThemePreference.valueOf(theme.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                themePref = ThemePreference.SYSTEM;
-            }
+        ThemePreference themePref;
+        try {
+            if (theme == null || theme.isBlank()) throw new IllegalArgumentException();
+            themePref = ThemePreference.valueOf(theme.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("settingsError", "Choose a valid appearance preference.");
+            return "redirect:/profile";
         }
         UserSettings settings = userSettingsService.getOrCreate(user);
         userSettingsService.update(user,

@@ -6,5 +6,7 @@ import java.util.List;
 
 public interface CoachingPhaseChangeRepository extends JpaRepository<CoachingPhaseChange, Long> {
 
+    List<CoachingPhaseChange> findTop5ByLinkIdOrderByChangedAtDescIdDesc(Long linkId);
+
     List<CoachingPhaseChange> findByLinkIdOrderByChangedAtDesc(Long linkId);
 }
