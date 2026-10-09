@@ -76,6 +76,12 @@ public class HomePageController {
         this.messageSource = messageSource;
     }
 
+    // Clean up bookmarked links from the previous session-expiry redirect.
+    @GetMapping(value = "/", params = "expired")
+    public ModelAndView cleanExpiredHomepage() {
+        return new ModelAndView("redirect:/");
+    }
+
     @GetMapping("/")
     public ModelAndView homePage(Authentication authentication, Locale locale) {
         User user = resolveCurrentUser(authentication);

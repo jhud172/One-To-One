@@ -215,4 +215,15 @@ class LoginIntegrationTest {
                         .param("password", "Demo123!"))
                 .andExpect(redirectedUrl("/admin/dashboard"));
     }
+    @Test
+    void legacyExpiryLinksRedirectToCleanHomepage() throws Exception {
+        mockMvc.perform(get("/").param("expired", "1"))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/"));
+        mockMvc.perform(get("/login").param("expired", "1"))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/"));
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("?expired="))));
+    }
+
 }

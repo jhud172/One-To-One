@@ -99,10 +99,6 @@
                 <span th:text="#{auth.logout}">You've been signed out.</span>
             </div>
 
-            <div th:if="${param.expired}" class="auth-alert auth-alert--success" role="alert">
-                <span th:text="#{auth.logout}">You've been signed out.</span>
-            </div>
-
             <div th:if="${param.registered}" class="auth-alert auth-alert--success" role="alert">
                 <span th:text="#{auth.registered}">Registration successful! Please login.</span>
             </div>

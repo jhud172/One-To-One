@@ -294,7 +294,7 @@ public class UserController {
         }
         applyAuthLayout(model);
         if (expired != null) {
-            return "redirect:/?expired=1";
+            return "redirect:/";
         }
 
         // Pass a validated role so the server-rendered form is correct before JavaScript runs.

@@ -19,7 +19,7 @@ public class CustomInvalidSessionStrategy implements InvalidSessionStrategy {
     private final String destination;
 
     public CustomInvalidSessionStrategy() {
-        this(new HttpSessionRequestCache(), new DefaultRedirectStrategy(), "/?expired=1");
+        this(new HttpSessionRequestCache(), new DefaultRedirectStrategy(), "/");
     }
 
     CustomInvalidSessionStrategy(RequestCache requestCache, RedirectStrategy redirectStrategy, String destination) {
@@ -40,6 +40,10 @@ public class CustomInvalidSessionStrategy implements InvalidSessionStrategy {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
+
+        // Replace the stale session cookie even on uncached paths such as login,
+        // preventing repeated invalid-session redirects after a restart or timeout.
+        request.getSession(true);
 
         // Preserve the original URL so that after the user logs in they return to the page they clicked.
         // Only cache navigational GET requests, and skip login/error/static resources to avoid loops.
